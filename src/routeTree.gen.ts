@@ -18,8 +18,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppVendorsIndexRouteImport } from './routes/_app/vendors/index'
 import { Route as AppSkusIndexRouteImport } from './routes/_app/skus/index'
+import { Route as AppPurchaseOrdersIndexRouteImport } from './routes/_app/purchase-orders/index'
+import { Route as AppProcurementIndexRouteImport } from './routes/_app/procurement/index'
+import { Route as AppManufacturersIndexRouteImport } from './routes/_app/manufacturers/index'
 import { Route as AppVendorsVendorIdRouteImport } from './routes/_app/vendors/$vendorId'
 import { Route as AppSkusSkuIdRouteImport } from './routes/_app/skus/$skuId'
+import { Route as AppPurchaseOrdersNewRouteImport } from './routes/_app/purchase-orders/new'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -65,6 +69,21 @@ const AppSkusIndexRoute = AppSkusIndexRouteImport.update({
   path: '/skus/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPurchaseOrdersIndexRoute = AppPurchaseOrdersIndexRouteImport.update({
+  id: '/purchase-orders/',
+  path: '/purchase-orders/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProcurementIndexRoute = AppProcurementIndexRouteImport.update({
+  id: '/procurement/',
+  path: '/procurement/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppManufacturersIndexRoute = AppManufacturersIndexRouteImport.update({
+  id: '/manufacturers/',
+  path: '/manufacturers/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppVendorsVendorIdRoute = AppVendorsVendorIdRouteImport.update({
   id: '/vendors/$vendorId',
   path: '/vendors/$vendorId',
@@ -75,6 +94,11 @@ const AppSkusSkuIdRoute = AppSkusSkuIdRouteImport.update({
   path: '/skus/$skuId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPurchaseOrdersNewRoute = AppPurchaseOrdersNewRouteImport.update({
+  id: '/purchase-orders/new',
+  path: '/purchase-orders/new',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -83,8 +107,12 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AppDashboardRoute
+  '/purchase-orders/new': typeof AppPurchaseOrdersNewRoute
   '/skus/$skuId': typeof AppSkusSkuIdRoute
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
+  '/manufacturers/': typeof AppManufacturersIndexRoute
+  '/procurement/': typeof AppProcurementIndexRoute
+  '/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
   '/skus/': typeof AppSkusIndexRoute
   '/vendors/': typeof AppVendorsIndexRoute
 }
@@ -95,8 +123,12 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AppDashboardRoute
+  '/purchase-orders/new': typeof AppPurchaseOrdersNewRoute
   '/skus/$skuId': typeof AppSkusSkuIdRoute
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
+  '/manufacturers': typeof AppManufacturersIndexRoute
+  '/procurement': typeof AppProcurementIndexRoute
+  '/purchase-orders': typeof AppPurchaseOrdersIndexRoute
   '/skus': typeof AppSkusIndexRoute
   '/vendors': typeof AppVendorsIndexRoute
 }
@@ -109,8 +141,12 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/purchase-orders/new': typeof AppPurchaseOrdersNewRoute
   '/_app/skus/$skuId': typeof AppSkusSkuIdRoute
   '/_app/vendors/$vendorId': typeof AppVendorsVendorIdRoute
+  '/_app/manufacturers/': typeof AppManufacturersIndexRoute
+  '/_app/procurement/': typeof AppProcurementIndexRoute
+  '/_app/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
   '/_app/skus/': typeof AppSkusIndexRoute
   '/_app/vendors/': typeof AppVendorsIndexRoute
 }
@@ -123,8 +159,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard'
+    | '/purchase-orders/new'
     | '/skus/$skuId'
     | '/vendors/$vendorId'
+    | '/manufacturers/'
+    | '/procurement/'
+    | '/purchase-orders/'
     | '/skus/'
     | '/vendors/'
   fileRoutesByTo: FileRoutesByTo
@@ -135,8 +175,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard'
+    | '/purchase-orders/new'
     | '/skus/$skuId'
     | '/vendors/$vendorId'
+    | '/manufacturers'
+    | '/procurement'
+    | '/purchase-orders'
     | '/skus'
     | '/vendors'
   id:
@@ -148,8 +192,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/_app/dashboard'
+    | '/_app/purchase-orders/new'
     | '/_app/skus/$skuId'
     | '/_app/vendors/$vendorId'
+    | '/_app/manufacturers/'
+    | '/_app/procurement/'
+    | '/_app/purchase-orders/'
     | '/_app/skus/'
     | '/_app/vendors/'
   fileRoutesById: FileRoutesById
@@ -228,6 +276,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSkusIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/purchase-orders/': {
+      id: '/_app/purchase-orders/'
+      path: '/purchase-orders'
+      fullPath: '/purchase-orders/'
+      preLoaderRoute: typeof AppPurchaseOrdersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/procurement/': {
+      id: '/_app/procurement/'
+      path: '/procurement'
+      fullPath: '/procurement/'
+      preLoaderRoute: typeof AppProcurementIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/manufacturers/': {
+      id: '/_app/manufacturers/'
+      path: '/manufacturers'
+      fullPath: '/manufacturers/'
+      preLoaderRoute: typeof AppManufacturersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/vendors/$vendorId': {
       id: '/_app/vendors/$vendorId'
       path: '/vendors/$vendorId'
@@ -242,21 +311,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSkusSkuIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/purchase-orders/new': {
+      id: '/_app/purchase-orders/new'
+      path: '/purchase-orders/new'
+      fullPath: '/purchase-orders/new'
+      preLoaderRoute: typeof AppPurchaseOrdersNewRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
+  AppPurchaseOrdersNewRoute: typeof AppPurchaseOrdersNewRoute
   AppSkusSkuIdRoute: typeof AppSkusSkuIdRoute
   AppVendorsVendorIdRoute: typeof AppVendorsVendorIdRoute
+  AppManufacturersIndexRoute: typeof AppManufacturersIndexRoute
+  AppProcurementIndexRoute: typeof AppProcurementIndexRoute
+  AppPurchaseOrdersIndexRoute: typeof AppPurchaseOrdersIndexRoute
   AppSkusIndexRoute: typeof AppSkusIndexRoute
   AppVendorsIndexRoute: typeof AppVendorsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
+  AppPurchaseOrdersNewRoute: AppPurchaseOrdersNewRoute,
   AppSkusSkuIdRoute: AppSkusSkuIdRoute,
   AppVendorsVendorIdRoute: AppVendorsVendorIdRoute,
+  AppManufacturersIndexRoute: AppManufacturersIndexRoute,
+  AppProcurementIndexRoute: AppProcurementIndexRoute,
+  AppPurchaseOrdersIndexRoute: AppPurchaseOrdersIndexRoute,
   AppSkusIndexRoute: AppSkusIndexRoute,
   AppVendorsIndexRoute: AppVendorsIndexRoute,
 }
@@ -274,3 +358,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
