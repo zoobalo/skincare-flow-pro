@@ -16,6 +16,10 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppVendorsIndexRouteImport } from './routes/_app/vendors/index'
+import { Route as AppSkusIndexRouteImport } from './routes/_app/skus/index'
+import { Route as AppVendorsVendorIdRouteImport } from './routes/_app/vendors/$vendorId'
+import { Route as AppSkusSkuIdRouteImport } from './routes/_app/skus/$skuId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -51,6 +55,26 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppVendorsIndexRoute = AppVendorsIndexRouteImport.update({
+  id: '/vendors/',
+  path: '/vendors/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSkusIndexRoute = AppSkusIndexRouteImport.update({
+  id: '/skus/',
+  path: '/skus/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVendorsVendorIdRoute = AppVendorsVendorIdRouteImport.update({
+  id: '/vendors/$vendorId',
+  path: '/vendors/$vendorId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSkusSkuIdRoute = AppSkusSkuIdRouteImport.update({
+  id: '/skus/$skuId',
+  path: '/skus/$skuId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +83,10 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AppDashboardRoute
+  '/skus/$skuId': typeof AppSkusSkuIdRoute
+  '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
+  '/skus/': typeof AppSkusIndexRoute
+  '/vendors/': typeof AppVendorsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -67,6 +95,10 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AppDashboardRoute
+  '/skus/$skuId': typeof AppSkusSkuIdRoute
+  '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
+  '/skus': typeof AppSkusIndexRoute
+  '/vendors': typeof AppVendorsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,6 +109,10 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/skus/$skuId': typeof AppSkusSkuIdRoute
+  '/_app/vendors/$vendorId': typeof AppVendorsVendorIdRoute
+  '/_app/skus/': typeof AppSkusIndexRoute
+  '/_app/vendors/': typeof AppVendorsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +123,10 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard'
+    | '/skus/$skuId'
+    | '/vendors/$vendorId'
+    | '/skus/'
+    | '/vendors/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -95,6 +135,10 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard'
+    | '/skus/$skuId'
+    | '/vendors/$vendorId'
+    | '/skus'
+    | '/vendors'
   id:
     | '__root__'
     | '/'
@@ -104,6 +148,10 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/_app/dashboard'
+    | '/_app/skus/$skuId'
+    | '/_app/vendors/$vendorId'
+    | '/_app/skus/'
+    | '/_app/vendors/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -166,15 +214,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/vendors/': {
+      id: '/_app/vendors/'
+      path: '/vendors'
+      fullPath: '/vendors/'
+      preLoaderRoute: typeof AppVendorsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/skus/': {
+      id: '/_app/skus/'
+      path: '/skus'
+      fullPath: '/skus/'
+      preLoaderRoute: typeof AppSkusIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/vendors/$vendorId': {
+      id: '/_app/vendors/$vendorId'
+      path: '/vendors/$vendorId'
+      fullPath: '/vendors/$vendorId'
+      preLoaderRoute: typeof AppVendorsVendorIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/skus/$skuId': {
+      id: '/_app/skus/$skuId'
+      path: '/skus/$skuId'
+      fullPath: '/skus/$skuId'
+      preLoaderRoute: typeof AppSkusSkuIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
+  AppSkusSkuIdRoute: typeof AppSkusSkuIdRoute
+  AppVendorsVendorIdRoute: typeof AppVendorsVendorIdRoute
+  AppSkusIndexRoute: typeof AppSkusIndexRoute
+  AppVendorsIndexRoute: typeof AppVendorsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
+  AppSkusSkuIdRoute: AppSkusSkuIdRoute,
+  AppVendorsVendorIdRoute: AppVendorsVendorIdRoute,
+  AppSkusIndexRoute: AppSkusIndexRoute,
+  AppVendorsIndexRoute: AppVendorsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
