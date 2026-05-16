@@ -1,0 +1,44 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { StatusBadge } from "@/components/status-badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+const users = [
+  { id: "u1", name: "Priya Ojha", email: "priya@skinops.demo", role: "Ops Manager", status: "Active" },
+  { id: "u2", name: "Rohan Mehta", email: "rohan@skinops.demo", role: "Procurement Lead", status: "Active" },
+  { id: "u3", name: "Anita Verma", email: "anita@skinops.demo", role: "Warehouse Manager", status: "Active" },
+  { id: "u4", name: "Karan Shah", email: "karan@skinops.demo", role: "Quality Analyst", status: "Inactive" },
+  { id: "u5", name: "Neha Singh", email: "neha@skinops.demo", role: "Logistics Coordinator", status: "Active" },
+];
+
+export const Route = createFileRoute("/_app/users/")({
+  component: UsersPage,
+  head: () => ({ meta: [{ title: "User Management — SkinOps" }] }),
+});
+
+function UsersPage() {
+  return (
+    <div className="space-y-6">
+      <PageHeader title="User Management" description="Team members and roles" actions={<Button><Plus className="mr-1.5 h-4 w-4" />Invite user</Button>} />
+      <div className="overflow-x-auto rounded-xl border bg-card">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <tr><th className="px-4 py-2.5 font-medium">User</th><th className="px-4 py-2.5 font-medium">Email</th><th className="px-4 py-2.5 font-medium">Role</th><th className="px-4 py-2.5 font-medium">Status</th></tr>
+          </thead>
+          <tbody>
+            {users.map(u => (
+              <tr key={u.id} className="border-t">
+                <td className="px-4 py-2.5"><div className="flex items-center gap-2"><Avatar className="h-7 w-7"><AvatarFallback className="text-xs">{u.name.split(" ").map(n=>n[0]).join("")}</AvatarFallback></Avatar><span className="font-medium">{u.name}</span></div></td>
+                <td className="px-4 py-2.5 text-muted-foreground">{u.email}</td>
+                <td className="px-4 py-2.5">{u.role}</td>
+                <td className="px-4 py-2.5"><StatusBadge status={u.status} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
