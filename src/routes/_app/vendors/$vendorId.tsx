@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_app/vendors/$vendorId")({
 });
 
 function VendorDetailPage() {
-  const { vendor } = Route.useLoaderData();
+  const { vendor } = Route.useLoaderData() as { vendor: typeof vendors[number] };
   const orders = purchaseOrders.filter(p => p.vendorId === vendor.id);
   const radial = [{ name: "Reliability", value: vendor.reliability, fill: "var(--chart-2)" }];
 

@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
 });
 
 function SkuDetailPage() {
-  const { sku } = Route.useLoaderData();
+  const { sku } = Route.useLoaderData() as { sku: typeof skus[number] };
   const mfg = helpers.manufacturer(sku.manufacturerId);
   const skuPOs = purchaseOrders.filter(p => p.skuId === sku.id);
   const totalPackagingValue = sku.packaging.reduce((acc, p) => acc + p.currentStock * p.costPerUnit, 0);
