@@ -72,11 +72,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "SkinOps — Procurement & Operations" },
+      { name: "description", content: "Enterprise procurement, inventory, and production management for skincare manufacturing." },
+      { name: "author", content: "SkinOps" },
+      { property: "og:title", content: "SkinOps — Procurement & Operations" },
+      { property: "og:description", content: "Enterprise procurement, inventory, and production management for skincare manufacturing." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -99,6 +99,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+        <script
+          dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('skinops-theme');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}` }}
+        />
       </head>
       <body>
         {children}
