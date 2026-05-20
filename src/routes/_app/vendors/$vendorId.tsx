@@ -1,25 +1,28 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
-import { vendors, purchaseOrders, helpers, procurementSpend } from "@/lib/mock/data";
+import { api, fmtMonth } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Mail, MapPin, Phone, Star } from "lucide-react";
 import { ChartCard } from "@/components/chart-card";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, RadialBarChart, RadialBar, Legend } from "recharts";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, RadialBarChart, RadialBar } from "recharts";
 
 export const Route = createFileRoute("/_app/vendors/$vendorId")({
-  loader: ({ params }) => {
-    const vendor = vendors.find(v => v.id === params.vendorId);
+  loader: async ({ params }) => {
+    const [vendor, dashboard] = await Promise.all([
+      api.vendors.get(params.vendorId),
+      api.dashboard.kpis(),
+    ]);
     if (!vendor) throw notFound();
-    return { vendor };
+    const spendTrend = dashboard.charts.procurementSpend.map((d) => ({ month: fmtMonth(d.month), spend: d.total }));
+    return { vendor, spendTrend };
   },
   component: VendorDetailPage,
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.vendor.name ?? "Vendor"} — SkinOps` }] }),
 });
 
 function VendorDetailPage() {
-  const { vendor } = Route.useLoaderData() as { vendor: typeof vendors[number] };
-  const orders = purchaseOrders.filter(p => p.vendorId === vendor.id);
+  const { vendor, spendTrend } = Route.useLoaderData();
   const radial = [{ name: "Reliability", value: vendor.reliability, fill: "var(--chart-2)" }];
 
   return (
@@ -49,7 +52,7 @@ function VendorDetailPage() {
           </dl>
         </div>
         <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Rating</div><div className="mt-1 flex items-baseline gap-1"><Star className="h-5 w-5 fill-warning text-warning" /><span className="text-2xl font-semibold tabular-nums">{vendor.rating}</span><span className="text-xs text-muted-foreground">/ 5</span></div><div className="mt-1 text-xs text-muted-foreground">{vendor.totalOrders} orders fulfilled</div></div>
-        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Total spend (YTD)</div><div className="mt-1 text-2xl font-semibold tabular-nums">₹{(vendor.totalSpend/100000).toFixed(1)}L</div><div className="mt-1 text-xs text-muted-foreground">{vendor.runningOrders} running orders</div></div>
+        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Total spend (YTD)</div><div className="mt-1 text-2xl font-semibold tabular-nums">₹{(vendor.totalSpend / 100000).toFixed(1)}L</div><div className="mt-1 text-xs text-muted-foreground">{vendor.runningOrders} running orders</div></div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -61,12 +64,12 @@ function VendorDetailPage() {
             </RadialBarChart>
           </ResponsiveContainer>
         </ChartCard>
-        <ChartCard title="Spend trend" description="Last 6 months" className="lg:col-span-2">
+        <ChartCard title="Spend trend" description="All-vendor procurement spend (last 6 months)" className="lg:col-span-2">
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={procurementSpend}>
+            <LineChart data={spendTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={(v) => `₹${(v/100000).toFixed(0)}L`} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
               <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
               <Line type="monotone" dataKey="spend" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
@@ -82,11 +85,11 @@ function VendorDetailPage() {
               <tr><th className="px-4 py-2.5 font-medium">PO #</th><th className="px-4 py-2.5 font-medium">SKU</th><th className="px-4 py-2.5 font-medium">Material</th><th className="px-4 py-2.5 font-medium text-right">Qty</th><th className="px-4 py-2.5 font-medium text-right">Total</th><th className="px-4 py-2.5 font-medium">ETA</th><th className="px-4 py-2.5 font-medium">Status</th></tr>
             </thead>
             <tbody>
-              {orders.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No orders</td></tr>}
-              {orders.map(p => (
+              {vendor.purchaseOrders.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No orders</td></tr>}
+              {vendor.purchaseOrders.map((p) => (
                 <tr key={p.id} className="border-t">
                   <td className="px-4 py-2.5 font-medium">{p.poNumber}</td>
-                  <td className="px-4 py-2.5">{helpers.sku(p.skuId)?.code}</td>
+                  <td className="px-4 py-2.5">{p.sku?.code}</td>
                   <td className="px-4 py-2.5">{p.materialType}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">{p.quantity.toLocaleString()}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">₹{p.total.toLocaleString()}</td>

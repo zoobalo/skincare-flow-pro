@@ -1,35 +1,91 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { skus } from "@/lib/mock/data";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { api } from "@/lib/api";
 import { Plus, LayoutGrid, List, Search } from "lucide-react";
 import { useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/skus/")({
+  loader: async () => {
+    const [skus, manufacturers] = await Promise.all([api.skus.list(), api.manufacturers.list()]);
+    return { skus, manufacturers };
+  },
   component: SkuListPage,
   head: () => ({ meta: [{ title: "SKU Management — SkinOps" }] }),
 });
 
+const SKU_CATEGORIES = ["Sun Care", "Serums", "Moisturizers", "Cleansers", "Toners", "Exfoliators", "Eye Care", "Lip Care", "Body Care"];
+const SKU_TYPES = ["Aerosol Spray", "Glass Dropper", "Pump Bottle", "Tube", "Jar", "Cream Tube", "Lotion Bottle", "Toner Bottle", "Stick"];
+
+const EMPTY_FORM = {
+  code: "", name: "", category: "Serums", type: "Glass Dropper",
+  description: "", image: "", manufacturerId: "",
+  currentInventory: 0, minThreshold: 0, productionTimelineDays: 30,
+};
+
 function SkuListPage() {
+  const { skus, manufacturers } = Route.useLoaderData();
+  const router = useRouter();
   const [view, setView] = useState<"grid" | "table">("grid");
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string>("all");
-  const categories = Array.from(new Set(skus.map(s => s.category)));
-  const filtered = skus.filter(s =>
-    (cat === "all" || s.category === cat) &&
-    (q.trim() === "" || s.name.toLowerCase().includes(q.toLowerCase()) || s.code.toLowerCase().includes(q.toLowerCase()))
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ ...EMPTY_FORM, manufacturerId: manufacturers[0]?.id ?? "" });
+
+  const categories = Array.from(new Set(skus.map((s) => s.category)));
+  const filtered = skus.filter(
+    (s) =>
+      (cat === "all" || s.category === cat) &&
+      (q.trim() === "" || s.name.toLowerCase().includes(q.toLowerCase()) || s.code.toLowerCase().includes(q.toLowerCase()))
   );
+
+  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const handleCreate = async () => {
+    if (!form.code || !form.name || !form.manufacturerId) {
+      toast.error("Code, name and manufacturer are required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.skus.create({
+        ...form,
+        currentInventory: Number(form.currentInventory),
+        minThreshold: Number(form.minThreshold),
+        productionTimelineDays: Number(form.productionTimelineDays),
+      });
+      toast.success(`SKU "${form.name}" created.`);
+      setOpen(false);
+      setForm({ ...EMPTY_FORM, manufacturerId: manufacturers[0]?.id ?? "" });
+      await router.invalidate();
+    } catch {
+      toast.error("Failed to create SKU.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="SKU Management"
         description={`${skus.length} active SKUs across ${categories.length} categories`}
-        actions={<Button><Plus className="mr-1.5 h-4 w-4" />Add SKU</Button>}
+        actions={
+          <Button onClick={() => setOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />Add SKU
+          </Button>
+        }
       />
+
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative w-full sm:max-w-xs">
@@ -40,24 +96,24 @@ function SkuListPage() {
             <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Category" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All categories</SelectItem>
-              {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div className="inline-flex rounded-md border bg-card p-0.5">
-          <button onClick={() => setView("grid")} className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs ${view==="grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><LayoutGrid className="h-3.5 w-3.5" />Cards</button>
-          <button onClick={() => setView("table")} className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs ${view==="table" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><List className="h-3.5 w-3.5" />Table</button>
+          <button onClick={() => setView("grid")} className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs ${view === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><LayoutGrid className="h-3.5 w-3.5" />Cards</button>
+          <button onClick={() => setView("table")} className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs ${view === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><List className="h-3.5 w-3.5" />Table</button>
         </div>
       </div>
 
       {view === "grid" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map(sku => {
+          {filtered.map((sku) => {
             const low = sku.currentInventory < sku.minThreshold;
             return (
               <Link key={sku.id} to="/skus/$skuId" params={{ skuId: sku.id }} className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md">
                 <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                  <img src={sku.image} alt={sku.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
+                  {sku.image ? <img src={sku.image} alt={sku.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" /> : <div className="h-full w-full bg-muted" />}
                   <div className="absolute left-2 top-2"><StatusBadge status={low ? "Low Stock" : "Healthy"} /></div>
                 </div>
                 <div className="flex flex-1 flex-col p-4">
@@ -87,7 +143,7 @@ function SkuListPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(sku => {
+              {filtered.map((sku) => {
                 const low = sku.currentInventory < sku.minThreshold;
                 return (
                   <tr key={sku.id} className="border-t hover:bg-muted/30">
@@ -105,6 +161,76 @@ function SkuListPage() {
           </table>
         </div>
       )}
+
+      {/* Create SKU Sheet */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Add New SKU</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>SKU Code *</Label>
+                <Input placeholder="e.g. INV-SS-150" value={form.code} onChange={set("code")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Category *</Label>
+                <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{SKU_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Product Name *</Label>
+              <Input placeholder="e.g. Hydra-Glow Vitamin C Serum" value={form.name} onChange={set("name")} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Type</Label>
+                <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{SKU_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Manufacturer *</Label>
+                <Select value={form.manufacturerId} onValueChange={(v) => setForm((f) => ({ ...f, manufacturerId: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{manufacturers.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Description</Label>
+              <Textarea rows={2} value={form.description} onChange={set("description")} placeholder="Short product description" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Image URL</Label>
+              <Input placeholder="https://..." value={form.image} onChange={set("image")} />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label>Current Stock</Label>
+                <Input type="number" value={form.currentInventory} onChange={set("currentInventory")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Min Threshold</Label>
+                <Input type="number" value={form.minThreshold} onChange={set("minThreshold")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Lead time (days)</Label>
+                <Input type="number" value={form.productionTimelineDays} onChange={set("productionTimelineDays")} />
+              </div>
+            </div>
+          </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={saving}>{saving ? "Creating…" : "Create SKU"}</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

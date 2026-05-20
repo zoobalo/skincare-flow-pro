@@ -1,20 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
-import { shipments } from "@/lib/mock/data";
+import { api } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
 import { MapPin, Truck } from "lucide-react";
 
 export const Route = createFileRoute("/_app/logistics/")({
+  loader: () => api.shipments.list(),
   component: LogisticsPage,
   head: () => ({ meta: [{ title: "Logistics — SkinOps" }] }),
 });
 
 function LogisticsPage() {
+  const shipments = Route.useLoaderData();
   return (
     <div className="space-y-6">
       <PageHeader title="Logistics & Transport" description={`${shipments.length} active shipments`} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {shipments.map(s => (
+        {shipments.map((s) => (
           <div key={s.id} className="rounded-xl border bg-card p-5">
             <div className="flex items-start justify-between gap-2">
               <div>

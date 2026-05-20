@@ -2,6 +2,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Topbar } from "@/components/topbar";
+import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
@@ -18,6 +19,7 @@ function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <Toaster richColors position="bottom-right" />
     </div>
   );
 }

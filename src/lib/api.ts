@@ -1,0 +1,253 @@
+const BASE = `${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api`;
+
+async function get<T>(path: string): Promise<T> {
+  const r = await fetch(BASE + path);
+  if (!r.ok) throw new Error(`API ${path} → ${r.status}`);
+  return r.json() as Promise<T>;
+}
+
+// ── Shared types ─────────────────────────────────────────────────────────────
+
+export type ApiVendor = {
+  id: string; name: string; contactPerson: string; mobile: string;
+  email: string; gst: string; address: string; city: string;
+  materials: string[]; leadTimeDays: number; paymentTerms: string;
+  rating: number; reliability: number; delayPercent: number;
+  totalOrders: number; runningOrders: number; totalSpend: number;
+};
+
+export type ApiManufacturer = {
+  id: string; name: string; location: string; contactPerson: string;
+  mobile: string; capacityPerMonth: number; activeBatches: number; qcPassRate: number;
+  productionBatches: ApiBatch[];
+};
+
+export type ApiSku = {
+  id: string; code: string; name: string; category: string; type: string;
+  description: string; image: string; manufacturerId: string;
+  currentInventory: number; minThreshold: number; productionTimelineDays: number;
+  manufacturer?: { id: string; name: string };
+};
+
+export type ApiSkuDetail = ApiSku & {
+  manufacturer: ApiManufacturer;
+  packaging: ApiPackagingItem[];
+  rawMaterials: ApiRawMaterial[];
+  purchaseOrders: ApiPo[];
+  productionBatches: ApiBatch[];
+};
+
+export type ApiPackagingItem = {
+  id: string; skuId: string; name: string; vendorId: string;
+  moq: number; leadTimeDays: number; currentStock: number; transitStock: number;
+  costPerUnit: number; lastPurchaseDate: string | null;
+  sku?: { id: string; code: string; name: string };
+};
+
+export type ApiRawMaterial = {
+  id: string; skuId: string; name: string; vendorId: string;
+  qtyPerUnit: number; unit: string; currentStock: number; costPerUnit: number;
+  sku?: { id: string; code: string; name: string };
+};
+
+export type ApiPo = {
+  id: string; poNumber: string; vendorId: string; skuId: string;
+  materialType: string; quantity: number; rate: number; total: number;
+  dispatchDate: string; expectedDelivery: string;
+  status: "Pending" | "Approved" | "In Production" | "Dispatched" | "Delivered" | "Delayed";
+  paymentDue: number | null; notes: string | null;
+  vendor?: { id: string; name: string; city: string };
+  sku?: { id: string; code: string; name: string };
+};
+
+export type ApiBatch = {
+  id: string; batchNumber: string; skuId: string; manufacturerId: string;
+  quantity: number; currentStage: string; startedAt: string;
+  expectedCompletion: string; delayed: boolean;
+  sku?: { id: string; code: string; name: string; image: string };
+  manufacturer?: { id: string; name: string; location: string };
+  stageHistory?: Array<{ id: number; batchId: string; stage: string; date: string; note: string | null }>;
+};
+
+export type ApiShipment = {
+  id: string; lrNumber: string; transporter: string; driverName: string;
+  vehicleNumber: string; origin: string; destination: string;
+  pickupDate: string; expectedDelivery: string; currentLocation: string;
+  freightCost: number; status: "In Transit" | "Delivered" | "Delayed" | "Loading";
+  linkedPoNumber: string | null;
+  purchaseOrder?: { id: string; poNumber: string; status: string; vendor?: { id: string; name: string } } | null;
+};
+
+export type ApiUser = {
+  id: string; name: string; email: string; role: string; status: string;
+};
+
+export type DashboardResponse = {
+  kpis: {
+    totalPOs: number; pendingApprovals: number; activeProduction: number;
+    inTransit: number; delayedBatches: number; lowStockSkus: number;
+    totalSpend: number; totalDuePayments: number; totalVendors: number; totalSkus: number;
+  };
+  charts: {
+    procurementSpend: Array<{ month: string; total: number }>;
+    monthlyProduction: Array<{ month: string; quantity: number }>;
+    poStatusBreakdown: Record<string, number>;
+    vendorReliability: Array<{ name: string; reliability: number; delayPercent: number }>;
+    shipmentStatusBreakdown: Record<string, number>;
+  };
+};
+
+// Helper to parse Drizzle numeric strings → numbers
+function parseNum(v: unknown): number {
+  return typeof v === "string" ? parseFloat(v) : (v as number) ?? 0;
+}
+
+function coerceVendor(v: any): ApiVendor {
+  return { ...v, rating: parseNum(v.rating), totalSpend: parseNum(v.totalSpend) };
+}
+
+function coercePo(p: any): ApiPo {
+  return { ...p, rate: parseNum(p.rate), total: parseNum(p.total), paymentDue: p.paymentDue != null ? parseNum(p.paymentDue) : null };
+}
+
+function coerceShipment(s: any): ApiShipment {
+  return { ...s, freightCost: parseNum(s.freightCost) };
+}
+
+function coercePackaging(p: any): ApiPackagingItem {
+  return { ...p, costPerUnit: parseNum(p.costPerUnit) };
+}
+
+function coerceRawMaterial(r: any): ApiRawMaterial {
+  return { ...r, qtyPerUnit: parseNum(r.qtyPerUnit), currentStock: parseNum(r.currentStock), costPerUnit: parseNum(r.costPerUnit) };
+}
+
+function coerceManufacturer(m: any): ApiManufacturer {
+  return { ...m, qcPassRate: parseNum(m.qcPassRate) };
+}
+
+// ── Months helper ─────────────────────────────────────────────────────────────
+
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+export function fmtMonth(iso: string) {
+  const m = parseInt(iso.slice(5, 7), 10);
+  return MONTH_NAMES[m - 1] ?? iso;
+}
+
+// ── API surface ───────────────────────────────────────────────────────────────
+
+export const api = {
+  dashboard: {
+    kpis: () => get<DashboardResponse>("/dashboard/kpis"),
+  },
+
+  vendors: {
+    list: async () => (await get<any[]>("/vendors")).map(coerceVendor),
+    get: async (id: string) => {
+      const v = await get<any>(`/vendors/${id}`);
+      return { ...coerceVendor(v), purchaseOrders: (v.purchaseOrders ?? []).map(coercePo) } as ApiVendor & { purchaseOrders: ApiPo[] };
+    },
+    create: (data: Partial<ApiVendor>) =>
+      fetch(`${BASE}/vendors`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiVendor>) =>
+      fetch(`${BASE}/vendors/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/vendors/${id}`, { method: "DELETE" }).then((r) => r.json()),
+  },
+
+  manufacturers: {
+    list: async () => (await get<any[]>("/manufacturers")).map(coerceManufacturer),
+    create: (data: Partial<ApiManufacturer>) =>
+      fetch(`${BASE}/manufacturers`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiManufacturer>) =>
+      fetch(`${BASE}/manufacturers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/manufacturers/${id}`, { method: "DELETE" }).then((r) => r.json()),
+  },
+
+  skus: {
+    list: async (search?: string, category?: string) => {
+      const q = new URLSearchParams();
+      if (search)   q.set("search",   search);
+      if (category) q.set("category", category);
+      const qs = q.toString();
+      return get<ApiSku[]>(`/skus${qs ? "?" + qs : ""}`);
+    },
+    get: async (id: string) => {
+      const s = await get<any>(`/skus/${id}`);
+      return {
+        ...s,
+        packaging:    (s.packaging    ?? []).map(coercePackaging),
+        rawMaterials: (s.rawMaterials ?? []).map(coerceRawMaterial),
+        purchaseOrders: (s.purchaseOrders ?? []).map(coercePo),
+      } as ApiSkuDetail;
+    },
+    create: (data: Partial<ApiSku>) =>
+      fetch(`${BASE}/skus`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiSku>) =>
+      fetch(`${BASE}/skus/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/skus/${id}`, { method: "DELETE" }).then((r) => r.json()),
+    addPackaging: (skuId: string, data: Partial<ApiPackagingItem>) =>
+      fetch(`${BASE}/skus/${skuId}/packaging`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updatePackaging: (id: string, data: Partial<ApiPackagingItem>) =>
+      fetch(`${BASE}/skus/packaging/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deletePackaging: (id: string) =>
+      fetch(`${BASE}/skus/packaging/${id}`, { method: "DELETE" }).then((r) => r.json()),
+    addRawMaterial: (skuId: string, data: Partial<ApiRawMaterial>) =>
+      fetch(`${BASE}/skus/${skuId}/raw-materials`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateRawMaterial: (id: string, data: Partial<ApiRawMaterial>) =>
+      fetch(`${BASE}/skus/raw-materials/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteRawMaterial: (id: string) =>
+      fetch(`${BASE}/skus/raw-materials/${id}`, { method: "DELETE" }).then((r) => r.json()),
+  },
+
+  purchaseOrders: {
+    list: async (params?: { status?: string; vendorId?: string; skuId?: string }) => {
+      const q = new URLSearchParams(params as Record<string, string>).toString();
+      return (await get<any[]>(`/purchase-orders${q ? "?" + q : ""}`)).map(coercePo);
+    },
+    updateStatus: (id: string, status: string) =>
+      fetch(`${BASE}/purchase-orders/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      }).then((r) => r.json()),
+    create: (data: Partial<ApiPo>) =>
+      fetch(`${BASE}/purchase-orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then((r) => r.json()),
+  },
+
+  production: {
+    list: () => get<ApiBatch[]>("/production"),
+    create: (data: Partial<ApiBatch>) =>
+      fetch(`${BASE}/production`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiBatch>) =>
+      fetch(`${BASE}/production/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/production/${id}`, { method: "DELETE" }).then((r) => r.json()),
+  },
+
+  shipments: {
+    list: async () => (await get<any[]>("/shipments")).map(coerceShipment),
+  },
+
+  inventory: {
+    summary:      () => get<any>("/inventory/summary"),
+    packaging:    async () => (await get<any[]>("/inventory/packaging")).map(coercePackaging),
+    rawMaterials: async () => (await get<any[]>("/inventory/raw-materials")).map(coerceRawMaterial),
+  },
+
+  users: {
+    list: () => get<ApiUser[]>("/users"),
+  },
+
+  procurement: {
+    mrpAlerts:        () => get<ApiSku[]>("/procurement/mrp-alerts"),
+    pendingApprovals: async () => (await get<any[]>("/procurement/pending-approvals")).map(coercePo),
+    duePayments:      async () => (await get<any[]>("/procurement/due-payments")).map(coercePo),
+  },
+};
