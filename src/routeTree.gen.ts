@@ -25,6 +25,7 @@ import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/ind
 import { Route as AppReportsIndexRouteImport } from './routes/_app/reports/index'
 import { Route as AppPurchaseOrdersIndexRouteImport } from './routes/_app/purchase-orders/index'
 import { Route as AppProductionIndexRouteImport } from './routes/_app/production/index'
+import { Route as AppProductionRemarksIndexRouteImport } from './routes/_app/production-remarks/index'
 import { Route as AppProcurementIndexRouteImport } from './routes/_app/procurement/index'
 import { Route as AppNpdIndexRouteImport } from './routes/_app/npd/index'
 import { Route as AppManufacturersIndexRouteImport } from './routes/_app/manufacturers/index'
@@ -116,6 +117,12 @@ const AppProductionIndexRoute = AppProductionIndexRouteImport.update({
   path: '/production/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProductionRemarksIndexRoute =
+  AppProductionRemarksIndexRouteImport.update({
+    id: '/production-remarks/',
+    path: '/production-remarks/',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppProcurementIndexRoute = AppProcurementIndexRouteImport.update({
   id: '/procurement/',
   path: '/procurement/',
@@ -191,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/manufacturers/': typeof AppManufacturersIndexRoute
   '/npd/': typeof AppNpdIndexRoute
   '/procurement/': typeof AppProcurementIndexRoute
+  '/production-remarks/': typeof AppProductionRemarksIndexRoute
   '/production/': typeof AppProductionIndexRoute
   '/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
   '/reports/': typeof AppReportsIndexRoute
@@ -219,6 +227,7 @@ export interface FileRoutesByTo {
   '/manufacturers': typeof AppManufacturersIndexRoute
   '/npd': typeof AppNpdIndexRoute
   '/procurement': typeof AppProcurementIndexRoute
+  '/production-remarks': typeof AppProductionRemarksIndexRoute
   '/production': typeof AppProductionIndexRoute
   '/purchase-orders': typeof AppPurchaseOrdersIndexRoute
   '/reports': typeof AppReportsIndexRoute
@@ -249,6 +258,7 @@ export interface FileRoutesById {
   '/_app/manufacturers/': typeof AppManufacturersIndexRoute
   '/_app/npd/': typeof AppNpdIndexRoute
   '/_app/procurement/': typeof AppProcurementIndexRoute
+  '/_app/production-remarks/': typeof AppProductionRemarksIndexRoute
   '/_app/production/': typeof AppProductionIndexRoute
   '/_app/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
   '/_app/reports/': typeof AppReportsIndexRoute
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
     | '/manufacturers/'
     | '/npd/'
     | '/procurement/'
+    | '/production-remarks/'
     | '/production/'
     | '/purchase-orders/'
     | '/reports/'
@@ -307,6 +318,7 @@ export interface FileRouteTypes {
     | '/manufacturers'
     | '/npd'
     | '/procurement'
+    | '/production-remarks'
     | '/production'
     | '/purchase-orders'
     | '/reports'
@@ -336,6 +348,7 @@ export interface FileRouteTypes {
     | '/_app/manufacturers/'
     | '/_app/npd/'
     | '/_app/procurement/'
+    | '/_app/production-remarks/'
     | '/_app/production/'
     | '/_app/purchase-orders/'
     | '/_app/reports/'
@@ -470,6 +483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProductionIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/production-remarks/': {
+      id: '/_app/production-remarks/'
+      path: '/production-remarks'
+      fullPath: '/production-remarks/'
+      preLoaderRoute: typeof AppProductionRemarksIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/procurement/': {
       id: '/_app/procurement/'
       path: '/procurement'
@@ -563,6 +583,7 @@ interface AppRouteChildren {
   AppManufacturersIndexRoute: typeof AppManufacturersIndexRoute
   AppNpdIndexRoute: typeof AppNpdIndexRoute
   AppProcurementIndexRoute: typeof AppProcurementIndexRoute
+  AppProductionRemarksIndexRoute: typeof AppProductionRemarksIndexRoute
   AppProductionIndexRoute: typeof AppProductionIndexRoute
   AppPurchaseOrdersIndexRoute: typeof AppPurchaseOrdersIndexRoute
   AppReportsIndexRoute: typeof AppReportsIndexRoute
@@ -587,6 +608,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppManufacturersIndexRoute: AppManufacturersIndexRoute,
   AppNpdIndexRoute: AppNpdIndexRoute,
   AppProcurementIndexRoute: AppProcurementIndexRoute,
+  AppProductionRemarksIndexRoute: AppProductionRemarksIndexRoute,
   AppProductionIndexRoute: AppProductionIndexRoute,
   AppPurchaseOrdersIndexRoute: AppPurchaseOrdersIndexRoute,
   AppReportsIndexRoute: AppReportsIndexRoute,

@@ -45,10 +45,20 @@ export const skuRawMaterials = pgTable("sku_raw_materials", {
   costPerUnit: numeric("cost_per_unit", { precision: 10, scale: 2 }).notNull(),
 });
 
+export const skuTests = pgTable("sku_tests", {
+  id:         text("id").primaryKey(),
+  skuId:      text("sku_id").notNull().references(() => skus.id, { onDelete: "cascade" }),
+  testName:   text("test_name").notNull(),
+  result:     text("result").notNull().default(""),
+  createdAt:  timestamp("created_at").defaultNow().notNull(),
+  updatedAt:  timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const skusRelations = relations(skus, ({ one, many }) => ({
   manufacturer:    one(manufacturers, { fields: [skus.manufacturerId], references: [manufacturers.id] }),
   packaging:       many(packagingItems),
   rawMaterials:    many(skuRawMaterials),
+  tests:           many(skuTests),
   purchaseOrders:  many(purchaseOrders),
   productionBatches: many(productionBatches),
 }));
@@ -59,6 +69,10 @@ export const packagingItemsRelations = relations(packagingItems, ({ one }) => ({
 
 export const skuRawMaterialsRelations = relations(skuRawMaterials, ({ one }) => ({
   sku: one(skus, { fields: [skuRawMaterials.skuId], references: [skus.id] }),
+}));
+
+export const skuTestsRelations = relations(skuTests, ({ one }) => ({
+  sku: one(skus, { fields: [skuTests.skuId], references: [skus.id] }),
 }));
 
 export type SKU            = typeof skus.$inferSelect;

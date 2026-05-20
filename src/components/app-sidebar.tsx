@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Factory, Boxes, PackageOpen, FlaskConical,
-  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker,
+  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,7 @@ const nav = [
   { group: "Procurement", items: [
     { to: "/procurement", label: "Procurement", icon: ShoppingCart },
     { to: "/purchase-orders", label: "Purchase Orders", icon: FileText },
+    { to: "/production-remarks", label: "Production Remarks", icon: MessageSquareWarning },
     { to: "/vendors", label: "Vendors", icon: Users },
     { to: "/manufacturers", label: "Manufacturers", icon: Factory },
   ]},

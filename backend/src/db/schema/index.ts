@@ -6,3 +6,5 @@ export * from "./production.ts";
 export * from "./shipments.ts";
 export * from "./users.ts";
 export * from "./tasks.ts";
+export * from "./npd.ts";
+export * from "./production-remarks.ts";

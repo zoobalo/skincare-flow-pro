@@ -44,6 +44,7 @@ export const getSkuById = (id: string) =>
         orderBy: (b, { desc }) => [desc(b.startedAt)],
         with: { stageHistory: { orderBy: (h, { asc }) => [asc(h.date)] } },
       },
+      tests: { orderBy: (t, { asc }) => [asc(t.createdAt)] },
     },
   });
 

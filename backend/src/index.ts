@@ -17,6 +17,8 @@ import { userRoutes } from "./modules/users/routes.ts";
 import { procurementRoutes } from "./modules/procurement/routes.ts";
 import { uploadRoutes } from "./modules/upload/routes.ts";
 import { taskRoutes } from "./modules/tasks/routes.ts";
+import { npdRoutes } from "./modules/npd/routes.ts";
+import { productionRemarkRoutes } from "./modules/production-remarks/routes.ts";
 
 const root = new Hono();
 
@@ -46,6 +48,8 @@ app.route("/users",           userRoutes);
 app.route("/procurement",     procurementRoutes);
 app.route("/upload",          uploadRoutes);
 app.route("/tasks",           taskRoutes);
+app.route("/npd",               npdRoutes);
+app.route("/production-remarks", productionRemarkRoutes);
 
 serve({ fetch: root.fetch, port: env.PORT }, () => {
   console.log(`🚀  Zoobalo API running on http://localhost:${env.PORT}/api`);

@@ -39,7 +39,7 @@ const GST_RATES = [0, 5, 12, 18, 28] as const;
 
 const EMPTY_PACK = { name: "", vendorId: "", moq: 1000, leadTimeDays: 14, currentStock: 0, transitStock: 0, transitDeliveryDate: "", costPerUnit: 0, lastPurchaseDate: "" };
 const EMPTY_RM   = { name: "", vendorId: "", qtyPerUnit: 1, unit: "ml", currentStock: 0, costPerUnit: 0 };
-const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false, materialCategory: "", materialItemId: "", applicableStages: [...PRODUCTION_STAGES] as string[] };
+const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false, materialCategory: "", materialItemId: "", applicableStages: [...PRODUCTION_STAGES] as string[], comment: "" };
 
 function SkuDetailPage() {
   const { sku, manufacturers, vendors } = Route.useLoaderData();
@@ -78,6 +78,12 @@ function SkuDetailPage() {
   const [editBatchSaving, setEditBatchSaving] = useState(false);
   const [editBatchId, setEditBatchId] = useState<string | null>(null);
   const [editBatchForm, setEditBatchForm] = useState({ ...EMPTY_BATCH, manufacturerId: manufacturers[0]?.id ?? "", materialCategory: "", materialItemId: "" });
+
+  // Tests sheet
+  const [testOpen, setTestOpen]       = useState(false);
+  const [testSaving, setTestSaving]   = useState(false);
+  const [editTestId, setEditTestId]   = useState<string | null>(null);
+  const [testForm, setTestForm]       = useState({ testName: "", result: "" });
 
   // Edit Packaging sheet
   const [editPackOpen, setEditPackOpen] = useState(false);
@@ -176,6 +182,7 @@ function SkuDetailPage() {
       materialCategory: batch.materialCategory ?? "",
       materialItemId: batch.materialItemId ?? "",
       applicableStages: batch.applicableStages ?? [...PRODUCTION_STAGES],
+      comment: batch.comment ?? "",
     });
     setEditBatchOpen(true);
   };
@@ -262,26 +269,31 @@ function SkuDetailPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="overflow-hidden rounded-xl border bg-card">
-          {sku.image ? <img src={sku.image} alt={sku.name} className="aspect-square w-full object-cover" /> : <div className="aspect-square w-full bg-muted flex items-center justify-center text-muted-foreground text-sm">No image</div>}
-        </div>
-        <div className="lg:col-span-2 grid grid-cols-2 gap-3">
-          <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Current inventory</div><div className="mt-1 flex items-baseline gap-2"><span className="text-2xl font-semibold tabular-nums">{sku.currentInventory.toLocaleString()}</span><StatusBadge status={low ? "Low Stock" : "Healthy"} /></div><div className="mt-1 text-xs text-muted-foreground">Min threshold: {sku.minThreshold.toLocaleString()}</div></div>
-          <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Production lead time</div><div className="mt-1 text-2xl font-semibold tabular-nums">{sku.productionTimelineDays}d</div><div className="mt-1 text-xs text-muted-foreground">From PO to dispatch</div></div>
-          <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Manufacturer</div><div className="mt-1 text-base font-semibold">{mfg?.name ?? "—"}</div><div className="mt-1 text-xs text-muted-foreground">{mfg?.location} {mfg?.qcPassRate ? `· QC ${mfg.qcPassRate}%` : ""}</div></div>
-          <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Packaging stock value</div><div className="mt-1 text-2xl font-semibold tabular-nums">₹{Math.round(totalPackagingValue).toLocaleString()}</div><div className="mt-1 text-xs text-muted-foreground">Across {sku.packaging.length} items</div></div>
-          <div className="col-span-2 rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Product description</div><p className="mt-1.5 text-sm">{sku.description || "—"}</p></div>
-        </div>
-      </div>
-
-      <Tabs defaultValue="packaging">
+      <Tabs defaultValue="details">
         <TabsList>
+          <TabsTrigger value="details">Product Details</TabsTrigger>
           <TabsTrigger value="packaging">Packaging ({sku.packaging.length})</TabsTrigger>
           <TabsTrigger value="raw">Raw Materials ({sku.rawMaterials.length})</TabsTrigger>
           <TabsTrigger value="production">Production ({sku.productionBatches.length})</TabsTrigger>
+          <TabsTrigger value="tests">Tests ({(sku as any).tests?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="pohistory">PO History</TabsTrigger>
         </TabsList>
+
+        {/* ── Product Details ── */}
+        <TabsContent value="details" className="mt-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="overflow-hidden rounded-xl border bg-card">
+              {sku.image ? <img src={sku.image} alt={sku.name} className="aspect-square w-full object-cover" /> : <div className="aspect-square w-full bg-muted flex items-center justify-center text-muted-foreground text-sm">No image</div>}
+            </div>
+            <div className="lg:col-span-2 grid grid-cols-2 gap-3">
+              <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Current inventory</div><div className="mt-1 flex items-baseline gap-2"><span className="text-2xl font-semibold tabular-nums">{sku.currentInventory.toLocaleString()}</span><StatusBadge status={low ? "Low Stock" : "Healthy"} /></div><div className="mt-1 text-xs text-muted-foreground">Min threshold: {sku.minThreshold.toLocaleString()}</div></div>
+              <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Production lead time</div><div className="mt-1 text-2xl font-semibold tabular-nums">{sku.productionTimelineDays}d</div><div className="mt-1 text-xs text-muted-foreground">From PO to dispatch</div></div>
+              <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Manufacturer</div><div className="mt-1 text-base font-semibold">{mfg?.name ?? "—"}</div><div className="mt-1 text-xs text-muted-foreground">{mfg?.location} {mfg?.qcPassRate ? `· QC ${mfg.qcPassRate}%` : ""}</div></div>
+              <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Packaging stock value</div><div className="mt-1 text-2xl font-semibold tabular-nums">₹{Math.round(totalPackagingValue).toLocaleString()}</div><div className="mt-1 text-xs text-muted-foreground">Across {sku.packaging.length} items</div></div>
+              <div className="col-span-2 rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Product description</div><p className="mt-1.5 text-sm">{sku.description || "—"}</p></div>
+            </div>
+          </div>
+        </TabsContent>
 
         {/* ── Packaging ── */}
         <TabsContent value="packaging" className="mt-4">
@@ -393,6 +405,11 @@ function SkuDetailPage() {
                   ) : (
                     <ProgressRail stages={(batch.applicableStages ?? PRODUCTION_STAGES) as any} current={batch.currentStage as any} delayed={batch.delayed} />
                   )}
+                  {batch.comment && (
+                    <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      <span className="font-semibold text-foreground">Note: </span>{batch.comment}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -460,7 +477,88 @@ function SkuDetailPage() {
             })}
           </div>
         </TabsContent>
+
+        {/* ── Tests ── */}
+        <TabsContent value="tests" className="mt-4">
+          <div className="mb-3 flex justify-end">
+            <Button size="sm" onClick={() => { setTestForm({ testName: "", result: "" }); setEditTestId(null); setTestOpen(true); }}>
+              <Plus className="mr-1.5 h-4 w-4" />Add Test
+            </Button>
+          </div>
+          {(sku as any).tests?.length === 0 && (
+            <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No tests yet. Click "Add Test" to record test results.</div>
+          )}
+          <div className="rounded-xl border bg-card overflow-hidden">
+            {(sku as any).tests?.length > 0 && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40 text-xs text-muted-foreground uppercase tracking-wide">
+                    <th className="px-4 py-2.5 text-left font-medium">Test Name</th>
+                    <th className="px-4 py-2.5 text-left font-medium">Result</th>
+                    <th className="px-4 py-2.5 text-right font-medium w-20">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {(sku as any).tests.map((t: any) => (
+                    <tr key={t.id}>
+                      <td className="px-4 py-3 font-medium align-top">{t.testName}</td>
+                      <td className="px-4 py-3 text-muted-foreground align-top whitespace-pre-wrap">{t.result || "—"}</td>
+                      <td className="px-4 py-3 text-right align-top">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setTestForm({ testName: t.testName, result: t.result }); setEditTestId(t.id); setTestOpen(true); }}>
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={async () => { if (!confirm("Delete this test?")) return; try { await api.skus.deleteTest(t.id); toast.success("Deleted."); reload(); } catch { toast.error("Failed to delete."); } }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* ── Test Sheet ── */}
+      <Sheet open={testOpen} onOpenChange={setTestOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>{editTestId ? "Edit Test" : "Add Test"}</SheetTitle></SheetHeader>
+          <div className="mt-6 grid grid-cols-1 gap-4">
+            <div className="space-y-1.5">
+              <Label>Test Name *</Label>
+              <Input placeholder="e.g. Viscosity, pH, Microbial Count" value={testForm.testName} onChange={(e) => setTestForm(f => ({ ...f, testName: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Result</Label>
+              <Textarea rows={4} placeholder="e.g. Pass — 5000–7000 cPs at 25°C" value={testForm.result} onChange={(e) => setTestForm(f => ({ ...f, result: e.target.value }))} />
+            </div>
+          </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setTestOpen(false)}>Cancel</Button>
+            <Button
+              disabled={testSaving}
+              onClick={async () => {
+                if (!testForm.testName.trim()) { toast.error("Test name is required."); return; }
+                setTestSaving(true);
+                try {
+                  if (editTestId) {
+                    await api.skus.updateTest(editTestId, testForm);
+                    toast.success("Test updated.");
+                  } else {
+                    await api.skus.addTest(sku.id, testForm);
+                    toast.success("Test added.");
+                  }
+                  setTestOpen(false);
+                  await reload();
+                } catch { toast.error("Failed to save."); } finally { setTestSaving(false); }
+              }}
+            >{testSaving ? "Saving…" : (editTestId ? "Save changes" : "Add Test")}</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* ── Edit SKU Sheet ── */}
       <Sheet open={editOpen} onOpenChange={setEditOpen}>
@@ -656,6 +754,10 @@ function SkuDetailPage() {
             <div className="flex items-center gap-3">
               <input type="checkbox" id="delayedFlag" checked={editBatchForm.delayed as boolean} onChange={(e) => setEditBatchForm(f => ({ ...f, delayed: e.target.checked }))} className="h-4 w-4" />
               <Label htmlFor="delayedFlag">Mark as Delayed</Label>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Comment</Label>
+              <Textarea rows={3} placeholder="Any notes about this batch…" value={(editBatchForm as any).comment ?? ""} onChange={(e) => setEditBatchForm(f => ({ ...f, comment: e.target.value }))} />
             </div>
           </div>
           <SheetFooter className="mt-6">
@@ -861,6 +963,10 @@ function SkuDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5"><Label>Start Date *</Label><Input type="date" value={batchForm.startedAt} onChange={setBatch("startedAt")} /></div>
               <div className="space-y-1.5"><Label>Expected Completion *</Label><Input type="date" value={batchForm.expectedCompletion} onChange={setBatch("expectedCompletion")} /></div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Comment</Label>
+              <Textarea rows={3} placeholder="Any notes about this batch…" value={batchForm.comment as string} onChange={setBatch("comment")} />
             </div>
           </div>
           <SheetFooter className="mt-6">

@@ -7,15 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { api } from "@/lib/api";
-import { Check, ChevronLeft, ChevronRight, Mail } from "lucide-react";
+import { api, type ApiProductionRemark } from "@/lib/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Check, ChevronLeft, ChevronRight, Mail, MessageSquareWarning } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/purchase-orders/new")({
   loader: async () => {
-    const [skus, vendors] = await Promise.all([api.skus.list(), api.vendors.list()]);
-    return { skus, vendors };
+    const [skus, vendors, remarks] = await Promise.all([api.skus.list(), api.vendors.list(), api.productionRemarks.list()]);
+    return { skus, vendors, remarks };
   },
   component: NewPOWizard,
   head: () => ({ meta: [{ title: "Create Purchase Order — Zoobalo" }] }),
@@ -37,7 +38,7 @@ function todayStr() {
 
 function NewPOWizard() {
   const navigate = useNavigate();
-  const { skus, vendors } = Route.useLoaderData();
+  const { skus, vendors, remarks } = Route.useLoaderData();
 
   const [step, setStep] = useState(0);
   const [poNumber, setPoNumber] = useState(genPoNumber);
@@ -53,6 +54,7 @@ function NewPOWizard() {
   const [terms, setTerms] = useState(DEFAULT_PO_TERMS);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [remarksOpen, setRemarksOpen] = useState(false);
 
   const next = () => {
     if (step === 0 && !poNumber.trim()) { toast.error("PO Number is required."); return; }
@@ -168,7 +170,28 @@ ${notes ? `<div class="section"><div class="section-title">Notes</div><p style="
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Create Purchase Order" description="Multi-step PO creation with vendor selection and email send" />
+      {(() => {
+        const activeRemarks = remarks.filter((r) => r.status !== "Resolved");
+        const skuRemarks    = activeRemarks.filter((r) => r.skuId === skuId);
+        const count = activeRemarks.length;
+        return (
+          <PageHeader
+            title="Create Purchase Order"
+            description="Multi-step PO creation with vendor selection and email send"
+            actions={
+              <Button variant="outline" onClick={() => setRemarksOpen(true)} className="relative">
+                <MessageSquareWarning className="mr-1.5 h-4 w-4" />
+                Production Remarks
+                {count > 0 && (
+                  <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-semibold text-white">
+                    {count}
+                  </span>
+                )}
+              </Button>
+            }
+          />
+        );
+      })()}
 
       <ol className="grid grid-cols-2 gap-2 md:grid-cols-5">
         {steps.map((label, i) => (
@@ -344,6 +367,58 @@ ${notes ? `<div class="section"><div class="section-title">Notes</div><p style="
           )}
         </div>
       </div>
+      {/* Production Remarks Dialog */}
+      <Dialog open={remarksOpen} onOpenChange={setRemarksOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Production Remarks</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground -mt-1">Reminders to convey to the vendor when raising this PO. Resolved remarks are hidden.</p>
+          <div className="overflow-y-auto flex-1 space-y-3 pr-1">
+            {(() => {
+              const active = remarks.filter((r) => r.status !== "Resolved");
+              if (active.length === 0) return (
+                <p className="py-8 text-center text-sm text-muted-foreground">No active remarks.</p>
+              );
+              const forThisSku  = active.filter((r) => r.skuId === skuId);
+              const forOtherSku = active.filter((r) => r.skuId !== skuId);
+              const STATUS_STYLES: Record<string, string> = {
+                Active:   "bg-amber-100 text-amber-800 border-amber-200",
+                Conveyed: "bg-blue-100 text-blue-800 border-blue-200",
+              };
+              const renderRemark = (r: ApiProductionRemark) => (
+                <div key={r.id} className="rounded-lg border bg-card p-3 space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {r.skuName && <span className="text-xs font-semibold">{r.skuName}</span>}
+                    {r.skuCode && <span className="text-xs text-muted-foreground">{r.skuCode}</span>}
+                    {r.materialType !== "None" && (
+                      <span className="text-[11px] rounded-full border px-2 py-0.5 text-muted-foreground">{r.materialType}</span>
+                    )}
+                    <span className={`ml-auto text-[11px] rounded-full border px-2 py-0.5 font-medium ${STATUS_STYLES[r.status] ?? ""}`}>{r.status}</span>
+                  </div>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{r.remark}</p>
+                </div>
+              );
+              return (
+                <>
+                  {forThisSku.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">For this SKU ({skus.find((s) => s.id === skuId)?.name ?? "—"})</p>
+                      {forThisSku.map(renderRemark)}
+                    </div>
+                  )}
+                  {forOtherSku.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{forThisSku.length > 0 ? "Other remarks" : "All remarks"}</p>
+                      {forOtherSku.map(renderRemark)}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

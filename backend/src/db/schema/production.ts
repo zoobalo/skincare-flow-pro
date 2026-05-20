@@ -33,6 +33,7 @@ export const productionBatches = pgTable("production_batches", {
   materialCategory:   text("material_category"),
   materialItemId:     text("material_item_id"),
   materialItemName:   text("material_item_name"),
+  comment:            text("comment"),
   createdAt:          timestamp("created_at").defaultNow().notNull(),
   updatedAt:          timestamp("updated_at").defaultNow().notNull(),
 });

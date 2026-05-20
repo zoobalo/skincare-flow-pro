@@ -36,12 +36,18 @@ export type ApiSku = {
   manufacturer?: { id: string; name: string };
 };
 
+export type ApiSkuTest = {
+  id: string; skuId: string; testName: string; result: string;
+  createdAt: string; updatedAt: string;
+};
+
 export type ApiSkuDetail = ApiSku & {
   manufacturer: ApiManufacturer;
   packaging: ApiPackagingItem[];
   rawMaterials: ApiRawMaterial[];
   purchaseOrders: ApiPo[];
   productionBatches: ApiBatch[];
+  tests: ApiSkuTest[];
 };
 
 export type ApiPackagingItem = {
@@ -74,7 +80,7 @@ export type ApiBatch = {
   quantity: number; currentStage: string; startedAt: string;
   expectedCompletion: string; delayed: boolean;
   materialCategory: string | null; materialItemId: string | null; materialItemName: string | null;
-  applicableStages: string[] | null;
+  applicableStages: string[] | null; comment: string | null;
   sku?: { id: string; code: string; name: string; image: string };
   manufacturer?: { id: string; name: string; location: string };
   stageHistory?: Array<{ id: number; batchId: string; stage: string; date: string; note: string | null }>;
@@ -91,6 +97,25 @@ export type ApiShipment = {
 
 export type ApiUser = {
   id: string; name: string; email: string; role: string; status: string;
+};
+
+export type ApiNpdImageGroup = { name: string; images: string[]; comment: string };
+
+export type ApiProductionRemark = {
+  id: string;
+  skuId: string | null;
+  materialType: "None" | "Packaging Material" | "Raw Material";
+  remark: string;
+  status: "Active" | "Conveyed" | "Resolved";
+  createdAt: string; updatedAt: string;
+  skuCode?: string | null; skuName?: string | null;
+};
+
+export type ApiNpd = {
+  id: string; name: string; launchMonth: string | null;
+  rmStatus: string; pmStatus: string;
+  images: ApiNpdImageGroup[]; comments: string;
+  createdAt: string; updatedAt: string;
 };
 
 export type ApiTask = {
@@ -220,6 +245,12 @@ export const api = {
       fetch(`${BASE}/skus/raw-materials/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteRawMaterial: (id: string) =>
       fetch(`${BASE}/skus/raw-materials/${id}`, { method: "DELETE" }).then((r) => r.json()),
+    addTest: (skuId: string, data: Partial<ApiSkuTest>) =>
+      fetch(`${BASE}/skus/${skuId}/tests`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateTest: (id: string, data: Partial<ApiSkuTest>) =>
+      fetch(`${BASE}/skus/tests/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteTest: (id: string) =>
+      fetch(`${BASE}/skus/tests/${id}`, { method: "DELETE" }).then((r) => r.json()),
   },
 
   purchaseOrders: {
@@ -271,6 +302,26 @@ export const api = {
 
   users: {
     list: () => get<ApiUser[]>("/users"),
+  },
+
+  npd: {
+    list: () => get<ApiNpd[]>("/npd"),
+    create: (data: Partial<ApiNpd>) =>
+      fetch(`${BASE}/npd`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiNpd>) =>
+      fetch(`${BASE}/npd/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/npd/${id}`, { method: "DELETE" }).then((r) => r.json()),
+  },
+
+  productionRemarks: {
+    list: () => get<ApiProductionRemark[]>("/production-remarks"),
+    create: (data: Partial<ApiProductionRemark>) =>
+      fetch(`${BASE}/production-remarks`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiProductionRemark>) =>
+      fetch(`${BASE}/production-remarks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/production-remarks/${id}`, { method: "DELETE" }).then((r) => r.json()),
   },
 
   tasks: {
