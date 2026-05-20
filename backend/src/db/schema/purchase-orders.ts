@@ -1,7 +1,17 @@
-import { pgTable, text, integer, numeric, timestamp, date } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, numeric, timestamp, date, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { vendors } from "./vendors.ts";
 import { skus } from "./skus.ts";
+
+export type POLineItem = {
+  description: string;
+  quantity: number;
+  rate: number;
+  gstRate: number;
+  subtotal: number;
+  gstAmount: number;
+  total: number;
+};
 
 export const PO_STATUSES = [
   "Pending",
@@ -31,6 +41,9 @@ export const purchaseOrders = pgTable("purchase_orders", {
   paymentDue:       numeric("payment_due", { precision: 14, scale: 2 }),
   amountPaid:       numeric("amount_paid", { precision: 14, scale: 2 }).default("0"),
   paymentDueDate:   date("payment_due_date", { mode: "string" }),
+  category:         text("category"),
+  items:            jsonb("items").$type<POLineItem[]>(),
+  deliveryAddress:  text("delivery_address"),
   notes:            text("notes"),
   terms:            text("terms"),
   createdAt:        timestamp("created_at").defaultNow().notNull(),

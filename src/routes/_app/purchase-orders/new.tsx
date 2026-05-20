@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { api, type ApiProductionRemark } from "@/lib/api";
+import { api, type ApiProductionRemark, type POLineItem } from "@/lib/api";
+import { PODocument, buildPoHtml } from "@/components/po-document";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, ChevronLeft, ChevronRight, Mail, MessageSquareWarning } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Mail, MessageSquareWarning, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -44,17 +45,37 @@ function NewPOWizard() {
   const [poNumber, setPoNumber] = useState(genPoNumber);
   const [poDate, setPoDate] = useState(todayStr);
   const [skuId, setSkuId]     = useState(skus[0]?.id ?? "");
-  const [material, setMaterial] = useState("Aluminium Can");
+  const [material, setMaterial]   = useState("Aluminium Can");
+  const [category, setCategory]   = useState<"RM" | "PM" | "FG">("PM");
   const [vendorId, setVendorId] = useState(vendors[0]?.id ?? "");
-  const [qty, setQty]     = useState(10000);
-  const [rate, setRate]   = useState(28.5);
-  const [gstRate, setGstRate] = useState(18);
-  const [eta, setEta]     = useState("2026-05-15");
+  const [lineItems, setLineItems] = useState<Array<{ description: string; qty: number; rate: number; gstRate: number }>>([
+    { description: "Aluminium Can", qty: 10000, rate: 28.5, gstRate: 18 },
+  ]);
+  const [eta, setEta]           = useState("2026-05-15");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [notes, setNotes] = useState("Please ensure batch certificates are sent along with dispatch.");
   const [terms, setTerms] = useState(DEFAULT_PO_TERMS);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [remarksOpen, setRemarksOpen] = useState(false);
+
+  const setItem = (idx: number, field: string, value: string | number) =>
+    setLineItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
+
+  const addItem = () =>
+    setLineItems(prev => [...prev, { description: "", qty: 1000, rate: 0, gstRate: 18 }]);
+
+  const removeItem = (idx: number) =>
+    setLineItems(prev => prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev);
+
+  const computedItems: POLineItem[] = lineItems.map(item => {
+    const subtotal  = item.qty * item.rate;
+    const gstAmount = Math.round(subtotal * item.gstRate / 100 * 100) / 100;
+    return { description: item.description, quantity: item.qty, rate: item.rate, gstRate: item.gstRate, subtotal, gstAmount, total: subtotal + gstAmount };
+  });
+  const grandTotal   = computedItems.reduce((s, r) => s + r.total, 0);
+  const totalGst     = computedItems.reduce((s, r) => s + r.gstAmount, 0);
+  const totalSubtotal = computedItems.reduce((s, r) => s + r.subtotal, 0);
 
   const next = () => {
     if (step === 0 && !poNumber.trim()) { toast.error("PO Number is required."); return; }
@@ -66,28 +87,26 @@ function NewPOWizard() {
   const sku    = skus.find((s) => s.id === skuId);
   const vendor = vendors.find((v) => v.id === vendorId);
 
-  const buildPayload = (status: string) => {
-    const subtotal   = qty * rate;
-    const gstAmt     = Math.round(subtotal * gstRate / 100 * 100) / 100;
-    const grandTotal = subtotal + gstAmt;
-    return {
-      id:               crypto.randomUUID(),
-      poNumber,
-      vendorId,
-      skuId,
-      materialType:     material,
-      quantity:         qty,
-      rate:             rate as any,
-      gstRate,
-      gstAmount:        gstAmt as any,
-      total:            grandTotal as any,
-      dispatchDate:     poDate,
-      expectedDelivery: eta,
-      status,
-      notes:            notes || null,
-      terms:            terms || null,
-    };
-  };
+  const buildPayload = (status: string) => ({
+    id:               crypto.randomUUID(),
+    poNumber,
+    vendorId,
+    skuId,
+    materialType:     material,
+    category,
+    quantity:         computedItems.reduce((s, r) => s + r.quantity, 0),
+    rate:             (lineItems[0]?.rate ?? 0) as any,
+    gstRate:          lineItems[0]?.gstRate ?? 18,
+    gstAmount:        totalGst as any,
+    total:            grandTotal as any,
+    items:            computedItems as any,
+    deliveryAddress:  deliveryAddress || null,
+    dispatchDate:     poDate,
+    expectedDelivery: eta,
+    status,
+    notes:            notes || null,
+    terms:            terms || null,
+  });
 
   const handleSend = async () => {
     setSubmitting(true);
@@ -116,54 +135,14 @@ function NewPOWizard() {
   };
 
   const handleDownload = () => {
-    const subtotal   = qty * rate;
-    const gstAmt     = Math.round(subtotal * gstRate / 100 * 100) / 100;
-    const grandTotal = subtotal + gstAmt;
-    const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${poNumber}</title>
-<style>
-  body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#333}
-  .header{display:flex;justify-content:space-between;margin-bottom:32px}
-  .po-title{font-size:28px;font-weight:bold}
-  .section{margin-bottom:24px}
-  .section-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#666;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:10px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-  dt{font-size:11px;color:#666;margin-bottom:2px}
-  dd{font-size:14px;margin:0 0 8px}
-  table{width:100%;border-collapse:collapse}
-  th{background:#f5f5f5;text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase}
-  td{padding:8px 12px;border-bottom:1px solid #eee;font-size:13px}
-  .tr{text-align:right}
-  .total td{font-weight:bold;border-top:2px solid #333;border-bottom:none}
-  .terms{font-size:12px;line-height:1.7;white-space:pre-line;color:#555}
-  @media print{body{margin:10px}}
-</style></head><body>
-<div class="header">
-  <div><div class="po-title">PURCHASE ORDER</div><div style="color:#666;margin-top:4px">${poNumber} &nbsp;·&nbsp; ${fmtDate(poDate)}</div></div>
-  <div style="text-align:right"><div style="font-weight:bold;font-size:20px">Zoobalo</div></div>
-</div>
-<div class="grid2 section">
-  <div>
-    <div class="section-title">Vendor</div>
-    <dl><dt>Company</dt><dd>${vendor?.name ?? ""}</dd><dt>Contact</dt><dd>${vendor?.contactPerson ?? ""}</dd><dt>Email</dt><dd>${vendor?.email ?? ""}</dd></dl>
-  </div>
-  <div>
-    <div class="section-title">Order Details</div>
-    <dl><dt>SKU</dt><dd>${sku?.code ?? ""} — ${sku?.name ?? ""}</dd><dt>Material</dt><dd>${material}</dd><dt>Expected Delivery</dt><dd>${fmtDate(eta)}</dd></dl>
-  </div>
-</div>
-<div class="section">
-  <div class="section-title">Pricing</div>
-  <table>
-    <tr><th>Description</th><th class="tr">Qty</th><th class="tr">Rate (₹)</th><th class="tr">Amount (₹)</th></tr>
-    <tr><td>${material}</td><td class="tr">${qty.toLocaleString()}</td><td class="tr">₹${rate}</td><td class="tr">₹${fmt(subtotal)}</td></tr>
-    <tr><td colspan="3" class="tr" style="color:#666">GST @ ${gstRate}%</td><td class="tr">₹${fmt(gstAmt)}</td></tr>
-    <tr class="total"><td colspan="3" class="tr">Grand Total</td><td class="tr">₹${fmt(grandTotal)}</td></tr>
-  </table>
-</div>
-${notes ? `<div class="section"><div class="section-title">Notes</div><p style="font-size:13px;color:#444">${notes}</p></div>` : ""}
-<div class="section"><div class="section-title">Terms &amp; Conditions</div><p class="terms">${terms.replace(/</g, "&lt;")}</p></div>
-</body></html>`;
+    const html = buildPoHtml({
+      poNumber, poDate, materialType: material,
+      quantity: computedItems.reduce((s, r) => s + r.quantity, 0),
+      rate: lineItems[0]?.rate ?? 0,
+      gstRate: lineItems[0]?.gstRate ?? 18,
+      gstAmount: totalGst, total: grandTotal,
+      items: computedItems, category, deliveryAt: deliveryAddress, notes, terms, vendor, sku,
+    });
     const win = window.open("", "_blank");
     if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 300); }
   };
@@ -228,6 +207,17 @@ ${notes ? `<div class="section"><div class="section-title">Notes</div><p style="
               <Label>Material type</Label>
               <Input value={material} onChange={(e) => setMaterial(e.target.value)} placeholder="e.g. Aluminium Can" />
             </div>
+            <div className="space-y-1.5">
+              <Label>Category</Label>
+              <Select value={category} onValueChange={(v) => setCategory(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PM">PM — Packaging Material</SelectItem>
+                  <SelectItem value="RM">RM — Raw Material</SelectItem>
+                  <SelectItem value="FG">FG — Finished Goods</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
 
@@ -249,55 +239,84 @@ ${notes ? `<div class="section"><div class="section-title">Notes</div><p style="
           </div>
         )}
 
-        {step === 2 && (() => {
-          const subtotal = qty * rate;
-          const gstAmt   = Math.round(subtotal * gstRate / 100 * 100) / 100;
-          const grandTotal = subtotal + gstAmt;
-          return (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-1.5">
-                  <Label>Quantity</Label>
-                  <Input type="number" value={qty} onChange={(e) => setQty(+e.target.value)} />
+        {step === 2 && (
+          <div className="space-y-4">
+            {/* Line items */}
+            {lineItems.map((item, idx) => (
+              <div key={idx} className="rounded-lg border bg-background p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Item {idx + 1}</span>
+                  {lineItems.length > 1 && (
+                    <button onClick={() => removeItem(idx)} className="text-destructive hover:text-destructive/80 p-1 rounded">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Rate per unit (₹)</Label>
-                  <Input type="number" step="0.01" value={rate} onChange={(e) => setRate(+e.target.value)} />
+                  <Label>Description *</Label>
+                  <Input
+                    placeholder="e.g. Aluminium Can 200ml"
+                    value={item.description}
+                    onChange={(e) => setItem(idx, "description", e.target.value)}
+                  />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>GST Rate</Label>
-                  <Select value={String(gstRate)} onValueChange={(v) => setGstRate(Number(v))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {[0, 5, 12, 18, 28].map((g) => (
-                        <SelectItem key={g} value={String(g)}>{g}%{g === 18 ? " (Standard)" : g === 28 ? " (Luxury)" : g === 0 ? " (Exempt)" : ""}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Quantity</Label>
+                    <Input type="number" value={item.qty || ""} onChange={(e) => setItem(idx, "qty", +e.target.value)} placeholder="0" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Rate per unit (₹)</Label>
+                    <Input type="number" step="0.01" value={item.rate || ""} onChange={(e) => setItem(idx, "rate", +e.target.value)} placeholder="0.00" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>GST Rate</Label>
+                    <Select value={String(item.gstRate)} onValueChange={(v) => setItem(idx, "gstRate", Number(v))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[0, 5, 12, 18, 28].map((g) => (
+                          <SelectItem key={g} value={String(g)}>{g}%{g === 18 ? " (Std)" : g === 28 ? " (Luxury)" : g === 0 ? " (Exempt)" : ""}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                {item.qty > 0 && item.rate > 0 && (
+                  <div className="grid grid-cols-3 gap-2 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    <div><span className="font-medium text-foreground">₹{(item.qty * item.rate).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br />Subtotal</div>
+                    <div><span className="font-medium text-foreground">₹{computedItems[idx] ? computedItems[idx].gstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}</span><br />GST @ {item.gstRate}%</div>
+                    <div><span className="font-medium text-foreground">₹{computedItems[idx] ? computedItems[idx].total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}</span><br />Item Total</div>
+                  </div>
+                )}
               </div>
-              <div className="rounded-lg border bg-muted/40 p-4 text-sm space-y-2">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal ({qty.toLocaleString()} × ₹{rate})</span>
-                  <span className="tabular-nums">₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>GST @ {gstRate}%</span>
-                  <span className="tabular-nums">₹{gstAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex justify-between border-t pt-2 font-semibold">
-                  <span>Grand Total</span>
-                  <span className="tabular-nums">₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
+            ))}
+
+            <Button variant="outline" size="sm" onClick={addItem}>
+              <Plus className="mr-1.5 h-4 w-4" />Add Another Item
+            </Button>
+
+            {/* Grand total summary */}
+            <div className="rounded-lg border bg-muted/40 p-4 text-sm space-y-2">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Subtotal ({lineItems.length} item{lineItems.length > 1 ? "s" : ""})</span>
+                <span className="tabular-nums">₹{totalSubtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Total GST</span>
+                <span className="tabular-nums">₹{totalGst.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between border-t pt-2 font-semibold text-base">
+                <span>Grand Total</span>
+                <span className="tabular-nums">₹{grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
-          );
-        })()}
+          </div>
+        )}
 
         {step === 3 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1.5"><Label>Expected delivery date</Label><Input type="date" value={eta} onChange={(e) => setEta(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Delivery address</Label><Input defaultValue="Zoobalo Warehouse, Andheri MIDC, Mumbai" /></div>
+            <div className="space-y-1.5"><Label>Delivery address</Label><Input placeholder="e.g. Influx Healthtech Ltd., Udaipur" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} /></div>
             <div className="md:col-span-2 space-y-1.5"><Label>Notes to vendor</Label><Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
           </div>
         )}
@@ -313,35 +332,24 @@ ${notes ? `<div class="section"><div class="section-title">Notes</div><p style="
         )}
 
         {step === 5 && (
-          <div className="space-y-4">
-            <div className="rounded-lg border bg-background p-4 text-sm">
-              <h4 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">PO Summary</h4>
-              <dl className="grid grid-cols-2 gap-3">
-                <div><dt className="text-xs text-muted-foreground">PO Number</dt><dd className="font-semibold">{poNumber}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">PO Date</dt><dd>{fmtDate(poDate)}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">SKU</dt><dd>{sku?.code} — {sku?.name}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Material</dt><dd>{material}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Vendor</dt><dd>{vendor?.name}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Vendor email</dt><dd>{vendor?.email}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Quantity</dt><dd className="tabular-nums">{qty.toLocaleString()}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Rate / unit</dt><dd className="tabular-nums">₹{rate}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Subtotal</dt><dd className="tabular-nums">₹{(qty * rate).toLocaleString()}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">GST ({gstRate}%)</dt><dd className="tabular-nums">₹{(Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Grand Total</dt><dd className="tabular-nums font-semibold">₹{(qty * rate + Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Expected delivery</dt><dd>{fmtDate(eta)}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Payment terms</dt><dd>{vendor?.paymentTerms}</dd></div>
-              </dl>
-            </div>
-            <div className="rounded-lg border bg-background p-4 text-sm">
-              <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Terms & Conditions</h4>
-              <p className="whitespace-pre-line text-xs text-muted-foreground">{terms}</p>
-            </div>
-            <div className="rounded-lg border bg-muted/40 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium"><Mail className="h-4 w-4" />Email preview</div>
-              <p className="mt-2 text-xs text-muted-foreground">To: {vendor?.email}</p>
-              <p className="text-xs text-muted-foreground">Subject: Purchase Order — {sku?.code} {material} — Qty {qty.toLocaleString()}</p>
-              <p className="mt-3 text-sm whitespace-pre-line">Hi {vendor?.contactPerson},{"\n\n"}Please find our PO for {qty.toLocaleString()} units of {material} for SKU {sku?.code} at ₹{rate}/unit (subtotal ₹{(qty * rate).toLocaleString()}, GST @{gstRate}% ₹{(Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}, grand total ₹{(qty * rate + Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}). Expected delivery by ${fmtDate(eta)}.{"\n\n"}{notes}{"\n\n"}Regards,{"\n"}Zoobalo Procurement</p>
-            </div>
+          <div className="max-h-[70vh] overflow-y-auto rounded-lg border bg-white p-2">
+            <PODocument
+              poNumber={poNumber}
+              poDate={poDate}
+              materialType={material}
+              quantity={computedItems.reduce((s, r) => s + r.quantity, 0)}
+              rate={lineItems[0]?.rate ?? 0}
+              gstRate={lineItems[0]?.gstRate ?? 18}
+              gstAmount={totalGst}
+              total={grandTotal}
+              items={computedItems}
+              category={category}
+              deliveryAt={deliveryAddress}
+              notes={notes}
+              terms={terms}
+              vendor={vendor}
+              sku={sku}
+            />
           </div>
         )}
 

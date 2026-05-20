@@ -1,4 +1,4 @@
-import { pgTable, text, integer, numeric, timestamp, date } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, numeric, timestamp, date, boolean } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { manufacturers } from "./manufacturers.ts";
 import { purchaseOrders } from "./purchase-orders.ts";
@@ -45,6 +45,25 @@ export const skuRawMaterials = pgTable("sku_raw_materials", {
   costPerUnit: numeric("cost_per_unit", { precision: 10, scale: 2 }).notNull(),
 });
 
+export const skuDispatches = pgTable("sku_dispatches", {
+  id:               text("id").primaryKey(),
+  skuId:            text("sku_id").notNull().references(() => skus.id, { onDelete: "cascade" }),
+  goodsType:        text("goods_type").notNull().default("Final Goods"),
+  goodsName:        text("goods_name").notNull().default(""),
+  quantity:         integer("quantity").notNull(),
+  dispatchDate:     date("dispatch_date", { mode: "string" }).notNull(),
+  from:             text("from").notNull().default(""),
+  to:               text("to").notNull().default(""),
+  transporterName:  text("transporter_name").notNull().default(""),
+  vehicleNumber:    text("vehicle_number").notNull().default(""),
+  lrNumber:         text("lr_number").notNull().default(""),
+  freight:          numeric("freight", { precision: 10, scale: 2 }).notNull().default("0"),
+  status:           text("status").notNull().default("Dispatched"),
+  notes:            text("notes").notNull().default(""),
+  createdAt:        timestamp("created_at").defaultNow().notNull(),
+  updatedAt:        timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const skuTests = pgTable("sku_tests", {
   id:         text("id").primaryKey(),
   skuId:      text("sku_id").notNull().references(() => skus.id, { onDelete: "cascade" }),
@@ -59,6 +78,7 @@ export const skusRelations = relations(skus, ({ one, many }) => ({
   packaging:       many(packagingItems),
   rawMaterials:    many(skuRawMaterials),
   tests:           many(skuTests),
+  dispatches:      many(skuDispatches),
   purchaseOrders:  many(purchaseOrders),
   productionBatches: many(productionBatches),
 }));
@@ -73,6 +93,10 @@ export const skuRawMaterialsRelations = relations(skuRawMaterials, ({ one }) => 
 
 export const skuTestsRelations = relations(skuTests, ({ one }) => ({
   sku: one(skus, { fields: [skuTests.skuId], references: [skus.id] }),
+}));
+
+export const skuDispatchesRelations = relations(skuDispatches, ({ one }) => ({
+  sku: one(skus, { fields: [skuDispatches.skuId], references: [skus.id] }),
 }));
 
 export type SKU            = typeof skus.$inferSelect;

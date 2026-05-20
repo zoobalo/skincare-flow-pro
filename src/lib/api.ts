@@ -41,6 +41,16 @@ export type ApiSkuTest = {
   createdAt: string; updatedAt: string;
 };
 
+export type ApiSkuDispatch = {
+  id: string; skuId: string;
+  goodsType: "Packaging Material" | "Final Goods";
+  goodsName: string; quantity: number; dispatchDate: string;
+  from: string; to: string;
+  transporterName: string; vehicleNumber: string; lrNumber: string; freight: number;
+  status: "Dispatched" | "In Transit" | "Delivered" | "Delayed";
+  notes: string; createdAt: string; updatedAt: string;
+};
+
 export type ApiSkuDetail = ApiSku & {
   manufacturer: ApiManufacturer;
   packaging: ApiPackagingItem[];
@@ -48,6 +58,7 @@ export type ApiSkuDetail = ApiSku & {
   purchaseOrders: ApiPo[];
   productionBatches: ApiBatch[];
   tests: ApiSkuTest[];
+  dispatches: ApiSkuDispatch[];
 };
 
 export type ApiPackagingItem = {
@@ -64,10 +75,23 @@ export type ApiRawMaterial = {
   sku?: { id: string; code: string; name: string };
 };
 
+export type POLineItem = {
+  description: string;
+  quantity: number;
+  rate: number;
+  gstRate: number;
+  subtotal: number;
+  gstAmount: number;
+  total: number;
+};
+
 export type ApiPo = {
   id: string; poNumber: string; vendorId: string; skuId: string;
   materialType: string; quantity: number; rate: number;
   gstRate: number; gstAmount: number; total: number;
+  category: string | null;
+  items: POLineItem[] | null;
+  deliveryAddress: string | null;
   dispatchDate: string; expectedDelivery: string;
   status: "To be sent" | "Sent" | "Pending" | "Approved" | "In Production" | "Dispatched" | "Delivered" | "Delayed";
   paymentDue: number | null; amountPaid: number | null; paymentDueDate: string | null; notes: string | null; terms: string | null;
@@ -97,6 +121,15 @@ export type ApiShipment = {
 
 export type ApiUser = {
   id: string; name: string; email: string; role: string; status: string;
+};
+
+export type ApiDirectoryEntry = {
+  id: string; name: string; category: string;
+  address: string; state: string; country: string;
+  contact1Name: string; contact1Phone: string;
+  contact2Name: string; contact2Phone: string;
+  email1: string; email2: string; comment: string;
+  createdAt: string; updatedAt: string;
 };
 
 export type ApiNpdImageGroup = { name: string; images: string[]; comment: string };
@@ -251,6 +284,12 @@ export const api = {
       fetch(`${BASE}/skus/tests/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteTest: (id: string) =>
       fetch(`${BASE}/skus/tests/${id}`, { method: "DELETE" }).then((r) => r.json()),
+    addDispatch: (skuId: string, data: Partial<ApiSkuDispatch>) =>
+      fetch(`${BASE}/skus/${skuId}/dispatches`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateDispatch: (id: string, data: Partial<ApiSkuDispatch>) =>
+      fetch(`${BASE}/skus/dispatches/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteDispatch: (id: string) =>
+      fetch(`${BASE}/skus/dispatches/${id}`, { method: "DELETE" }).then((r) => r.json()),
   },
 
   purchaseOrders: {
@@ -258,6 +297,7 @@ export const api = {
       const q = new URLSearchParams(params as Record<string, string>).toString();
       return (await get<any[]>(`/purchase-orders${q ? "?" + q : ""}`)).map(coercePo);
     },
+    get: async (id: string) => coercePo(await get<any>(`/purchase-orders/${id}`)) as ApiPo & { vendor: ApiVendor; sku: ApiSku },
     updateStatus: (id: string, status: string) =>
       fetch(`${BASE}/purchase-orders/${id}/status`, {
         method: "PATCH",
@@ -312,6 +352,16 @@ export const api = {
       fetch(`${BASE}/npd/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
       fetch(`${BASE}/npd/${id}`, { method: "DELETE" }).then((r) => r.json()),
+  },
+
+  directory: {
+    list: () => get<ApiDirectoryEntry[]>("/directory"),
+    create: (data: Partial<ApiDirectoryEntry>) =>
+      fetch(`${BASE}/directory`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiDirectoryEntry>) =>
+      fetch(`${BASE}/directory/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/directory/${id}`, { method: "DELETE" }).then((r) => r.json()),
   },
 
   productionRemarks: {

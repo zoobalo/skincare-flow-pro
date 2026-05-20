@@ -39,6 +39,10 @@ const GST_RATES = [0, 5, 12, 18, 28] as const;
 
 const EMPTY_PACK = { name: "", vendorId: "", moq: 1000, leadTimeDays: 14, currentStock: 0, transitStock: 0, transitDeliveryDate: "", costPerUnit: 0, lastPurchaseDate: "" };
 const EMPTY_RM   = { name: "", vendorId: "", qtyPerUnit: 1, unit: "ml", currentStock: 0, costPerUnit: 0 };
+const DISPATCH_STATUSES = ["Dispatched", "In Transit", "Delivered", "Delayed"] as const;
+const GOODS_TYPES = ["Final Goods", "Packaging Material"] as const;
+const EMPTY_DISPATCH = { goodsType: "Final Goods", goodsName: "", quantity: 0, dispatchDate: "", from: "", to: "", transporterName: "", vehicleNumber: "", lrNumber: "", freight: 0, status: "Dispatched", notes: "" };
+
 const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false, materialCategory: "", materialItemId: "", applicableStages: [...PRODUCTION_STAGES] as string[], comment: "" };
 
 function SkuDetailPage() {
@@ -78,6 +82,12 @@ function SkuDetailPage() {
   const [editBatchSaving, setEditBatchSaving] = useState(false);
   const [editBatchId, setEditBatchId] = useState<string | null>(null);
   const [editBatchForm, setEditBatchForm] = useState({ ...EMPTY_BATCH, manufacturerId: manufacturers[0]?.id ?? "", materialCategory: "", materialItemId: "" });
+
+  // Dispatch sheet
+  const [dispatchOpen, setDispatchOpen]       = useState(false);
+  const [dispatchSaving, setDispatchSaving]   = useState(false);
+  const [editDispatchId, setEditDispatchId]   = useState<string | null>(null);
+  const [dispatchForm, setDispatchForm]       = useState({ ...EMPTY_DISPATCH });
 
   // Tests sheet
   const [testOpen, setTestOpen]       = useState(false);
@@ -277,6 +287,7 @@ function SkuDetailPage() {
           <TabsTrigger value="production">Production ({sku.productionBatches.length})</TabsTrigger>
           <TabsTrigger value="tests">Tests ({(sku as any).tests?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="pohistory">PO History</TabsTrigger>
+          <TabsTrigger value="dispatch">Dispatch ({(sku as any).dispatches?.length ?? 0})</TabsTrigger>
         </TabsList>
 
         {/* ── Product Details ── */}
@@ -520,7 +531,154 @@ function SkuDetailPage() {
             )}
           </div>
         </TabsContent>
+
+        {/* ── Dispatch ── */}
+        <TabsContent value="dispatch" className="mt-4">
+          <div className="mb-3 flex justify-end">
+            <Button size="sm" onClick={() => { setDispatchForm({ ...EMPTY_DISPATCH }); setEditDispatchId(null); setDispatchOpen(true); }}>
+              <Plus className="mr-1.5 h-4 w-4" />Add Dispatch
+            </Button>
+          </div>
+          {((sku as any).dispatches?.length ?? 0) === 0 && (
+            <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No dispatch records yet. Click "Add Dispatch" to start tracking.</div>
+          )}
+          <div className="space-y-3">
+            {((sku as any).dispatches ?? []).map((d: any) => {
+              const statusColors: Record<string, string> = {
+                Dispatched:  "bg-blue-100 text-blue-800 border-blue-200",
+                "In Transit":"bg-amber-100 text-amber-800 border-amber-200",
+                Delivered:   "bg-green-100 text-green-800 border-green-200",
+                Delayed:     "bg-red-100 text-red-800 border-red-200",
+              };
+              const goodsColors: Record<string, string> = {
+                "Final Goods":        "bg-purple-100 text-purple-800 border-purple-200",
+                "Packaging Material": "bg-amber-100 text-amber-800 border-amber-200",
+              };
+              return (
+                <div key={d.id} className="rounded-xl border bg-card p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold">{d.goodsName || "—"}</span>
+                        <span className={`text-[11px] rounded-full border px-2 py-0.5 font-medium ${goodsColors[d.goodsType] ?? ""}`}>{d.goodsType}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{d.quantity.toLocaleString()} units · {fmtDate(d.dispatchDate)}</p>
+                      {(d.from || d.to) && (
+                        <p className="text-xs text-muted-foreground">
+                          {d.from && <span>From: <span className="text-foreground font-medium">{d.from}</span></span>}
+                          {d.from && d.to && <span className="mx-1">→</span>}
+                          {d.to && <span>To: <span className="text-foreground font-medium">{d.to}</span></span>}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[11px] rounded-full border px-2 py-0.5 font-medium ${statusColors[d.status] ?? ""}`}>{d.status}</span>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setDispatchForm({ goodsType: d.goodsType, goodsName: d.goodsName, quantity: d.quantity, dispatchDate: d.dispatchDate, from: d.from, to: d.to, transporterName: d.transporterName ?? "", vehicleNumber: d.vehicleNumber ?? "", lrNumber: d.lrNumber ?? "", freight: d.freight ?? 0, status: d.status, notes: d.notes }); setEditDispatchId(d.id); setDispatchOpen(true); }}><Edit className="h-3.5 w-3.5" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={async () => { if (!confirm("Delete dispatch record?")) return; try { await api.skus.deleteDispatch(d.id); toast.success("Deleted."); reload(); } catch { toast.error("Failed."); } }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </div>
+                  {(d.transporterName || d.vehicleNumber || d.lrNumber || d.freight > 0) && (
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs border-t pt-2 sm:grid-cols-4">
+                      {d.transporterName && <div><span className="text-muted-foreground">Transporter: </span><span className="font-medium">{d.transporterName}</span></div>}
+                      {d.vehicleNumber   && <div><span className="text-muted-foreground">Vehicle: </span><span className="font-medium">{d.vehicleNumber}</span></div>}
+                      {d.lrNumber        && <div><span className="text-muted-foreground">LR No: </span><span className="font-medium">{d.lrNumber}</span></div>}
+                      {d.freight > 0     && <div><span className="text-muted-foreground">Freight: </span><span className="font-medium">₹{Number(d.freight).toLocaleString()}</span></div>}
+                    </div>
+                  )}
+                  {d.notes && <p className="text-xs text-muted-foreground leading-relaxed border-t pt-2">{d.notes}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* ── Dispatch Sheet ── */}
+      <Sheet open={dispatchOpen} onOpenChange={setDispatchOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>{editDispatchId ? "Edit Dispatch" : "Add Dispatch"}</SheetTitle></SheetHeader>
+          <div className="mt-6 grid grid-cols-1 gap-4">
+            <div className="space-y-1.5">
+              <Label>Type of Goods *</Label>
+              <Select value={dispatchForm.goodsType} onValueChange={(v) => setDispatchForm(f => ({ ...f, goodsType: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{GOODS_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Goods Name *</Label>
+              <Input placeholder="e.g. SPF 50 Sunscreen 50ml" value={dispatchForm.goodsName} onChange={(e) => setDispatchForm(f => ({ ...f, goodsName: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Number of Units *</Label>
+                <Input type="number" value={dispatchForm.quantity || ""} onChange={(e) => setDispatchForm(f => ({ ...f, quantity: +e.target.value }))} placeholder="0" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Dispatch Date *</Label>
+                <Input type="date" value={dispatchForm.dispatchDate} onChange={(e) => setDispatchForm(f => ({ ...f, dispatchDate: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>From</Label>
+                <Input placeholder="Origin location" value={dispatchForm.from} onChange={(e) => setDispatchForm(f => ({ ...f, from: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>To</Label>
+                <Input placeholder="Destination location" value={dispatchForm.to} onChange={(e) => setDispatchForm(f => ({ ...f, to: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Transporter Name</Label>
+                <Input placeholder="e.g. BlueDart, DTDC" value={(dispatchForm as any).transporterName} onChange={(e) => setDispatchForm(f => ({ ...f, transporterName: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Vehicle Number</Label>
+                <Input placeholder="e.g. MH12AB1234" value={(dispatchForm as any).vehicleNumber} onChange={(e) => setDispatchForm(f => ({ ...f, vehicleNumber: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>LR / Docket Number</Label>
+                <Input placeholder="Lorry receipt number" value={(dispatchForm as any).lrNumber} onChange={(e) => setDispatchForm(f => ({ ...f, lrNumber: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Freight (₹)</Label>
+                <Input type="number" placeholder="0" value={(dispatchForm as any).freight || ""} onChange={(e) => setDispatchForm(f => ({ ...f, freight: +e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <Select value={dispatchForm.status} onValueChange={(v) => setDispatchForm(f => ({ ...f, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{DISPATCH_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Notes</Label>
+              <Textarea rows={3} placeholder="Any additional notes…" value={dispatchForm.notes} onChange={(e) => setDispatchForm(f => ({ ...f, notes: e.target.value }))} />
+            </div>
+          </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setDispatchOpen(false)}>Cancel</Button>
+            <Button
+              disabled={dispatchSaving}
+              onClick={async () => {
+                if (!dispatchForm.dispatchDate) { toast.error("Dispatch date is required."); return; }
+                if (!dispatchForm.quantity)     { toast.error("Quantity is required."); return; }
+                setDispatchSaving(true);
+                try {
+                  if (editDispatchId) { await api.skus.updateDispatch(editDispatchId, dispatchForm as any); toast.success("Dispatch updated."); }
+                  else                { await api.skus.addDispatch(sku.id, dispatchForm as any); toast.success("Dispatch added."); }
+                  setDispatchOpen(false); await reload();
+                } catch { toast.error("Failed to save."); } finally { setDispatchSaving(false); }
+              }}
+            >{dispatchSaving ? "Saving…" : (editDispatchId ? "Save changes" : "Add Dispatch")}</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* ── Test Sheet ── */}
       <Sheet open={testOpen} onOpenChange={setTestOpen}>
@@ -966,7 +1124,7 @@ function SkuDetailPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Comment</Label>
-              <Textarea rows={3} placeholder="Any notes about this batch…" value={batchForm.comment as string} onChange={setBatch("comment")} />
+              <Textarea rows={3} placeholder="Any notes about this batch…" value={batchForm.comment as string} onChange={(e) => setBatchForm(p => ({ ...p, comment: e.target.value }))} />
             </div>
           </div>
           <SheetFooter className="mt-6">

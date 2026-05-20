@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter, useNavigate } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { api, type ApiPo } from "@/lib/api";
 import { fmtDate, DEFAULT_PO_TERMS } from "@/lib/utils";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Mail } from "lucide-react";
+import { Plus, Pencil, Trash2, Mail, Eye } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -40,7 +40,8 @@ const EMPTY_FORM = {
 
 function POPage() {
   const { purchaseOrders, vendors, skus } = Route.useLoaderData();
-  const router = useRouter();
+  const router   = useRouter();
+  const navigate = useNavigate();
 
   const [editTarget, setEditTarget] = useState<ApiPo | null>(null);
   const [editSaving, setEditSaving] = useState(false);
@@ -181,6 +182,7 @@ function POPage() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <StatusBadge status={po.status} />
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="View PO" onClick={() => navigate({ to: "/purchase-orders/$poId", params: { poId: po.id } })}><Eye className="h-3.5 w-3.5" /></Button>
                   <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(po)}><Pencil className="h-3.5 w-3.5" /></Button>
                   <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(po)}><Trash2 className="h-3.5 w-3.5" /></Button>
                 </div>
