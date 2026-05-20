@@ -9,7 +9,7 @@ import { useTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/_app/settings/")({
   component: SettingsPage,
-  head: () => ({ meta: [{ title: "Settings — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Settings — Zoobalo" }] }),
 });
 
 function SettingsPage() {

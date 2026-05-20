@@ -28,9 +28,10 @@ export const packagingItems = pgTable("packaging_items", {
   moq:              integer("moq").notNull(),
   leadTimeDays:     integer("lead_time_days").notNull(),
   currentStock:     integer("current_stock").notNull().default(0),
-  transitStock:     integer("transit_stock").notNull().default(0),
-  costPerUnit:      numeric("cost_per_unit", { precision: 10, scale: 2 }).notNull(),
-  lastPurchaseDate: date("last_purchase_date", { mode: "string" }),
+  transitStock:         integer("transit_stock").notNull().default(0),
+  transitDeliveryDate:  date("transit_delivery_date", { mode: "string" }),
+  costPerUnit:          numeric("cost_per_unit", { precision: 10, scale: 2 }).notNull(),
+  lastPurchaseDate:     date("last_purchase_date", { mode: "string" }),
 });
 
 export const skuRawMaterials = pgTable("sku_raw_materials", {

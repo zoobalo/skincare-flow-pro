@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_app/procurement/")({
     return { mrpAlerts, pendingApprovals, duePayments, totalDue };
   },
   component: ProcurementPage,
-  head: () => ({ meta: [{ title: "Procurement — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Procurement — Zoobalo" }] }),
 });
 
 function ApproveButton({ id, onDone }: { id: string; onDone: () => void }) {

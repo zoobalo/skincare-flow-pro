@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Factory, Boxes, PackageOpen, FlaskConical,
-  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles,
+  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,12 @@ const nav = [
   ]},
   { group: "Products", items: [
     { to: "/skus", label: "SKU Management", icon: Package },
+  ]},
+  { group: "Work", items: [
+    { to: "/tasks", label: "Task Management", icon: ListChecks },
+  ]},
+  { group: "NPD", items: [
+    { to: "/npd", label: "New Product Development", icon: Beaker },
   ]},
   { group: "Procurement", items: [
     { to: "/procurement", label: "Procurement", icon: ShoppingCart },
@@ -54,7 +60,7 @@ export function AppSidebar({ collapsed }: { collapsed: boolean }) {
         </div>
         {!collapsed && (
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">SkinOps</div>
+            <div className="truncate text-sm font-semibold">Zoobalo</div>
             <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">Procurement Suite</div>
           </div>
         )}

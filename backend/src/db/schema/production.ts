@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, timestamp, date, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, timestamp, date, serial, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { skus } from "./skus.ts";
 import { manufacturers } from "./manufacturers.ts";
@@ -29,6 +29,7 @@ export const productionBatches = pgTable("production_batches", {
   startedAt:          date("started_at", { mode: "string" }).notNull(),
   expectedCompletion: date("expected_completion", { mode: "string" }).notNull(),
   delayed:            boolean("delayed").notNull().default(false),
+  applicableStages:   jsonb("applicable_stages").$type<string[]>(),
   materialCategory:   text("material_category"),
   materialItemId:     text("material_item_id"),
   materialItemName:   text("material_item_name"),

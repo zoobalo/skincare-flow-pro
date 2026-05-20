@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_app/inventory/")({
     return { summary, packaging, rawMaterials, skus, vendorMap, stockValue, lowItems, agingData };
   },
   component: InventoryPage,
-  head: () => ({ meta: [{ title: "Inventory — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Inventory — Zoobalo" }] }),
 });
 
 function InventoryPage() {

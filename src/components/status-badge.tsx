@@ -8,6 +8,8 @@ type Status =
   | string;
 
 const map: Record<string, string> = {
+  "To be sent": "bg-warning/15 text-warning-foreground border-warning/30",
+  Sent: "bg-info/15 text-info border-info/30",
   Pending: "bg-warning/15 text-warning-foreground border-warning/30",
   Approved: "bg-info/15 text-info border-info/30",
   "In Production": "bg-info/15 text-info border-info/30",

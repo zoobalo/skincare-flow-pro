@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { fmtDate } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { api } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
@@ -7,7 +8,7 @@ import { MapPin, Truck } from "lucide-react";
 export const Route = createFileRoute("/_app/logistics/")({
   loader: () => api.shipments.list(),
   component: LogisticsPage,
-  head: () => ({ meta: [{ title: "Logistics — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Logistics — Zoobalo" }] }),
 });
 
 function LogisticsPage() {
@@ -31,7 +32,7 @@ function LogisticsPage() {
               <div><div className="text-muted-foreground">Destination</div><div className="font-medium">{s.destination}</div></div>
             </div>
             <div className="mt-4 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
-              <span>Pickup {s.pickupDate} · ETA {s.expectedDelivery}</span>
+              <span>Pickup {fmtDate(s.pickupDate)} · ETA {fmtDate(s.expectedDelivery)}</span>
               <span className="tabular-nums">Freight ₹{s.freightCost.toLocaleString()}</span>
             </div>
           </div>

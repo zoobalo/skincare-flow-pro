@@ -16,6 +16,7 @@ import { dashboardRoutes } from "./modules/dashboard/routes.ts";
 import { userRoutes } from "./modules/users/routes.ts";
 import { procurementRoutes } from "./modules/procurement/routes.ts";
 import { uploadRoutes } from "./modules/upload/routes.ts";
+import { taskRoutes } from "./modules/tasks/routes.ts";
 
 const root = new Hono();
 
@@ -44,7 +45,8 @@ app.route("/dashboard",       dashboardRoutes);
 app.route("/users",           userRoutes);
 app.route("/procurement",     procurementRoutes);
 app.route("/upload",          uploadRoutes);
+app.route("/tasks",           taskRoutes);
 
 serve({ fetch: root.fetch, port: env.PORT }, () => {
-  console.log(`🚀  SkinOps API running on http://localhost:${env.PORT}/api`);
+  console.log(`🚀  Zoobalo API running on http://localhost:${env.PORT}/api`);
 });

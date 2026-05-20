@@ -1,7 +1,7 @@
 {
   "name": "skinops-backend",
   "version": "1.0.0",
-  "description": "SkinOps backend — Drizzle ORM + PostgreSQL",
+  "description": "Zoobalo backend — Drizzle ORM + PostgreSQL",
   "type": "module",
   "scripts": {
     "db:push": "drizzle-kit push",

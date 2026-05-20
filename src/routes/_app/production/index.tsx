@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { fmtDate } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { api } from "@/lib/api";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
@@ -11,7 +12,7 @@ import { Plus, AlertTriangle } from "lucide-react";
 export const Route = createFileRoute("/_app/production/")({
   loader: () => api.production.list(),
   component: ProductionPage,
-  head: () => ({ meta: [{ title: "Production Tracking — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Production Tracking — Zoobalo" }] }),
 });
 
 function ProductionPage() {
@@ -54,7 +55,7 @@ function ProductionPage() {
                         </div>
                         <div className="mt-2 text-xs"><StatusBadge status={batch.delayed ? "Delayed" : "In Production"} /></div>
                         <div className="mt-2 text-[10px] text-muted-foreground">Stage: <span className="font-medium text-foreground">{batch.currentStage}</span></div>
-                        <div className="text-[10px] text-muted-foreground">ETA: {batch.expectedCompletion}</div>
+                        <div className="text-[10px] text-muted-foreground">ETA: {fmtDate(batch.expectedCompletion)}</div>
                       </li>
                     ))}
                     {items.length === 0 && <li className="py-6 text-center text-xs text-muted-foreground">No batches</li>}
@@ -71,7 +72,7 @@ function ProductionPage() {
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold">{batch.sku?.name}</h3>
-                    <p className="text-xs text-muted-foreground">{batch.batchNumber} · {batch.manufacturer?.name} · {batch.quantity.toLocaleString()} units · ETA {batch.expectedCompletion}</p>
+                    <p className="text-xs text-muted-foreground">{batch.batchNumber} · {batch.manufacturer?.name} · {batch.quantity.toLocaleString()} units · ETA {fmtDate(batch.expectedCompletion)}</p>
                   </div>
                   <StatusBadge status={batch.delayed ? "Delayed" : "In Production"} />
                 </div>

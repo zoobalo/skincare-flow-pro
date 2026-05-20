@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_app/inventory/packaging")({
     return { items, vendorMap };
   },
   component: PackPage,
-  head: () => ({ meta: [{ title: "Packaging Inventory — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Packaging Inventory — Zoobalo" }] }),
 });
 
 function PackPage() {

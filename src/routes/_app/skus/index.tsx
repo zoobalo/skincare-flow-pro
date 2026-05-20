@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_app/skus/")({
     return { skus, manufacturers };
   },
   component: SkuListPage,
-  head: () => ({ meta: [{ title: "SKU Management — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "SKU Management — Zoobalo" }] }),
 });
 
 const SKU_CATEGORIES = ["Sun Care", "Serums", "Moisturizers", "Cleansers", "Toners", "Exfoliators", "Eye Care", "Lip Care", "Body Care"];

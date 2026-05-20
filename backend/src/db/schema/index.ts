@@ -5,3 +5,4 @@ export * from "./purchase-orders.ts";
 export * from "./production.ts";
 export * from "./shipments.ts";
 export * from "./users.ts";
+export * from "./tasks.ts";

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/forgot-password")({
   component: ForgotPage,
-  head: () => ({ meta: [{ title: "Forgot password — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Forgot password — Zoobalo" }] }),
 });
 
 function ForgotPage() {

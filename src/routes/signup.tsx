@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
-  head: () => ({ meta: [{ title: "Create account — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Create account — Zoobalo" }] }),
 });
 
 function SignupPage() {
@@ -16,7 +16,7 @@ function SignupPage() {
   return (
     <AuthShell
       title="Create your workspace"
-      subtitle="Spin up SkinOps for your skincare brand in seconds"
+      subtitle="Spin up Zoobalo for your skincare brand in seconds"
       footer={<>Already have an account? <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link></>}
     >
       <form onSubmit={(e) => { e.preventDefault(); navigate({ to: "/dashboard" }); }} className="space-y-4">

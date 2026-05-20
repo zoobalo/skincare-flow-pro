@@ -29,7 +29,10 @@ export const purchaseOrders = pgTable("purchase_orders", {
   expectedDelivery: date("expected_delivery", { mode: "string" }).notNull(),
   status:           text("status").notNull().$type<POStatus>(),
   paymentDue:       numeric("payment_due", { precision: 14, scale: 2 }),
+  amountPaid:       numeric("amount_paid", { precision: 14, scale: 2 }).default("0"),
+  paymentDueDate:   date("payment_due_date", { mode: "string" }),
   notes:            text("notes"),
+  terms:            text("terms"),
   createdAt:        timestamp("created_at").defaultNow().notNull(),
   updatedAt:        timestamp("updated_at").defaultNow().notNull(),
 });

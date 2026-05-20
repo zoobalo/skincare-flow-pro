@@ -5,10 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Plus, Factory, CheckCircle2, Clock, Truck, Pencil, Trash2, Mail, MapPin, Phone, Star } from "lucide-react";
-import { ProgressRail } from "@/components/progress-rail";
-import { PRODUCTION_STAGES } from "@/lib/mock/types";
-import { StatusBadge } from "@/components/status-badge";
+import { Plus, Factory, Pencil, Trash2, Mail, MapPin, Phone, Star } from "lucide-react";
 import { ContactsEditor } from "@/components/contacts-editor";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -17,7 +14,7 @@ import type { ApiManufacturer, ApiContact } from "@/lib/api";
 export const Route = createFileRoute("/_app/manufacturers/")({
   loader: () => api.manufacturers.list(),
   component: ManufacturersPage,
-  head: () => ({ meta: [{ title: "Manufacturers — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Manufacturers — Zoobalo" }] }),
 });
 
 const EMPTY = {
@@ -286,27 +283,6 @@ function ManufacturersPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-            {m.productionBatches.length > 0 && (
-              <div className="mt-4 border-t pt-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Live batches</p>
-                <ul className="mt-3 space-y-3">
-                  {m.productionBatches.map((b) => (
-                    <li key={b.id} className="rounded-lg border bg-background p-3">
-                      <div className="mb-2 flex items-center justify-between text-xs">
-                        <span className="font-medium">{b.batchNumber} · {b.sku?.code}</span>
-                        <StatusBadge status={b.delayed ? "Delayed" : "In Production"} />
-                      </div>
-                      <ProgressRail stages={PRODUCTION_STAGES} current={b.currentStage as any} delayed={b.delayed} />
-                      <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
-                        <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />ETA {b.expectedCompletion}</span>
-                        <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Qty {b.quantity.toLocaleString()}</span>
-                        <span className="inline-flex items-center gap-1"><Truck className="h-3 w-3" />Started {b.startedAt}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
               </div>
             )}
           </div>

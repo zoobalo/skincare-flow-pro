@@ -9,7 +9,7 @@ import { api } from "@/lib/api";
 export const Route = createFileRoute("/_app/users/")({
   loader: () => api.users.list(),
   component: UsersPage,
-  head: () => ({ meta: [{ title: "User Management — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "User Management — Zoobalo" }] }),
 });
 
 function UsersPage() {

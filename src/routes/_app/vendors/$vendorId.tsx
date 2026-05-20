@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { api, fmtMonth } from "@/lib/api";
+import { fmtDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Mail, MapPin, Phone, Star, UserRound } from "lucide-react";
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/_app/vendors/$vendorId")({
     return { vendor, spendTrend };
   },
   component: VendorDetailPage,
-  head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.vendor.name ?? "Vendor"} — SkinOps` }] }),
+  head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.vendor.name ?? "Vendor"} — Zoobalo` }] }),
 });
 
 function VendorDetailPage() {
@@ -108,7 +109,7 @@ function VendorDetailPage() {
                   <td className="px-4 py-2.5">{p.materialType}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">{p.quantity.toLocaleString()}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">₹{p.total.toLocaleString()}</td>
-                  <td className="px-4 py-2.5">{p.expectedDelivery}</td>
+                  <td className="px-4 py-2.5">{fmtDate(p.expectedDelivery)}</td>
                   <td className="px-4 py-2.5"><StatusBadge status={p.status} /></td>
                 </tr>
               ))}

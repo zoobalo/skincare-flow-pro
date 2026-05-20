@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_app/inventory/raw-materials")({
     return { items, vendorMap };
   },
   component: RawPage,
-  head: () => ({ meta: [{ title: "Raw Materials — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Raw Materials — Zoobalo" }] }),
 });
 
 function RawPage() {

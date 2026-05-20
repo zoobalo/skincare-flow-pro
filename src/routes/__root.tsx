@@ -72,10 +72,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SkinOps — Procurement & Operations" },
+      { title: "Zoobalo — Procurement & Operations" },
       { name: "description", content: "Enterprise procurement, inventory, and production management for skincare manufacturing." },
-      { name: "author", content: "SkinOps" },
-      { property: "og:title", content: "SkinOps — Procurement & Operations" },
+      { name: "author", content: "Zoobalo" },
+      { property: "og:title", content: "Zoobalo — Procurement & Operations" },
       { property: "og:description", content: "Enterprise procurement, inventory, and production management for skincare manufacturing." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

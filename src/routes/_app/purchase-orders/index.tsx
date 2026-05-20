@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
-import { DataTable, type Column } from "@/components/data-table";
-import { api, type ApiPo, type ApiVendor, type ApiSku } from "@/lib/api";
+import { api, type ApiPo } from "@/lib/api";
+import { fmtDate, DEFAULT_PO_TERMS } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Mail } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -22,19 +23,19 @@ export const Route = createFileRoute("/_app/purchase-orders/")({
     return { purchaseOrders, vendors, skus };
   },
   component: POPage,
-  head: () => ({ meta: [{ title: "Purchase Orders — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Purchase Orders — Zoobalo" }] }),
 });
 
-const PO_STATUSES = ["Pending", "Approved", "In Production", "Dispatched", "Delivered", "Delayed"] as const;
+const PO_STATUSES = ["To be sent", "Sent", "Pending", "Approved", "In Production", "Dispatched", "Delivered", "Delayed"] as const;
 
 const GST_RATES = [0, 5, 12, 18, 28] as const;
 
 const EMPTY_FORM = {
-  vendorId: "", skuId: "", materialType: "", quantity: 1000,
+  poNumber: "", vendorId: "", skuId: "", materialType: "", quantity: 1000,
   rate: 0, gstRate: 18, gstAmount: 0, total: 0,
   dispatchDate: "", expectedDelivery: "",
   status: "Pending" as typeof PO_STATUSES[number],
-  paymentDue: "", notes: "",
+  paymentDue: "", amountPaid: "", paymentDueDate: "", notes: "", terms: "",
 };
 
 function POPage() {
@@ -43,10 +44,12 @@ function POPage() {
 
   const [editTarget, setEditTarget] = useState<ApiPo | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [sendingId, setSendingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
 
   const openEdit = (po: ApiPo) => {
     setEditForm({
+      poNumber: po.poNumber,
       vendorId: po.vendorId,
       skuId: po.skuId,
       materialType: po.materialType,
@@ -59,7 +62,10 @@ function POPage() {
       expectedDelivery: po.expectedDelivery,
       status: po.status,
       paymentDue: po.paymentDue != null ? String(po.paymentDue) : "",
+      amountPaid: po.amountPaid != null ? String(po.amountPaid) : "",
+      paymentDueDate: po.paymentDueDate ?? "",
       notes: po.notes ?? "",
+      terms: po.terms ?? DEFAULT_PO_TERMS,
     });
     setEditTarget(po);
   };
@@ -79,7 +85,10 @@ function POPage() {
         gstAmount: gstAmt as any,
         total:     grandTotal as any,
         paymentDue: editForm.paymentDue ? Number(editForm.paymentDue) as any : null,
+        amountPaid: editForm.amountPaid ? Number(editForm.amountPaid) as any : null,
+        paymentDueDate: editForm.paymentDueDate || null,
         notes: editForm.notes || null,
+        terms: editForm.terms || null,
       });
       toast.success("Purchase order updated.");
       setEditTarget(null);
@@ -88,6 +97,21 @@ function POPage() {
       toast.error("Failed to update purchase order.");
     } finally {
       setEditSaving(false);
+    }
+  };
+
+  const handleSendExisting = async () => {
+    if (!editTarget) return;
+    setSendingId(editTarget.id);
+    try {
+      await api.purchaseOrders.update(editTarget.id, { status: "Sent" } as any);
+      toast.success(`PO ${editTarget.poNumber} marked as sent.`);
+      setEditTarget(null);
+      await router.invalidate();
+    } catch {
+      toast.error("Failed to update PO status.");
+    } finally {
+      setSendingId(null);
     }
   };
 
@@ -103,35 +127,16 @@ function POPage() {
     }
   };
 
+  const [q, setQ] = useState("");
+
   const set = (f: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setEditForm((p) => ({ ...p, [f]: e.target.value }));
 
-  const cols: Column<ApiPo>[] = [
-    { key: "po",       header: "PO #",     accessor: (r) => r.poNumber,           cell: (r) => <span className="font-medium">{r.poNumber}</span> },
-    { key: "vendor",   header: "Vendor",   accessor: (r) => r.vendor?.name ?? "", cell: (r) => r.vendor?.name },
-    { key: "sku",      header: "SKU",      accessor: (r) => r.sku?.code ?? "",    cell: (r) => r.sku?.code },
-    { key: "material", header: "Material", accessor: (r) => r.materialType,       cell: (r) => r.materialType },
-    { key: "qty",      header: "Qty",      accessor: (r) => r.quantity,           cell: (r) => <span className="tabular-nums">{r.quantity.toLocaleString()}</span>, className: "text-right" },
-    { key: "rate",     header: "Rate",     accessor: (r) => r.rate,               cell: (r) => <span className="tabular-nums">₹{r.rate}</span>, className: "text-right" },
-    { key: "gst",      header: "GST",      accessor: (r) => r.gstRate,            cell: (r) => <span className="tabular-nums text-muted-foreground">{r.gstRate ?? 0}%</span>, className: "text-right" },
-    { key: "total",    header: "Total (incl. GST)", accessor: (r) => r.total,     cell: (r) => <span className="tabular-nums font-medium">₹{r.total.toLocaleString()}</span>, className: "text-right" },
-    { key: "dispatch", header: "Dispatch", accessor: (r) => r.dispatchDate,       cell: (r) => r.dispatchDate },
-    { key: "eta",      header: "Expected", accessor: (r) => r.expectedDelivery,   cell: (r) => r.expectedDelivery },
-    { key: "status",   header: "Status",   accessor: (r) => r.status,             cell: (r) => <StatusBadge status={r.status} /> },
-    {
-      key: "actions", header: "", accessor: (r) => r.id,
-      cell: (r) => (
-        <div className="flex items-center gap-1">
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(r)}>
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(r)}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  const filtered = purchaseOrders.filter((p) => {
+    if (!q.trim()) return true;
+    const needle = q.toLowerCase();
+    return p.poNumber.toLowerCase().includes(needle) || p.materialType.toLowerCase().includes(needle) || (p.vendor?.name ?? "").toLowerCase().includes(needle) || (p.sku?.code ?? "").toLowerCase().includes(needle);
+  });
 
   return (
     <div className="space-y-6">
@@ -141,7 +146,7 @@ function POPage() {
         actions={<Button asChild><Link to="/purchase-orders/new"><Plus className="mr-1.5 h-4 w-4" />Create PO</Link></Button>}
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-8">
         {PO_STATUSES.map((s) => {
           const count = purchaseOrders.filter((p) => p.status === s).length;
           return (
@@ -153,13 +158,81 @@ function POPage() {
         })}
       </div>
 
-      <DataTable rows={purchaseOrders} columns={cols} searchKeys={["poNumber", "materialType"]} searchPlaceholder="Search POs…" pageSize={12} />
+      <div className="relative max-w-sm">
+        <svg className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
+        <Input placeholder="Search POs…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-8" />
+      </div>
+
+      <div className="space-y-3">
+        {filtered.length === 0 && (
+          <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No purchase orders found.</div>
+        )}
+        {filtered.map((po) => {
+          const paid    = po.amountPaid ?? 0;
+          const pending = Math.max(0, po.total - paid);
+          const fmt     = (n: number) => `₹${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          return (
+            <div key={po.id} className="rounded-xl border bg-card p-4 space-y-3">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-semibold">{po.poNumber}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{fmtDate(po.dispatchDate)} · {po.vendor?.name}</div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <StatusBadge status={po.status} />
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(po)}><Pencil className="h-3.5 w-3.5" /></Button>
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(po)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                </div>
+              </div>
+
+              {/* Order details */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs sm:grid-cols-4">
+                <div><div className="text-muted-foreground">SKU</div><div className="font-medium">{po.sku?.code ?? "—"}</div></div>
+                <div><div className="text-muted-foreground">Material</div><div className="font-medium">{po.materialType}</div></div>
+                <div><div className="text-muted-foreground">Quantity</div><div className="font-medium tabular-nums">{po.quantity.toLocaleString()}</div></div>
+                <div><div className="text-muted-foreground">Rate / unit</div><div className="font-medium tabular-nums">₹{po.rate}</div></div>
+              </div>
+
+              {/* Pricing */}
+              <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-xs border-t pt-3 sm:grid-cols-4">
+                <div><div className="text-muted-foreground">GST ({po.gstRate ?? 0}%)</div><div className="font-medium tabular-nums">{fmt(po.gstAmount ?? 0)}</div></div>
+                <div><div className="text-muted-foreground">Grand Total</div><div className="font-semibold tabular-nums">{fmt(po.total)}</div></div>
+                <div><div className="text-muted-foreground">Expected delivery</div><div className="font-medium">{fmtDate(po.expectedDelivery)}</div></div>
+                <div className="hidden sm:block"><div className="text-muted-foreground">Notes</div><div className="font-medium truncate max-w-[160px]">{po.notes || "—"}</div></div>
+              </div>
+
+              {/* Payment tracking — only for Sent POs */}
+              {po.status === "Sent" && (
+                <div className="grid grid-cols-3 gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-xs">
+                  <div>
+                    <div className="text-muted-foreground mb-0.5">Amount Paid</div>
+                    <div className="font-semibold tabular-nums text-success">{fmt(paid)}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground mb-0.5">Amount Pending</div>
+                    <div className={`font-semibold tabular-nums ${pending > 0 ? "text-destructive" : "text-success"}`}>{fmt(pending)}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground mb-0.5">Pay by Date</div>
+                    <div className="font-semibold">{fmtDate(po.paymentDueDate)}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {/* ── Edit PO Sheet ── */}
       <Sheet open={!!editTarget} onOpenChange={(v) => { if (!v) setEditTarget(null); }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader><SheetTitle>Edit PO — {editTarget?.poNumber}</SheetTitle></SheetHeader>
           <div className="mt-6 grid grid-cols-1 gap-4">
+            <div className="space-y-1.5">
+              <Label>PO Number</Label>
+              <Input value={editForm.poNumber} onChange={set("poNumber")} placeholder="e.g. PO-20260520-1234" />
+            </div>
             <div className="space-y-1.5">
               <Label>Vendor</Label>
               <Select value={editForm.vendorId} onValueChange={(v) => setEditForm((f) => ({ ...f, vendorId: v }))}>
@@ -211,11 +284,52 @@ function POPage() {
                 <SelectContent>{PO_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5"><Label>Payment Due (₹)</Label><Input type="number" step="0.01" placeholder="Leave blank if none" value={editForm.paymentDue} onChange={set("paymentDue")} /></div>
+            {editForm.status === "Sent" && (() => {
+              const total      = Number(editForm.quantity) * Number(editForm.rate) * (1 + Number(editForm.gstRate) / 100);
+              const paid       = Number(editForm.amountPaid) || 0;
+              const pending    = Math.max(0, total - paid);
+              const fmt        = (n: number) => `₹${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              return (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">Payment Tracking</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Amount Paid (₹)</Label>
+                      <Input type="number" step="0.01" min="0" placeholder="0.00" value={editForm.amountPaid} onChange={set("amountPaid")} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Amount Pending (₹)</Label>
+                      <div className={`flex h-9 items-center rounded-md border px-3 text-sm tabular-nums font-medium ${pending > 0 ? "border-destructive/40 bg-destructive/5 text-destructive" : "border-success/40 bg-success/5 text-success"}`}>
+                        {fmt(pending)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Due Date for Pending Payment</Label>
+                    <Input type="date" value={editForm.paymentDueDate} onChange={set("paymentDueDate")} />
+                  </div>
+                  <div className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground grid grid-cols-3 gap-2">
+                    <div><span className="block font-medium text-foreground">{fmt(total)}</span>Grand Total</div>
+                    <div><span className="block font-medium text-foreground">{fmt(paid)}</span>Paid</div>
+                    <div><span className={`block font-medium ${pending > 0 ? "text-destructive" : "text-success"}`}>{fmt(pending)}</span>Pending</div>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Optional notes" value={editForm.notes} onChange={set("notes")} /></div>
+            <div className="space-y-1.5">
+              <Label>Terms & Conditions</Label>
+              <Textarea rows={8} className="font-mono text-xs" placeholder="Enter terms and conditions…" value={editForm.terms} onChange={set("terms")} />
+            </div>
           </div>
           <SheetFooter className="mt-6">
             <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+            {editTarget?.status === "To be sent" && (
+              <Button variant="secondary" onClick={handleSendExisting} disabled={!!sendingId}>
+                <Mail className="mr-1.5 h-3.5 w-3.5" />
+                {sendingId ? "Sending…" : "Send to vendor"}
+              </Button>
+            )}
             <Button onClick={saveEdit} disabled={editSaving}>{editSaving ? "Saving…" : "Save changes"}</Button>
           </SheetFooter>
         </SheetContent>

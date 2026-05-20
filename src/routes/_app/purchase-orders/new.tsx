@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { fmtDate, DEFAULT_PO_TERMS } from "@/lib/utils";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -17,10 +18,11 @@ export const Route = createFileRoute("/_app/purchase-orders/new")({
     return { skus, vendors };
   },
   component: NewPOWizard,
-  head: () => ({ meta: [{ title: "Create Purchase Order — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Create Purchase Order — Zoobalo" }] }),
 });
 
-const steps = ["SKU & Material", "Vendor", "Quantity & Pricing", "Delivery", "Review & Send"] as const;
+const steps = ["SKU & Material", "Vendor", "Quantity & Pricing", "Delivery", "Terms & Conditions", "Review & Send"] as const;
+
 
 function genPoNumber() {
   const d = new Date();
@@ -38,6 +40,8 @@ function NewPOWizard() {
   const { skus, vendors } = Route.useLoaderData();
 
   const [step, setStep] = useState(0);
+  const [poNumber, setPoNumber] = useState(genPoNumber);
+  const [poDate, setPoDate] = useState(todayStr);
   const [skuId, setSkuId]     = useState(skus[0]?.id ?? "");
   const [material, setMaterial] = useState("Aluminium Can");
   const [vendorId, setVendorId] = useState(vendors[0]?.id ?? "");
@@ -46,43 +50,120 @@ function NewPOWizard() {
   const [gstRate, setGstRate] = useState(18);
   const [eta, setEta]     = useState("2026-05-15");
   const [notes, setNotes] = useState("Please ensure batch certificates are sent along with dispatch.");
+  const [terms, setTerms] = useState(DEFAULT_PO_TERMS);
   const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const next = () => setStep((s) => Math.min(s + 1, steps.length - 1));
+  const next = () => {
+    if (step === 0 && !poNumber.trim()) { toast.error("PO Number is required."); return; }
+    if (step === 0 && !poDate) { toast.error("PO Date is required."); return; }
+    setStep((s) => Math.min(s + 1, steps.length - 1));
+  };
   const prev = () => setStep((s) => Math.max(s - 1, 0));
 
   const sku    = skus.find((s) => s.id === skuId);
   const vendor = vendors.find((v) => v.id === vendorId);
 
-  const submit = async () => {
+  const buildPayload = (status: string) => {
+    const subtotal   = qty * rate;
+    const gstAmt     = Math.round(subtotal * gstRate / 100 * 100) / 100;
+    const grandTotal = subtotal + gstAmt;
+    return {
+      id:               crypto.randomUUID(),
+      poNumber,
+      vendorId,
+      skuId,
+      materialType:     material,
+      quantity:         qty,
+      rate:             rate as any,
+      gstRate,
+      gstAmount:        gstAmt as any,
+      total:            grandTotal as any,
+      dispatchDate:     poDate,
+      expectedDelivery: eta,
+      status,
+      notes:            notes || null,
+      terms:            terms || null,
+    };
+  };
+
+  const handleSend = async () => {
     setSubmitting(true);
     try {
-      const subtotal  = qty * rate;
-      const gstAmt    = Math.round(subtotal * gstRate / 100 * 100) / 100;
-      const grandTotal = subtotal + gstAmt;
-      await api.purchaseOrders.create({
-        id:               crypto.randomUUID(),
-        poNumber:         genPoNumber(),
-        vendorId,
-        skuId,
-        materialType:     material,
-        quantity:         qty,
-        rate:             rate as any,
-        gstRate,
-        gstAmount:        gstAmt as any,
-        total:            grandTotal as any,
-        dispatchDate:     todayStr(),
-        expectedDelivery: eta,
-        status:           "Pending",
-        notes:            notes || null,
-      });
-      toast.success("Purchase order created and sent to vendor.");
+      await api.purchaseOrders.create(buildPayload("Sent") as any);
+      toast.success(`PO ${poNumber} sent to ${vendor?.email ?? "vendor"}.`);
       navigate({ to: "/purchase-orders" });
     } catch {
-      toast.error("Failed to create purchase order. Please try again.");
+      toast.error("Failed to send purchase order.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.purchaseOrders.create(buildPayload("To be sent") as any);
+      toast.success(`PO ${poNumber} saved. Not yet sent to vendor.`);
+      navigate({ to: "/purchase-orders" });
+    } catch {
+      toast.error("Failed to save purchase order.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDownload = () => {
+    const subtotal   = qty * rate;
+    const gstAmt     = Math.round(subtotal * gstRate / 100 * 100) / 100;
+    const grandTotal = subtotal + gstAmt;
+    const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${poNumber}</title>
+<style>
+  body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#333}
+  .header{display:flex;justify-content:space-between;margin-bottom:32px}
+  .po-title{font-size:28px;font-weight:bold}
+  .section{margin-bottom:24px}
+  .section-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#666;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:10px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  dt{font-size:11px;color:#666;margin-bottom:2px}
+  dd{font-size:14px;margin:0 0 8px}
+  table{width:100%;border-collapse:collapse}
+  th{background:#f5f5f5;text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase}
+  td{padding:8px 12px;border-bottom:1px solid #eee;font-size:13px}
+  .tr{text-align:right}
+  .total td{font-weight:bold;border-top:2px solid #333;border-bottom:none}
+  .terms{font-size:12px;line-height:1.7;white-space:pre-line;color:#555}
+  @media print{body{margin:10px}}
+</style></head><body>
+<div class="header">
+  <div><div class="po-title">PURCHASE ORDER</div><div style="color:#666;margin-top:4px">${poNumber} &nbsp;·&nbsp; ${fmtDate(poDate)}</div></div>
+  <div style="text-align:right"><div style="font-weight:bold;font-size:20px">Zoobalo</div></div>
+</div>
+<div class="grid2 section">
+  <div>
+    <div class="section-title">Vendor</div>
+    <dl><dt>Company</dt><dd>${vendor?.name ?? ""}</dd><dt>Contact</dt><dd>${vendor?.contactPerson ?? ""}</dd><dt>Email</dt><dd>${vendor?.email ?? ""}</dd></dl>
+  </div>
+  <div>
+    <div class="section-title">Order Details</div>
+    <dl><dt>SKU</dt><dd>${sku?.code ?? ""} — ${sku?.name ?? ""}</dd><dt>Material</dt><dd>${material}</dd><dt>Expected Delivery</dt><dd>${fmtDate(eta)}</dd></dl>
+  </div>
+</div>
+<div class="section">
+  <div class="section-title">Pricing</div>
+  <table>
+    <tr><th>Description</th><th class="tr">Qty</th><th class="tr">Rate (₹)</th><th class="tr">Amount (₹)</th></tr>
+    <tr><td>${material}</td><td class="tr">${qty.toLocaleString()}</td><td class="tr">₹${rate}</td><td class="tr">₹${fmt(subtotal)}</td></tr>
+    <tr><td colspan="3" class="tr" style="color:#666">GST @ ${gstRate}%</td><td class="tr">₹${fmt(gstAmt)}</td></tr>
+    <tr class="total"><td colspan="3" class="tr">Grand Total</td><td class="tr">₹${fmt(grandTotal)}</td></tr>
+  </table>
+</div>
+${notes ? `<div class="section"><div class="section-title">Notes</div><p style="font-size:13px;color:#444">${notes}</p></div>` : ""}
+<div class="section"><div class="section-title">Terms &amp; Conditions</div><p class="terms">${terms.replace(/</g, "&lt;")}</p></div>
+</body></html>`;
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 300); }
   };
 
   return (
@@ -103,6 +184,14 @@ function NewPOWizard() {
       <div className="rounded-xl border bg-card p-6">
         {step === 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>PO Number *</Label>
+              <Input value={poNumber} onChange={(e) => setPoNumber(e.target.value)} placeholder="e.g. PO-20260520-4321" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>PO Date *</Label>
+              <Input type="date" value={poDate} onChange={(e) => setPoDate(e.target.value)} />
+            </div>
             <div className="space-y-1.5">
               <Label>SKU</Label>
               <Select value={skuId} onValueChange={setSkuId}>
@@ -185,16 +274,28 @@ function NewPOWizard() {
         {step === 3 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1.5"><Label>Expected delivery date</Label><Input type="date" value={eta} onChange={(e) => setEta(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Delivery address</Label><Input defaultValue="SkinOps Warehouse, Andheri MIDC, Mumbai" /></div>
+            <div className="space-y-1.5"><Label>Delivery address</Label><Input defaultValue="Zoobalo Warehouse, Andheri MIDC, Mumbai" /></div>
             <div className="md:col-span-2 space-y-1.5"><Label>Notes to vendor</Label><Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
           </div>
         )}
 
         {step === 4 && (
           <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Terms & Conditions</Label>
+              <p className="text-xs text-muted-foreground">These terms will be included in the purchase order sent to the vendor. Edit as needed.</p>
+              <Textarea rows={10} value={terms} onChange={(e) => setTerms(e.target.value)} className="font-mono text-xs" />
+            </div>
+          </div>
+        )}
+
+        {step === 5 && (
+          <div className="space-y-4">
             <div className="rounded-lg border bg-background p-4 text-sm">
               <h4 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">PO Summary</h4>
               <dl className="grid grid-cols-2 gap-3">
+                <div><dt className="text-xs text-muted-foreground">PO Number</dt><dd className="font-semibold">{poNumber}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">PO Date</dt><dd>{fmtDate(poDate)}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">SKU</dt><dd>{sku?.code} — {sku?.name}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Material</dt><dd>{material}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Vendor</dt><dd>{vendor?.name}</dd></div>
@@ -204,15 +305,19 @@ function NewPOWizard() {
                 <div><dt className="text-xs text-muted-foreground">Subtotal</dt><dd className="tabular-nums">₹{(qty * rate).toLocaleString()}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">GST ({gstRate}%)</dt><dd className="tabular-nums">₹{(Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Grand Total</dt><dd className="tabular-nums font-semibold">₹{(qty * rate + Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Expected delivery</dt><dd>{eta}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">Expected delivery</dt><dd>{fmtDate(eta)}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Payment terms</dt><dd>{vendor?.paymentTerms}</dd></div>
               </dl>
+            </div>
+            <div className="rounded-lg border bg-background p-4 text-sm">
+              <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Terms & Conditions</h4>
+              <p className="whitespace-pre-line text-xs text-muted-foreground">{terms}</p>
             </div>
             <div className="rounded-lg border bg-muted/40 p-4">
               <div className="flex items-center gap-2 text-sm font-medium"><Mail className="h-4 w-4" />Email preview</div>
               <p className="mt-2 text-xs text-muted-foreground">To: {vendor?.email}</p>
               <p className="text-xs text-muted-foreground">Subject: Purchase Order — {sku?.code} {material} — Qty {qty.toLocaleString()}</p>
-              <p className="mt-3 text-sm whitespace-pre-line">Hi {vendor?.contactPerson},{"\n\n"}Please find our PO for {qty.toLocaleString()} units of {material} for SKU {sku?.code} at ₹{rate}/unit (subtotal ₹{(qty * rate).toLocaleString()}, GST @{gstRate}% ₹{(Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}, grand total ₹{(qty * rate + Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}). Expected delivery by {eta}.{"\n\n"}{notes}{"\n\n"}Regards,{"\n"}SkinOps Procurement</p>
+              <p className="mt-3 text-sm whitespace-pre-line">Hi {vendor?.contactPerson},{"\n\n"}Please find our PO for {qty.toLocaleString()} units of {material} for SKU {sku?.code} at ₹{rate}/unit (subtotal ₹{(qty * rate).toLocaleString()}, GST @{gstRate}% ₹{(Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}, grand total ₹{(qty * rate + Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}). Expected delivery by ${fmtDate(eta)}.{"\n\n"}{notes}{"\n\n"}Regards,{"\n"}Zoobalo Procurement</p>
             </div>
           </div>
         )}
@@ -224,10 +329,18 @@ function NewPOWizard() {
           {step < steps.length - 1 ? (
             <Button onClick={next}>Next<ChevronRight className="ml-1 h-4 w-4" /></Button>
           ) : (
-            <Button onClick={submit} disabled={submitting}>
-              <Mail className="mr-1.5 h-4 w-4" />
-              {submitting ? "Sending…" : "Send PO to vendor"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleDownload} type="button">
+                Download
+              </Button>
+              <Button variant="outline" onClick={handleSave} disabled={saving || submitting}>
+                {saving ? "Saving…" : "Save"}
+              </Button>
+              <Button onClick={handleSend} disabled={submitting || saving}>
+                <Mail className="mr-1.5 h-4 w-4" />
+                {submitting ? "Sending…" : "Send PO to vendor"}
+              </Button>
+            </div>
           )}
         </div>
       </div>

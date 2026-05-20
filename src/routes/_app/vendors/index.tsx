@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Plus, Star, Trash2 } from "lucide-react";
+import { Plus, Star, Trash2, Pencil } from "lucide-react";
 import { ContactsEditor } from "@/components/contacts-editor";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ import type { ApiContact } from "@/lib/api";
 export const Route = createFileRoute("/_app/vendors/")({
   loader: () => api.vendors.list(),
   component: VendorsPage,
-  head: () => ({ meta: [{ title: "Vendors — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Vendors — Zoobalo" }] }),
 });
 
 
@@ -33,6 +33,53 @@ function VendorsPage() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ ...EMPTY });
+
+  const [editTarget, setEditTarget] = useState<ApiVendor | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState({ ...EMPTY });
+
+  const openEdit = (v: ApiVendor) => {
+    setEditForm({
+      name: v.name, contactPerson: v.contactPerson, mobile: v.mobile, email: v.email,
+      gst: v.gst ?? "", address: v.address ?? "", city: v.city ?? "",
+      materials: v.materials.join(", "),
+      leadTimeDays: v.leadTimeDays, paymentTerms: v.paymentTerms,
+      rating: v.rating, reliability: v.reliability, delayPercent: v.delayPercent,
+      totalOrders: v.totalOrders, runningOrders: v.runningOrders, totalSpend: v.totalSpend,
+      contacts: v.contacts ?? [],
+    });
+    setEditTarget(v);
+  };
+
+  const handleUpdate = async () => {
+    if (!editTarget) return;
+    if (!editForm.name || !editForm.email || !editForm.city) {
+      toast.error("Name, email and city are required.");
+      return;
+    }
+    setEditSaving(true);
+    try {
+      await api.vendors.update(editTarget.id, {
+        ...editForm,
+        materials: (editForm.materials as any).split(",").map((s: string) => s.trim()).filter(Boolean),
+        leadTimeDays: Number(editForm.leadTimeDays),
+        rating: Number(editForm.rating) as any,
+        reliability: Number(editForm.reliability),
+        delayPercent: Number(editForm.delayPercent),
+        totalOrders: Number(editForm.totalOrders),
+        runningOrders: Number(editForm.runningOrders),
+        totalSpend: Number(editForm.totalSpend) as any,
+        contacts: editForm.contacts,
+      });
+      toast.success(`Vendor "${editForm.name}" updated.`);
+      setEditTarget(null);
+      await router.invalidate();
+    } catch {
+      toast.error("Failed to update vendor.");
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   const handleDelete = async (v: ApiVendor) => {
     if (!confirm(`Delete "${v.name}"? This cannot be undone.`)) return;
@@ -56,11 +103,16 @@ function VendorsPage() {
     { key: "delay",       header: "Delay %",      accessor: (r) => r.delayPercent, cell: (r) => <span className={`tabular-nums ${r.delayPercent > 10 ? "text-destructive" : "text-success"}`}>{r.delayPercent}%</span>, className: "text-right" },
     { key: "running",     header: "Running",      accessor: (r) => r.runningOrders,cell: (r) => <span className="tabular-nums">{r.runningOrders}</span>, className: "text-right" },
     { key: "spend",       header: "Total spend",  accessor: (r) => r.totalSpend,   cell: (r) => <span className="tabular-nums">₹{(r.totalSpend / 100000).toFixed(1)}L</span>, className: "text-right" },
-    { key: "actions",     header: "",             accessor: (r) => r.id,           cell: (r) => <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(r)}><Trash2 className="h-3.5 w-3.5" /></Button> },
+    { key: "actions", header: "", accessor: (r) => r.id, cell: (r) => (
+      <div className="flex items-center gap-1">
+        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(r)}><Pencil className="h-3.5 w-3.5" /></Button>
+        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(r)}><Trash2 className="h-3.5 w-3.5" /></Button>
+      </div>
+    )},
   ];
 
-  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((f) => ({ ...f, [field]: e.target.value }));
+  const set    = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [field]: e.target.value }));
+  const setEdit = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => setEditForm((f) => ({ ...f, [field]: e.target.value }));
 
   const handleCreate = async () => {
     if (!form.name || !form.email || !form.city) {
@@ -105,6 +157,52 @@ function VendorsPage() {
       />
       <DataTable rows={vendors} columns={cols} searchKeys={["name", "city", "contactPerson", "email"]} searchPlaceholder="Search vendors…" pageSize={15} />
 
+      {/* ── Edit Vendor Sheet ── */}
+      <Sheet key={editTarget?.id ?? "ev"} open={!!editTarget} onOpenChange={(v) => { if (!v) setEditTarget(null); }}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>Edit Vendor — {editTarget?.name}</SheetTitle></SheetHeader>
+          <div className="mt-6 grid grid-cols-1 gap-4">
+            <div className="space-y-1.5">
+              <Label>Vendor Name *</Label>
+              <Input value={editForm.name} onChange={setEdit("name")} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5"><Label>Contact Person</Label><Input value={editForm.contactPerson} onChange={setEdit("contactPerson")} /></div>
+              <div className="space-y-1.5"><Label>Mobile</Label><Input value={editForm.mobile} onChange={setEdit("mobile")} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5"><Label>Email *</Label><Input type="email" value={editForm.email} onChange={setEdit("email")} /></div>
+              <div className="space-y-1.5"><Label>GST Number</Label><Input value={editForm.gst} onChange={setEdit("gst")} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5"><Label>City *</Label><Input value={editForm.city} onChange={setEdit("city")} /></div>
+              <div className="space-y-1.5"><Label>Address</Label><Input value={editForm.address} onChange={setEdit("address")} /></div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Materials Supplied (comma separated)</Label>
+              <Input value={editForm.materials} onChange={setEdit("materials")} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5"><Label>Lead time (days)</Label><Input type="number" value={editForm.leadTimeDays} onChange={setEdit("leadTimeDays")} /></div>
+              <div className="space-y-1.5"><Label>Payment Terms</Label><Input value={editForm.paymentTerms} onChange={setEdit("paymentTerms")} /></div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5"><Label>Rating (0–5)</Label><Input type="number" step="0.1" min="0" max="5" value={editForm.rating} onChange={setEdit("rating")} /></div>
+              <div className="space-y-1.5"><Label>Reliability %</Label><Input type="number" min="0" max="100" value={editForm.reliability} onChange={setEdit("reliability")} /></div>
+              <div className="space-y-1.5"><Label>Delay %</Label><Input type="number" min="0" max="100" value={editForm.delayPercent} onChange={setEdit("delayPercent")} /></div>
+            </div>
+            <div className="border-t pt-4">
+              <ContactsEditor contacts={editForm.contacts} onChange={(contacts) => setEditForm((f) => ({ ...f, contacts }))} />
+            </div>
+          </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button onClick={handleUpdate} disabled={editSaving}>{editSaving ? "Saving…" : "Save changes"}</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Add Vendor Sheet ── */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>

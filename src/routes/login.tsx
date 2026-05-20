@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
-  head: () => ({ meta: [{ title: "Sign in — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Zoobalo" }] }),
 });
 
 function LoginPage() {
@@ -18,7 +18,7 @@ function LoginPage() {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Sign in to your SkinOps workspace"
+      subtitle="Sign in to your Zoobalo workspace"
       footer={<>Don't have an account? <Link to="/signup" className="font-medium text-primary hover:underline">Create one</Link></>}
     >
       <form onSubmit={(e) => { e.preventDefault(); navigate({ to: "/dashboard" }); }} className="space-y-4">

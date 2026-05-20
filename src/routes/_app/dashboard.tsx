@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { fmtDate } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { KpiCard } from "@/components/kpi-card";
 import { ChartCard } from "@/components/chart-card";
@@ -43,7 +44,7 @@ export const Route = createFileRoute("/_app/dashboard")({
     };
   },
   component: DashboardPage,
-  head: () => ({ meta: [{ title: "Dashboard — SkinOps" }, { name: "description", content: "Operations overview: KPIs, charts, and quick actions." }] }),
+  head: () => ({ meta: [{ title: "Dashboard — Zoobalo" }, { name: "description", content: "Operations overview: KPIs, charts, and quick actions." }] }),
 });
 
 const PIE_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--destructive)"];
@@ -170,7 +171,7 @@ function DashboardPage() {
                   <td className="px-4 py-2.5">{p.materialType}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">{p.quantity.toLocaleString()}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">₹{p.total.toLocaleString()}</td>
-                  <td className="px-4 py-2.5">{p.expectedDelivery}</td>
+                  <td className="px-4 py-2.5">{fmtDate(p.expectedDelivery)}</td>
                   <td className="px-4 py-2.5"><StatusBadge status={p.status} /></td>
                 </tr>
               ))}

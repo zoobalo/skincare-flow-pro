@@ -19,12 +19,14 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppWarehouseIndexRouteImport } from './routes/_app/warehouse/index'
 import { Route as AppVendorsIndexRouteImport } from './routes/_app/vendors/index'
 import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
+import { Route as AppTasksIndexRouteImport } from './routes/_app/tasks/index'
 import { Route as AppSkusIndexRouteImport } from './routes/_app/skus/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppReportsIndexRouteImport } from './routes/_app/reports/index'
 import { Route as AppPurchaseOrdersIndexRouteImport } from './routes/_app/purchase-orders/index'
 import { Route as AppProductionIndexRouteImport } from './routes/_app/production/index'
 import { Route as AppProcurementIndexRouteImport } from './routes/_app/procurement/index'
+import { Route as AppNpdIndexRouteImport } from './routes/_app/npd/index'
 import { Route as AppManufacturersIndexRouteImport } from './routes/_app/manufacturers/index'
 import { Route as AppLogisticsIndexRouteImport } from './routes/_app/logistics/index'
 import { Route as AppInventoryIndexRouteImport } from './routes/_app/inventory/index'
@@ -84,6 +86,11 @@ const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
   path: '/users/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppTasksIndexRoute = AppTasksIndexRouteImport.update({
+  id: '/tasks/',
+  path: '/tasks/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSkusIndexRoute = AppSkusIndexRouteImport.update({
   id: '/skus/',
   path: '/skus/',
@@ -112,6 +119,11 @@ const AppProductionIndexRoute = AppProductionIndexRouteImport.update({
 const AppProcurementIndexRoute = AppProcurementIndexRouteImport.update({
   id: '/procurement/',
   path: '/procurement/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNpdIndexRoute = AppNpdIndexRouteImport.update({
+  id: '/npd/',
+  path: '/npd/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppManufacturersIndexRoute = AppManufacturersIndexRouteImport.update({
@@ -177,12 +189,14 @@ export interface FileRoutesByFullPath {
   '/inventory/': typeof AppInventoryIndexRoute
   '/logistics/': typeof AppLogisticsIndexRoute
   '/manufacturers/': typeof AppManufacturersIndexRoute
+  '/npd/': typeof AppNpdIndexRoute
   '/procurement/': typeof AppProcurementIndexRoute
   '/production/': typeof AppProductionIndexRoute
   '/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
   '/reports/': typeof AppReportsIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/skus/': typeof AppSkusIndexRoute
+  '/tasks/': typeof AppTasksIndexRoute
   '/users/': typeof AppUsersIndexRoute
   '/vendors/': typeof AppVendorsIndexRoute
   '/warehouse/': typeof AppWarehouseIndexRoute
@@ -203,12 +217,14 @@ export interface FileRoutesByTo {
   '/inventory': typeof AppInventoryIndexRoute
   '/logistics': typeof AppLogisticsIndexRoute
   '/manufacturers': typeof AppManufacturersIndexRoute
+  '/npd': typeof AppNpdIndexRoute
   '/procurement': typeof AppProcurementIndexRoute
   '/production': typeof AppProductionIndexRoute
   '/purchase-orders': typeof AppPurchaseOrdersIndexRoute
   '/reports': typeof AppReportsIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/skus': typeof AppSkusIndexRoute
+  '/tasks': typeof AppTasksIndexRoute
   '/users': typeof AppUsersIndexRoute
   '/vendors': typeof AppVendorsIndexRoute
   '/warehouse': typeof AppWarehouseIndexRoute
@@ -231,12 +247,14 @@ export interface FileRoutesById {
   '/_app/inventory/': typeof AppInventoryIndexRoute
   '/_app/logistics/': typeof AppLogisticsIndexRoute
   '/_app/manufacturers/': typeof AppManufacturersIndexRoute
+  '/_app/npd/': typeof AppNpdIndexRoute
   '/_app/procurement/': typeof AppProcurementIndexRoute
   '/_app/production/': typeof AppProductionIndexRoute
   '/_app/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
   '/_app/reports/': typeof AppReportsIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/skus/': typeof AppSkusIndexRoute
+  '/_app/tasks/': typeof AppTasksIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
   '/_app/vendors/': typeof AppVendorsIndexRoute
   '/_app/warehouse/': typeof AppWarehouseIndexRoute
@@ -259,12 +277,14 @@ export interface FileRouteTypes {
     | '/inventory/'
     | '/logistics/'
     | '/manufacturers/'
+    | '/npd/'
     | '/procurement/'
     | '/production/'
     | '/purchase-orders/'
     | '/reports/'
     | '/settings/'
     | '/skus/'
+    | '/tasks/'
     | '/users/'
     | '/vendors/'
     | '/warehouse/'
@@ -285,12 +305,14 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/logistics'
     | '/manufacturers'
+    | '/npd'
     | '/procurement'
     | '/production'
     | '/purchase-orders'
     | '/reports'
     | '/settings'
     | '/skus'
+    | '/tasks'
     | '/users'
     | '/vendors'
     | '/warehouse'
@@ -312,12 +334,14 @@ export interface FileRouteTypes {
     | '/_app/inventory/'
     | '/_app/logistics/'
     | '/_app/manufacturers/'
+    | '/_app/npd/'
     | '/_app/procurement/'
     | '/_app/production/'
     | '/_app/purchase-orders/'
     | '/_app/reports/'
     | '/_app/settings/'
     | '/_app/skus/'
+    | '/_app/tasks/'
     | '/_app/users/'
     | '/_app/vendors/'
     | '/_app/warehouse/'
@@ -404,6 +428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUsersIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/tasks/': {
+      id: '/_app/tasks/'
+      path: '/tasks'
+      fullPath: '/tasks/'
+      preLoaderRoute: typeof AppTasksIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/skus/': {
       id: '/_app/skus/'
       path: '/skus'
@@ -444,6 +475,13 @@ declare module '@tanstack/react-router' {
       path: '/procurement'
       fullPath: '/procurement/'
       preLoaderRoute: typeof AppProcurementIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/npd/': {
+      id: '/_app/npd/'
+      path: '/npd'
+      fullPath: '/npd/'
+      preLoaderRoute: typeof AppNpdIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/manufacturers/': {
@@ -523,12 +561,14 @@ interface AppRouteChildren {
   AppInventoryIndexRoute: typeof AppInventoryIndexRoute
   AppLogisticsIndexRoute: typeof AppLogisticsIndexRoute
   AppManufacturersIndexRoute: typeof AppManufacturersIndexRoute
+  AppNpdIndexRoute: typeof AppNpdIndexRoute
   AppProcurementIndexRoute: typeof AppProcurementIndexRoute
   AppProductionIndexRoute: typeof AppProductionIndexRoute
   AppPurchaseOrdersIndexRoute: typeof AppPurchaseOrdersIndexRoute
   AppReportsIndexRoute: typeof AppReportsIndexRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
   AppSkusIndexRoute: typeof AppSkusIndexRoute
+  AppTasksIndexRoute: typeof AppTasksIndexRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
   AppVendorsIndexRoute: typeof AppVendorsIndexRoute
   AppWarehouseIndexRoute: typeof AppWarehouseIndexRoute
@@ -545,12 +585,14 @@ const AppRouteChildren: AppRouteChildren = {
   AppInventoryIndexRoute: AppInventoryIndexRoute,
   AppLogisticsIndexRoute: AppLogisticsIndexRoute,
   AppManufacturersIndexRoute: AppManufacturersIndexRoute,
+  AppNpdIndexRoute: AppNpdIndexRoute,
   AppProcurementIndexRoute: AppProcurementIndexRoute,
   AppProductionIndexRoute: AppProductionIndexRoute,
   AppPurchaseOrdersIndexRoute: AppPurchaseOrdersIndexRoute,
   AppReportsIndexRoute: AppReportsIndexRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
   AppSkusIndexRoute: AppSkusIndexRoute,
+  AppTasksIndexRoute: AppTasksIndexRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,
   AppVendorsIndexRoute: AppVendorsIndexRoute,
   AppWarehouseIndexRoute: AppWarehouseIndexRoute,

@@ -9,7 +9,7 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-foreground/15 backdrop-blur">
             <Sparkles className="h-5 w-5" />
           </div>
-          <span className="text-lg font-semibold tracking-tight">SkinOps</span>
+          <span className="text-lg font-semibold tracking-tight">Zoobalo</span>
         </Link>
         <div>
           <h2 className="max-w-md text-3xl font-semibold leading-tight">
@@ -24,13 +24,13 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
             <div><div className="text-2xl font-semibold">12+</div><div className="text-primary-foreground/70">Manufacturers</div></div>
           </div>
         </div>
-        <p className="text-xs text-primary-foreground/60">© 2026 SkinOps · For skincare manufacturing teams</p>
+        <p className="text-xs text-primary-foreground/60">© 2026 Zoobalo · For skincare manufacturing teams</p>
       </div>
       <div className="flex items-center justify-center p-6 md:p-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-2 lg:hidden">
             <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground"><Sparkles className="h-5 w-5" /></div>
-            <span className="text-lg font-semibold">SkinOps</span>
+            <span className="text-lg font-semibold">Zoobalo</span>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           {subtitle && <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>}

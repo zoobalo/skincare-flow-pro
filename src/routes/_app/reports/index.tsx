@@ -16,7 +16,7 @@ const reports = [
 
 export const Route = createFileRoute("/_app/reports/")({
   component: ReportsPage,
-  head: () => ({ meta: [{ title: "Reports — SkinOps" }] }),
+  head: () => ({ meta: [{ title: "Reports — Zoobalo" }] }),
 });
 
 function ReportsPage() {

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { api } from "@/lib/api";
+import { fmtDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -27,18 +28,18 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
     return { sku, manufacturers, vendors };
   },
   component: SkuDetailPage,
-  head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.sku.name ?? "SKU"} — SkinOps` }] }),
+  head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.sku.name ?? "SKU"} — Zoobalo` }] }),
 });
 
 const SKU_CATEGORIES = ["Sun Care", "Serums", "Moisturizers", "Cleansers", "Toners", "Exfoliators", "Eye Care", "Lip Care", "Body Care"];
 const SKU_TYPES = ["Aerosol Spray", "Glass Dropper", "Pump Bottle", "Tube", "Jar", "Cream Tube", "Lotion Bottle", "Toner Bottle", "Stick"];
 const RAW_UNITS = ["ml", "g", "kg", "L", "pcs", "mg"];
-const PO_STATUSES = ["Pending", "Approved", "In Production", "Dispatched", "Delivered", "Delayed"] as const;
+const PO_STATUSES = ["To be sent", "Sent", "Pending", "Approved", "In Production", "Dispatched", "Delivered", "Delayed"] as const;
 const GST_RATES = [0, 5, 12, 18, 28] as const;
 
-const EMPTY_PACK = { name: "", vendorId: "", moq: 1000, leadTimeDays: 14, currentStock: 0, transitStock: 0, costPerUnit: 0, lastPurchaseDate: "" };
+const EMPTY_PACK = { name: "", vendorId: "", moq: 1000, leadTimeDays: 14, currentStock: 0, transitStock: 0, transitDeliveryDate: "", costPerUnit: 0, lastPurchaseDate: "" };
 const EMPTY_RM   = { name: "", vendorId: "", qtyPerUnit: 1, unit: "ml", currentStock: 0, costPerUnit: 0 };
-const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false, materialCategory: "", materialItemId: "" };
+const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false, materialCategory: "", materialItemId: "", applicableStages: [...PRODUCTION_STAGES] as string[] };
 
 function SkuDetailPage() {
   const { sku, manufacturers, vendors } = Route.useLoaderData();
@@ -122,7 +123,7 @@ function SkuDetailPage() {
     if (!packForm.name || !packForm.vendorId) { toast.error("Name and vendor are required."); return; }
     setPackSaving(true);
     try {
-      await api.skus.addPackaging(sku.id, { ...packForm, moq: +packForm.moq, leadTimeDays: +packForm.leadTimeDays, currentStock: +packForm.currentStock, transitStock: +packForm.transitStock, costPerUnit: +packForm.costPerUnit, lastPurchaseDate: packForm.lastPurchaseDate || null });
+      await api.skus.addPackaging(sku.id, { ...packForm, moq: +packForm.moq, leadTimeDays: +packForm.leadTimeDays, currentStock: +packForm.currentStock, transitStock: +packForm.transitStock, transitDeliveryDate: packForm.transitDeliveryDate || null, costPerUnit: +packForm.costPerUnit, lastPurchaseDate: packForm.lastPurchaseDate || null });
       toast.success("Packaging material added."); setPackOpen(false); setPackForm({ ...EMPTY_PACK, vendorId: vendors[0]?.id ?? "" }); reload();
     } catch { toast.error("Failed to add packaging."); } finally { setPackSaving(false); }
   };
@@ -174,6 +175,7 @@ function SkuDetailPage() {
       delayed: batch.delayed,
       materialCategory: batch.materialCategory ?? "",
       materialItemId: batch.materialItemId ?? "",
+      applicableStages: batch.applicableStages ?? [...PRODUCTION_STAGES],
     });
     setEditBatchOpen(true);
   };
@@ -199,14 +201,14 @@ function SkuDetailPage() {
 
   const openEditPack = (p: typeof sku.packaging[0]) => {
     setEditPackId(p.id);
-    setEditPackForm({ name: p.name, vendorId: p.vendorId, moq: p.moq, leadTimeDays: p.leadTimeDays, currentStock: p.currentStock, transitStock: p.transitStock, costPerUnit: p.costPerUnit, lastPurchaseDate: p.lastPurchaseDate ?? "" });
+    setEditPackForm({ name: p.name, vendorId: p.vendorId, moq: p.moq, leadTimeDays: p.leadTimeDays, currentStock: p.currentStock, transitStock: p.transitStock, transitDeliveryDate: p.transitDeliveryDate ?? "", costPerUnit: p.costPerUnit, lastPurchaseDate: p.lastPurchaseDate ?? "" });
     setEditPackOpen(true);
   };
   const saveEditPack = async () => {
     if (!editPackId) return;
     setEditPackSaving(true);
     try {
-      await api.skus.updatePackaging(editPackId, { ...editPackForm, moq: +editPackForm.moq, leadTimeDays: +editPackForm.leadTimeDays, currentStock: +editPackForm.currentStock, transitStock: +editPackForm.transitStock, costPerUnit: +editPackForm.costPerUnit, lastPurchaseDate: editPackForm.lastPurchaseDate || null });
+      await api.skus.updatePackaging(editPackId, { ...editPackForm, moq: +editPackForm.moq, leadTimeDays: +editPackForm.leadTimeDays, currentStock: +editPackForm.currentStock, transitStock: +editPackForm.transitStock, transitDeliveryDate: editPackForm.transitDeliveryDate || null, costPerUnit: +editPackForm.costPerUnit, lastPurchaseDate: editPackForm.lastPurchaseDate || null });
       toast.success("Packaging updated."); setEditPackOpen(false); reload();
     } catch { toast.error("Failed to update packaging."); } finally { setEditPackSaving(false); }
   };
@@ -309,7 +311,13 @@ function SkuDetailPage() {
                   <div><div className="text-muted-foreground">Cost / unit</div><div className="font-semibold tabular-nums">₹{p.costPerUnit}</div></div>
                   <div><div className="text-muted-foreground">Lead time</div><div className="font-semibold tabular-nums">{p.leadTimeDays}d</div></div>
                 </div>
-                <div className="mt-3 border-t pt-3 text-xs text-muted-foreground">Last PO: {p.lastPurchaseDate ?? "—"}</div>
+                {p.transitStock > 0 && (
+                  <div className="mt-2 rounded-md bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400 flex items-center justify-between">
+                    <span className="font-medium">In transit: {p.transitStock.toLocaleString()} units</span>
+                    <span>Expected delivery: <span className="font-semibold">{fmtDate(p.transitDeliveryDate)}</span></span>
+                  </div>
+                )}
+                <div className="mt-3 border-t pt-3 text-xs text-muted-foreground">Last PO: {fmtDate(p.lastPurchaseDate)}</div>
               </div>
             ))}
           </div>
@@ -366,7 +374,7 @@ function SkuDetailPage() {
                   <div className="mb-4 flex items-center justify-between gap-2">
                     <div>
                       <div className="font-semibold">{batch.batchNumber}</div>
-                      <p className="text-xs text-muted-foreground">{batch.quantity.toLocaleString()} units · ETA {batch.expectedCompletion}</p>
+                      <p className="text-xs text-muted-foreground">{batch.quantity.toLocaleString()} units · ETA {fmtDate(batch.expectedCompletion)}</p>
                       {batch.materialCategory && batch.materialItemName && (
                         <p className="mt-0.5 text-xs text-primary font-medium">{batch.materialCategory}: {batch.materialItemName}</p>
                       )}
@@ -383,7 +391,7 @@ function SkuDetailPage() {
                       All stages complete — batch delivered to warehouse
                     </div>
                   ) : (
-                    <ProgressRail stages={PRODUCTION_STAGES} current={batch.currentStage as any} delayed={batch.delayed} />
+                    <ProgressRail stages={(batch.applicableStages ?? PRODUCTION_STAGES) as any} current={batch.currentStage as any} delayed={batch.delayed} />
                   )}
                 </div>
               );
@@ -393,26 +401,63 @@ function SkuDetailPage() {
 
         {/* ── PO History ── */}
         <TabsContent value="pohistory" className="mt-4">
-          <div className="overflow-x-auto rounded-xl border bg-card">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr><th className="px-4 py-2.5 font-medium">PO #</th><th className="px-4 py-2.5 font-medium">Vendor</th><th className="px-4 py-2.5 font-medium">Material</th><th className="px-4 py-2.5 font-medium text-right">Qty</th><th className="px-4 py-2.5 font-medium text-right">Total</th><th className="px-4 py-2.5 font-medium">Status</th><th className="px-4 py-2.5 font-medium w-16"></th></tr>
-              </thead>
-              <tbody>
-                {sku.purchaseOrders.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No PO history yet.</td></tr>}
-                {sku.purchaseOrders.map((p) => (
-                  <tr key={p.id} className="border-t">
-                    <td className="px-4 py-2.5 font-medium">{p.poNumber}</td>
-                    <td className="px-4 py-2.5">{p.vendor?.name}</td>
-                    <td className="px-4 py-2.5">{p.materialType}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">{p.quantity.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">₹{p.total.toLocaleString()}</td>
-                    <td className="px-4 py-2.5"><StatusBadge status={p.status} /></td>
-                    <td className="px-4 py-2.5 text-right"><Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditPo(p)}><Edit className="h-3.5 w-3.5" /></Button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {sku.purchaseOrders.length === 0 && (
+            <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No PO history yet.</div>
+          )}
+          <div className="space-y-3">
+            {sku.purchaseOrders.map((p) => {
+              const paid    = (p as any).amountPaid ?? 0;
+              const pending = Math.max(0, p.total - paid);
+              const fmt     = (n: number) => `₹${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              return (
+                <div key={p.id} className="rounded-xl border bg-card p-4 space-y-3">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-semibold">{p.poNumber}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{fmtDate(p.dispatchDate)} · {p.vendor?.name}</div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <StatusBadge status={p.status} />
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditPo(p)}><Edit className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </div>
+
+                  {/* Order details */}
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs sm:grid-cols-4">
+                    <div><div className="text-muted-foreground">Material</div><div className="font-medium">{p.materialType}</div></div>
+                    <div><div className="text-muted-foreground">Quantity</div><div className="font-medium tabular-nums">{p.quantity.toLocaleString()}</div></div>
+                    <div><div className="text-muted-foreground">Rate / unit</div><div className="font-medium tabular-nums">₹{p.rate}</div></div>
+                    <div><div className="text-muted-foreground">Expected delivery</div><div className="font-medium">{fmtDate(p.expectedDelivery)}</div></div>
+                  </div>
+
+                  {/* Pricing */}
+                  <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-xs border-t pt-3">
+                    <div><div className="text-muted-foreground">GST ({p.gstRate ?? 0}%)</div><div className="font-medium tabular-nums">{fmt(p.gstAmount ?? 0)}</div></div>
+                    <div><div className="text-muted-foreground">Grand Total</div><div className="font-semibold tabular-nums">{fmt(p.total)}</div></div>
+                    <div><div className="text-muted-foreground">Notes</div><div className="font-medium truncate">{p.notes || "—"}</div></div>
+                  </div>
+
+                  {/* Payment tracking — only for Sent POs */}
+                  {p.status === "Sent" && (
+                    <div className="grid grid-cols-3 gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-xs">
+                      <div>
+                        <div className="text-muted-foreground mb-0.5">Amount Paid</div>
+                        <div className="font-semibold tabular-nums text-success">{fmt(paid)}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground mb-0.5">Amount Pending</div>
+                        <div className={`font-semibold tabular-nums ${pending > 0 ? "text-destructive" : "text-success"}`}>{fmt(pending)}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground mb-0.5">Pay by Date</div>
+                        <div className="font-semibold">{fmtDate((p as any).paymentDueDate)}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </TabsContent>
       </Tabs>
@@ -485,6 +530,7 @@ function SkuDetailPage() {
               <div className="space-y-1.5"><Label>Transit Stock</Label><Input type="number" value={packForm.transitStock} onChange={setPack("transitStock")} /></div>
               <div className="space-y-1.5"><Label>Cost / unit (₹)</Label><Input type="number" step="0.01" value={packForm.costPerUnit} onChange={setPack("costPerUnit")} /></div>
             </div>
+            <div className="space-y-1.5"><Label>Transit Delivery Date</Label><Input type="date" value={packForm.transitDeliveryDate} onChange={setPack("transitDeliveryDate")} /></div>
             <div className="space-y-1.5"><Label>Last Purchase Date</Label><Input type="date" value={packForm.lastPurchaseDate} onChange={setPack("lastPurchaseDate")} /></div>
           </div>
           <SheetFooter className="mt-6">
@@ -568,11 +614,37 @@ function SkuDetailPage() {
                 </div>
               )}
             </div>
+            <div className="space-y-2">
+              <Label>Applicable Stages</Label>
+              <p className="text-xs text-muted-foreground">Select only the stages this batch will go through.</p>
+              <div className="rounded-lg border divide-y overflow-hidden">
+                {PRODUCTION_STAGES.map((stage) => {
+                  const checked = (editBatchForm.applicableStages as string[]).includes(stage);
+                  return (
+                    <label key={stage} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/40 transition-colors select-none">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          const next = checked
+                            ? (editBatchForm.applicableStages as string[]).filter(s => s !== stage)
+                            : [...(editBatchForm.applicableStages as string[]), stage].sort((a, b) => PRODUCTION_STAGES.indexOf(a as any) - PRODUCTION_STAGES.indexOf(b as any));
+                          const currentStillValid = next.includes(editBatchForm.currentStage) || editBatchForm.currentStage === "Completed";
+                          setEditBatchForm(f => ({ ...f, applicableStages: next, currentStage: currentStillValid ? f.currentStage : (next[0] ?? "PO Generated") }));
+                        }}
+                        className="h-4 w-4 accent-primary shrink-0"
+                      />
+                      <span className={`text-sm ${checked ? "text-foreground" : "text-muted-foreground"}`}>{stage}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
             <div className="space-y-1.5"><Label>Current Stage</Label>
               <Select value={editBatchForm.currentStage} onValueChange={(v) => setEditBatchForm(f => ({ ...f, currentStage: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {PRODUCTION_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {(editBatchForm.applicableStages as string[]).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   <SelectItem value="Completed">✓ Completed</SelectItem>
                 </SelectContent>
               </Select>
@@ -614,6 +686,7 @@ function SkuDetailPage() {
               <div className="space-y-1.5"><Label>Transit Stock</Label><Input type="number" value={editPackForm.transitStock} onChange={setEditPack("transitStock")} /></div>
               <div className="space-y-1.5"><Label>Cost / unit (₹)</Label><Input type="number" step="0.01" value={editPackForm.costPerUnit} onChange={setEditPack("costPerUnit")} /></div>
             </div>
+            <div className="space-y-1.5"><Label>Transit Delivery Date</Label><Input type="date" value={editPackForm.transitDeliveryDate} onChange={setEditPack("transitDeliveryDate")} /></div>
             <div className="space-y-1.5"><Label>Last Purchase Date</Label><Input type="date" value={editPackForm.lastPurchaseDate} onChange={setEditPack("lastPurchaseDate")} /></div>
           </div>
           <SheetFooter className="mt-6">
@@ -750,11 +823,37 @@ function SkuDetailPage() {
                 </div>
               )}
             </div>
+            <div className="space-y-2">
+              <Label>Applicable Stages</Label>
+              <p className="text-xs text-muted-foreground">Select only the stages this batch will go through.</p>
+              <div className="rounded-lg border divide-y overflow-hidden">
+                {PRODUCTION_STAGES.map((stage) => {
+                  const checked = (batchForm.applicableStages as string[]).includes(stage);
+                  return (
+                    <label key={stage} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/40 transition-colors select-none">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          const next = checked
+                            ? (batchForm.applicableStages as string[]).filter(s => s !== stage)
+                            : [...(batchForm.applicableStages as string[]), stage].sort((a, b) => PRODUCTION_STAGES.indexOf(a as any) - PRODUCTION_STAGES.indexOf(b as any));
+                          const currentStillValid = next.includes(batchForm.currentStage) || batchForm.currentStage === "Completed";
+                          setBatchForm(f => ({ ...f, applicableStages: next, currentStage: currentStillValid ? f.currentStage : (next[0] ?? "PO Generated") }));
+                        }}
+                        className="h-4 w-4 accent-primary shrink-0"
+                      />
+                      <span className={`text-sm ${checked ? "text-foreground" : "text-muted-foreground"}`}>{stage}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
             <div className="space-y-1.5"><Label>Current Stage</Label>
               <Select value={batchForm.currentStage} onValueChange={(v) => setBatchForm(f => ({ ...f, currentStage: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {PRODUCTION_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {(batchForm.applicableStages as string[]).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   <SelectItem value="Completed">✓ Completed</SelectItem>
                 </SelectContent>
               </Select>

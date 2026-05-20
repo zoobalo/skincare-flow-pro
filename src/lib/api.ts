@@ -47,6 +47,7 @@ export type ApiSkuDetail = ApiSku & {
 export type ApiPackagingItem = {
   id: string; skuId: string; name: string; vendorId: string;
   moq: number; leadTimeDays: number; currentStock: number; transitStock: number;
+  transitDeliveryDate: string | null;
   costPerUnit: number; lastPurchaseDate: string | null;
   sku?: { id: string; code: string; name: string };
 };
@@ -62,8 +63,8 @@ export type ApiPo = {
   materialType: string; quantity: number; rate: number;
   gstRate: number; gstAmount: number; total: number;
   dispatchDate: string; expectedDelivery: string;
-  status: "Pending" | "Approved" | "In Production" | "Dispatched" | "Delivered" | "Delayed";
-  paymentDue: number | null; notes: string | null;
+  status: "To be sent" | "Sent" | "Pending" | "Approved" | "In Production" | "Dispatched" | "Delivered" | "Delayed";
+  paymentDue: number | null; amountPaid: number | null; paymentDueDate: string | null; notes: string | null; terms: string | null;
   vendor?: { id: string; name: string; city: string };
   sku?: { id: string; code: string; name: string };
 };
@@ -73,6 +74,7 @@ export type ApiBatch = {
   quantity: number; currentStage: string; startedAt: string;
   expectedCompletion: string; delayed: boolean;
   materialCategory: string | null; materialItemId: string | null; materialItemName: string | null;
+  applicableStages: string[] | null;
   sku?: { id: string; code: string; name: string; image: string };
   manufacturer?: { id: string; name: string; location: string };
   stageHistory?: Array<{ id: number; batchId: string; stage: string; date: string; note: string | null }>;
@@ -89,6 +91,15 @@ export type ApiShipment = {
 
 export type ApiUser = {
   id: string; name: string; email: string; role: string; status: string;
+};
+
+export type ApiTask = {
+  id: string; title: string; comments: string;
+  status: "None" | "Initiated" | "Done";
+  urgency: "Low" | "Medium" | "High" | "Very High";
+  skuId: string | null; productType: "None" | "Packaging Material" | "Raw Material";
+  deadlineDate: string | null;
+  createdAt: string; updatedAt: string;
 };
 
 export type DashboardResponse = {
@@ -116,7 +127,7 @@ function coerceVendor(v: any): ApiVendor {
 }
 
 function coercePo(p: any): ApiPo {
-  return { ...p, rate: parseNum(p.rate), gstAmount: parseNum(p.gstAmount), total: parseNum(p.total), paymentDue: p.paymentDue != null ? parseNum(p.paymentDue) : null };
+  return { ...p, rate: parseNum(p.rate), gstAmount: parseNum(p.gstAmount), total: parseNum(p.total), paymentDue: p.paymentDue != null ? parseNum(p.paymentDue) : null, amountPaid: p.amountPaid != null ? parseNum(p.amountPaid) : null };
 }
 
 function coerceShipment(s: any): ApiShipment {
@@ -260,6 +271,16 @@ export const api = {
 
   users: {
     list: () => get<ApiUser[]>("/users"),
+  },
+
+  tasks: {
+    list: () => get<ApiTask[]>("/tasks"),
+    create: (data: Partial<ApiTask>) =>
+      fetch(`${BASE}/tasks`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiTask>) =>
+      fetch(`${BASE}/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/tasks/${id}`, { method: "DELETE" }).then((r) => r.json()),
   },
 
   procurement: {
