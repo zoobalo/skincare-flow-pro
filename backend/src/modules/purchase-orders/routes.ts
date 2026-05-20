@@ -4,6 +4,8 @@ import {
   getPurchaseOrderById,
   createPurchaseOrder,
   updatePurchaseOrderStatus,
+  updatePurchaseOrder,
+  deletePurchaseOrder,
 } from "./queries.ts";
 import { PO_STATUSES } from "../../db/schema/purchase-orders.ts";
 
@@ -33,4 +35,15 @@ export const purchaseOrderRoutes = new Hono()
     const [updated] = await updatePurchaseOrderStatus(c.req.param("id"), status as any);
     if (!updated) return c.json({ error: "Purchase order not found" }, 404);
     return c.json(updated);
+  })
+  .patch("/:id", async (c) => {
+    const body = await c.req.json();
+    const [updated] = await updatePurchaseOrder(c.req.param("id"), body);
+    if (!updated) return c.json({ error: "Purchase order not found" }, 404);
+    return c.json(updated);
+  })
+  .delete("/:id", async (c) => {
+    const [deleted] = await deletePurchaseOrder(c.req.param("id"));
+    if (!deleted) return c.json({ error: "Purchase order not found" }, 404);
+    return c.json({ ok: true });
   });

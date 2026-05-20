@@ -13,6 +13,7 @@ const map: Record<string, string> = {
   "In Production": "bg-info/15 text-info border-info/30",
   Dispatched: "bg-chart-5/15 text-chart-5 border-chart-5/30",
   Delivered: "bg-success/15 text-success border-success/30",
+  Completed: "bg-success/15 text-success border-success/30",
   Delayed: "bg-destructive/15 text-destructive border-destructive/30",
   "In Transit": "bg-info/15 text-info border-info/30",
   Loading: "bg-muted text-muted-foreground border-border",

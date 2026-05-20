@@ -12,15 +12,27 @@ export const productionRoutes = new Hono()
     return c.json(data);
   })
   .post("/", async (c) => {
-    const body = await c.req.json();
-    const [created] = await createBatch({ ...body, id: crypto.randomUUID() });
-    return c.json(created, 201);
+    try {
+      const body = await c.req.json();
+      const { batchNumber, skuId, manufacturerId, quantity, currentStage, startedAt, expectedCompletion, delayed, materialCategory, materialItemId, materialItemName } = body;
+      const [created] = await createBatch({ id: crypto.randomUUID(), batchNumber, skuId, manufacturerId, quantity, currentStage, startedAt, expectedCompletion, delayed: delayed ?? false, materialCategory: materialCategory ?? null, materialItemId: materialItemId ?? null, materialItemName: materialItemName ?? null });
+      return c.json(created, 201);
+    } catch (err: any) {
+      console.error("POST /production error:", err);
+      return c.json({ error: err?.message ?? "Failed to create batch" }, 500);
+    }
   })
   .patch("/:id", async (c) => {
-    const body = await c.req.json();
-    const [updated] = await updateBatch(c.req.param("id"), body);
-    if (!updated) return c.json({ error: "Batch not found" }, 404);
-    return c.json(updated);
+    try {
+      const body = await c.req.json();
+      const { batchNumber, skuId, manufacturerId, quantity, currentStage, startedAt, expectedCompletion, delayed, materialCategory, materialItemId, materialItemName } = body;
+      const [updated] = await updateBatch(c.req.param("id"), { batchNumber, skuId, manufacturerId, quantity, currentStage, startedAt, expectedCompletion, delayed, materialCategory: materialCategory ?? null, materialItemId: materialItemId ?? null, materialItemName: materialItemName ?? null });
+      if (!updated) return c.json({ error: "Batch not found" }, 404);
+      return c.json(updated);
+    } catch (err: any) {
+      console.error("PATCH /production/:id error:", err);
+      return c.json({ error: err?.message ?? "Failed to update batch" }, 500);
+    }
   })
   .patch("/:id/stage", async (c) => {
     const { stage } = await c.req.json<{ stage: string }>();

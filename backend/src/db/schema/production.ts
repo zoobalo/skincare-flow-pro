@@ -29,6 +29,9 @@ export const productionBatches = pgTable("production_batches", {
   startedAt:          date("started_at", { mode: "string" }).notNull(),
   expectedCompletion: date("expected_completion", { mode: "string" }).notNull(),
   delayed:            boolean("delayed").notNull().default(false),
+  materialCategory:   text("material_category"),
+  materialItemId:     text("material_item_id"),
+  materialItemName:   text("material_item_name"),
   createdAt:          timestamp("created_at").defaultNow().notNull(),
   updatedAt:          timestamp("updated_at").defaultNow().notNull(),
 });

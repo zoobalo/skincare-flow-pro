@@ -1,4 +1,4 @@
-import { pgTable, text, integer, numeric, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, numeric, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { skus } from "./skus.ts";
 import { purchaseOrders } from "./purchase-orders.ts";
@@ -21,6 +21,7 @@ export const vendors = pgTable("vendors", {
   totalOrders:   integer("total_orders").notNull().default(0),
   runningOrders: integer("running_orders").notNull().default(0),
   totalSpend:    numeric("total_spend", { precision: 14, scale: 2 }).notNull().default("0"),
+  contacts:      jsonb("contacts").$type<Contact[]>().notNull().default([]),
   createdAt:     timestamp("created_at").defaultNow().notNull(),
   updatedAt:     timestamp("updated_at").defaultNow().notNull(),
 });
@@ -29,5 +30,6 @@ export const vendorsRelations = relations(vendors, ({ many }) => ({
   purchaseOrders: many(purchaseOrders),
 }));
 
+export type Contact = { department: string; name: string; mobile: string; email: string };
 export type Vendor    = typeof vendors.$inferSelect;
 export type NewVendor = typeof vendors.$inferInsert;

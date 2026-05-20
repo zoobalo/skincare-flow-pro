@@ -8,17 +8,24 @@ async function get<T>(path: string): Promise<T> {
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 
+export type ApiContact = { department: string; name: string; mobile: string; email: string };
+
 export type ApiVendor = {
   id: string; name: string; contactPerson: string; mobile: string;
   email: string; gst: string; address: string; city: string;
   materials: string[]; leadTimeDays: number; paymentTerms: string;
   rating: number; reliability: number; delayPercent: number;
   totalOrders: number; runningOrders: number; totalSpend: number;
+  contacts: ApiContact[];
 };
 
 export type ApiManufacturer = {
-  id: string; name: string; location: string; contactPerson: string;
-  mobile: string; capacityPerMonth: number; activeBatches: number; qcPassRate: number;
+  id: string; name: string; location: string; city: string;
+  email: string; gst: string; contactPerson: string; mobile: string;
+  capacityPerMonth: number; activeBatches: number; qcPassRate: number;
+  leadTimeDays: number; paymentTerms: string;
+  rating: number; reliability: number; delayPercent: number;
+  contacts: ApiContact[];
   productionBatches: ApiBatch[];
 };
 
@@ -52,7 +59,8 @@ export type ApiRawMaterial = {
 
 export type ApiPo = {
   id: string; poNumber: string; vendorId: string; skuId: string;
-  materialType: string; quantity: number; rate: number; total: number;
+  materialType: string; quantity: number; rate: number;
+  gstRate: number; gstAmount: number; total: number;
   dispatchDate: string; expectedDelivery: string;
   status: "Pending" | "Approved" | "In Production" | "Dispatched" | "Delivered" | "Delayed";
   paymentDue: number | null; notes: string | null;
@@ -64,6 +72,7 @@ export type ApiBatch = {
   id: string; batchNumber: string; skuId: string; manufacturerId: string;
   quantity: number; currentStage: string; startedAt: string;
   expectedCompletion: string; delayed: boolean;
+  materialCategory: string | null; materialItemId: string | null; materialItemName: string | null;
   sku?: { id: string; code: string; name: string; image: string };
   manufacturer?: { id: string; name: string; location: string };
   stageHistory?: Array<{ id: number; batchId: string; stage: string; date: string; note: string | null }>;
@@ -107,7 +116,7 @@ function coerceVendor(v: any): ApiVendor {
 }
 
 function coercePo(p: any): ApiPo {
-  return { ...p, rate: parseNum(p.rate), total: parseNum(p.total), paymentDue: p.paymentDue != null ? parseNum(p.paymentDue) : null };
+  return { ...p, rate: parseNum(p.rate), gstAmount: parseNum(p.gstAmount), total: parseNum(p.total), paymentDue: p.paymentDue != null ? parseNum(p.paymentDue) : null };
 }
 
 function coerceShipment(s: any): ApiShipment {
@@ -123,7 +132,7 @@ function coerceRawMaterial(r: any): ApiRawMaterial {
 }
 
 function coerceManufacturer(m: any): ApiManufacturer {
-  return { ...m, qcPassRate: parseNum(m.qcPassRate) };
+  return { ...m, qcPassRate: parseNum(m.qcPassRate), rating: parseNum(m.rating) };
 }
 
 // ── Months helper ─────────────────────────────────────────────────────────────
@@ -219,6 +228,14 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiPo>) =>
+      fetch(`${BASE}/purchase-orders/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/purchase-orders/${id}`, { method: "DELETE" }).then((r) => r.json()),
   },
 
   production: {

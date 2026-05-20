@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Plus, Factory, CheckCircle2, Clock, Truck, Pencil } from "lucide-react";
+import { Plus, Factory, CheckCircle2, Clock, Truck, Pencil, Trash2, Mail, MapPin, Phone, Star } from "lucide-react";
 import { ProgressRail } from "@/components/progress-rail";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
 import { StatusBadge } from "@/components/status-badge";
+import { ContactsEditor } from "@/components/contacts-editor";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { ApiManufacturer } from "@/lib/api";
+import type { ApiManufacturer, ApiContact } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/manufacturers/")({
   loader: () => api.manufacturers.list(),
@@ -19,7 +20,14 @@ export const Route = createFileRoute("/_app/manufacturers/")({
   head: () => ({ meta: [{ title: "Manufacturers — SkinOps" }] }),
 });
 
-const EMPTY = { name: "", location: "", contactPerson: "", mobile: "", capacityPerMonth: 50000, qcPassRate: 97 };
+const EMPTY = {
+  name: "", location: "", city: "", email: "", gst: "",
+  contactPerson: "", mobile: "",
+  capacityPerMonth: 50000, qcPassRate: 97,
+  leadTimeDays: 30, paymentTerms: "Net 30",
+  rating: 4.0, reliability: 90, delayPercent: 5,
+  contacts: [] as ApiContact[],
+};
 
 function ManufacturerSheet({
   open, onOpenChange, initial, onSave,
@@ -30,12 +38,12 @@ function ManufacturerSheet({
   onSave: (data: typeof EMPTY) => Promise<void>;
 }) {
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ ...EMPTY, ...initial });
+  const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY, ...initial, contacts: (initial?.contacts as ApiContact[]) ?? [] });
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
 
   const handleSave = async () => {
-    if (!form.name || !form.location) { toast.error("Name and location are required."); return; }
+    if (!form.name || !form.location || !form.city) { toast.error("Name, address and city are required."); return; }
     setSaving(true);
     try {
       await onSave(form);
@@ -56,10 +64,6 @@ function ManufacturerSheet({
             <Label>Company Name *</Label>
             <Input placeholder="e.g. Bluewave Personal Care" value={form.name} onChange={set("name")} />
           </div>
-          <div className="space-y-1.5">
-            <Label>Location *</Label>
-            <Input placeholder="e.g. Daman" value={form.location} onChange={set("location")} />
-          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Contact Person</Label>
@@ -72,6 +76,26 @@ function ManufacturerSheet({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input type="email" placeholder="manufacturer@company.com" value={form.email} onChange={set("email")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>GST Number</Label>
+              <Input placeholder="27AAAPL1234C1Z5" value={form.gst} onChange={set("gst")} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Address *</Label>
+              <Input placeholder="Plot 14, MIDC…" value={form.location} onChange={set("location")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>City *</Label>
+              <Input placeholder="e.g. Daman" value={form.city} onChange={set("city")} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
               <Label>Capacity / month (units)</Label>
               <Input type="number" value={form.capacityPerMonth} onChange={set("capacityPerMonth")} />
             </div>
@@ -79,6 +103,33 @@ function ManufacturerSheet({
               <Label>QC Pass Rate (%)</Label>
               <Input type="number" step="0.1" min="0" max="100" value={form.qcPassRate} onChange={set("qcPassRate")} />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Lead time (days)</Label>
+              <Input type="number" value={form.leadTimeDays} onChange={set("leadTimeDays")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Payment Terms</Label>
+              <Input placeholder="Net 30" value={form.paymentTerms} onChange={set("paymentTerms")} />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label>Rating (0–5)</Label>
+              <Input type="number" step="0.1" min="0" max="5" value={form.rating} onChange={set("rating")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Reliability %</Label>
+              <Input type="number" min="0" max="100" value={form.reliability} onChange={set("reliability")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Delay %</Label>
+              <Input type="number" min="0" max="100" value={form.delayPercent} onChange={set("delayPercent")} />
+            </div>
+          </div>
+          <div className="border-t pt-4">
+            <ContactsEditor contacts={form.contacts} onChange={(contacts) => setForm((f) => ({ ...f, contacts }))} />
           </div>
         </div>
         <SheetFooter className="mt-6">
@@ -101,6 +152,10 @@ function ManufacturersPage() {
       ...form,
       capacityPerMonth: Number(form.capacityPerMonth),
       qcPassRate: Number(form.qcPassRate) as any,
+      leadTimeDays: Number(form.leadTimeDays),
+      rating: Number(form.rating) as any,
+      reliability: Number(form.reliability),
+      delayPercent: Number(form.delayPercent),
       activeBatches: 0,
     });
     toast.success(`Manufacturer "${form.name}" added.`);
@@ -112,10 +167,26 @@ function ManufacturersPage() {
       ...form,
       capacityPerMonth: Number(form.capacityPerMonth),
       qcPassRate: Number(form.qcPassRate) as any,
+      leadTimeDays: Number(form.leadTimeDays),
+      rating: Number(form.rating) as any,
+      reliability: Number(form.reliability),
+      delayPercent: Number(form.delayPercent),
     });
     toast.success("Manufacturer updated.");
     setEditTarget(null);
     await router.invalidate();
+  };
+
+  const handleDelete = async (m: ApiManufacturer) => {
+    if (!confirm(`Delete "${m.name}"? This cannot be undone.`)) return;
+    const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/manufacturers/${m.id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success(`"${m.name}" deleted.`);
+      await router.invalidate();
+    } else {
+      const body = await res.json().catch(() => ({}));
+      toast.error(body.error ?? "Failed to delete manufacturer.");
+    }
   };
 
   return (
@@ -142,22 +213,81 @@ function ManufacturersPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-base font-semibold">{m.name}</h3>
-                <p className="text-xs text-muted-foreground">{m.location} · {m.contactPerson} · {m.mobile}</p>
+                <p className="text-xs text-muted-foreground">{m.city || m.location} · {m.contactPerson} · {m.mobile}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="ghost" onClick={() => setEditTarget(m)}>
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setEditTarget(m)}>
                   <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(m)}>
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
                 <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
                   <Factory className="h-5 w-5" />
                 </div>
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
+            {/* Contact & location details */}
+            <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              {m.email && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Mail className="h-3 w-3 shrink-0" /><span className="truncate">{m.email}</span>
+                </div>
+              )}
+              {m.gst && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="font-medium text-foreground">GST</span>
+                  <span className="font-mono">{m.gst}</span>
+                </div>
+              )}
+              {m.mobile && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Phone className="h-3 w-3 shrink-0" /><span>{m.mobile}</span>
+                </div>
+              )}
+              {(m.location || m.city) && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{[m.location, m.city].filter(Boolean).join(", ")}</span>
+                </div>
+              )}
+              {m.paymentTerms && (
+                <div><span className="text-muted-foreground">Payment · </span><span className="font-medium">{m.paymentTerms}</span></div>
+              )}
+              {m.leadTimeDays > 0 && (
+                <div><span className="text-muted-foreground">Lead time · </span><span className="font-medium">{m.leadTimeDays}d</span></div>
+              )}
+            </div>
+            {/* Key metrics */}
+            <div className="mt-4 grid grid-cols-3 gap-3 border-t pt-4 text-xs">
               <div><div className="text-muted-foreground">Capacity / mo</div><div className="text-base font-semibold tabular-nums">{m.capacityPerMonth.toLocaleString()}</div></div>
               <div><div className="text-muted-foreground">Active batches</div><div className="text-base font-semibold tabular-nums">{m.activeBatches}</div></div>
               <div><div className="text-muted-foreground">QC pass rate</div><div className="text-base font-semibold tabular-nums text-success">{m.qcPassRate}%</div></div>
             </div>
+            <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                <span className="font-semibold tabular-nums">{m.rating}</span>
+                <span className="text-muted-foreground">/ 5</span>
+              </div>
+              <div><div className="text-muted-foreground">Reliability</div><div className="font-semibold tabular-nums">{m.reliability}%</div></div>
+              <div><div className="text-muted-foreground">Delay %</div><div className={`font-semibold tabular-nums ${m.delayPercent > 10 ? "text-destructive" : "text-success"}`}>{m.delayPercent}%</div></div>
+            </div>
+            {m.contacts && m.contacts.length > 0 && (
+              <div className="mt-4 border-t pt-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Department Contacts</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {m.contacts.map((c, i) => (
+                    <div key={i} className="rounded-lg bg-muted/40 px-3 py-2 text-xs">
+                      <div className="font-semibold text-primary">{c.department}</div>
+                      <div className="font-medium">{c.name}</div>
+                      {c.mobile && <div className="text-muted-foreground">{c.mobile}</div>}
+                      {c.email && <div className="text-muted-foreground">{c.email}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {m.productionBatches.length > 0 && (
               <div className="mt-4 border-t pt-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Live batches</p>
@@ -185,6 +315,7 @@ function ManufacturersPage() {
 
       <ManufacturerSheet open={createOpen} onOpenChange={setCreateOpen} onSave={handleCreate} />
       <ManufacturerSheet
+        key={editTarget?.id ?? "edit"}
         open={!!editTarget}
         onOpenChange={(v) => { if (!v) setEditTarget(null); }}
         initial={editTarget ?? undefined}

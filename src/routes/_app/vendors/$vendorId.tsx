@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { api, fmtMonth } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mail, MapPin, Phone, Star } from "lucide-react";
+import { ArrowLeft, Mail, MapPin, Phone, Star, UserRound } from "lucide-react";
 import { ChartCard } from "@/components/chart-card";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, RadialBarChart, RadialBar } from "recharts";
 
@@ -50,6 +50,21 @@ function VendorDetailPage() {
             <div><dt className="text-xs text-muted-foreground">Payment terms</dt><dd className="mt-0.5">{vendor.paymentTerms}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Lead time</dt><dd className="mt-0.5">{vendor.leadTimeDays} days</dd></div>
           </dl>
+          {vendor.contacts && vendor.contacts.length > 0 && (
+            <div className="mt-4 border-t pt-4">
+              <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground"><UserRound className="h-3.5 w-3.5" />Department Contacts</h4>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {vendor.contacts.map((c, i) => (
+                  <div key={i} className="rounded-lg bg-muted/40 px-3 py-2 text-xs">
+                    <div className="font-semibold text-primary">{c.department}</div>
+                    <div className="mt-0.5 font-medium">{c.name}</div>
+                    {c.mobile && <div className="text-muted-foreground">{c.mobile}</div>}
+                    {c.email && <div className="text-muted-foreground">{c.email}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Rating</div><div className="mt-1 flex items-baseline gap-1"><Star className="h-5 w-5 fill-warning text-warning" /><span className="text-2xl font-semibold tabular-nums">{vendor.rating}</span><span className="text-xs text-muted-foreground">/ 5</span></div><div className="mt-1 text-xs text-muted-foreground">{vendor.totalOrders} orders fulfilled</div></div>
         <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Total spend (YTD)</div><div className="mt-1 text-2xl font-semibold tabular-nums">₹{(vendor.totalSpend / 100000).toFixed(1)}L</div><div className="mt-1 text-xs text-muted-foreground">{vendor.runningOrders} running orders</div></div>

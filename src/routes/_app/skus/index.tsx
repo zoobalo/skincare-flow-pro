@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api } from "@/lib/api";
-import { Plus, LayoutGrid, List, Search } from "lucide-react";
+import { Plus, LayoutGrid, List, Search, Trash2 } from "lucide-react";
+import { ImageUpload } from "@/components/image-upload";
 import { useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
 import { toast } from "sonner";
@@ -49,6 +50,20 @@ function SkuListPage() {
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const handleDelete = async (id: string, name: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/skus/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success(`"${name}" deleted.`);
+      await router.invalidate();
+    } else {
+      const body = await res.json().catch(() => ({}));
+      toast.error(body.error ?? "Failed to delete SKU.");
+    }
+  };
 
   const handleCreate = async () => {
     if (!form.code || !form.name || !form.manufacturerId) {
@@ -111,20 +126,28 @@ function SkuListPage() {
           {filtered.map((sku) => {
             const low = sku.currentInventory < sku.minThreshold;
             return (
-              <Link key={sku.id} to="/skus/$skuId" params={{ skuId: sku.id }} className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md">
-                <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                  {sku.image ? <img src={sku.image} alt={sku.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" /> : <div className="h-full w-full bg-muted" />}
-                  <div className="absolute left-2 top-2"><StatusBadge status={low ? "Low Stock" : "Healthy"} /></div>
-                </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{sku.code} · {sku.category}</p>
-                  <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">{sku.name}</h3>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                    <div><div className="text-muted-foreground">Stock</div><div className="font-semibold tabular-nums">{sku.currentInventory.toLocaleString()}</div></div>
-                    <div><div className="text-muted-foreground">Lead time</div><div className="font-semibold tabular-nums">{sku.productionTimelineDays}d</div></div>
+              <div key={sku.id} className="relative group">
+                <Link to="/skus/$skuId" params={{ skuId: sku.id }} className="flex flex-col overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                    {sku.image ? <img src={sku.image} alt={sku.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" /> : <div className="h-full w-full bg-muted" />}
+                    <div className="absolute left-2 top-2"><StatusBadge status={low ? "Low Stock" : "Healthy"} /></div>
                   </div>
-                </div>
-              </Link>
+                  <div className="flex flex-1 flex-col p-4">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{sku.code} · {sku.category}</p>
+                    <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">{sku.name}</h3>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div><div className="text-muted-foreground">Stock</div><div className="font-semibold tabular-nums">{sku.currentInventory.toLocaleString()}</div></div>
+                      <div><div className="text-muted-foreground">Lead time</div><div className="font-semibold tabular-nums">{sku.productionTimelineDays}d</div></div>
+                    </div>
+                  </div>
+                </Link>
+                <button
+                  onClick={(e) => handleDelete(sku.id, sku.name, e)}
+                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-background/80 text-destructive opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             );
           })}
         </div>
@@ -140,6 +163,7 @@ function SkuListPage() {
                 <th className="px-4 py-2.5 font-medium text-right">Min</th>
                 <th className="px-4 py-2.5 font-medium text-right">Lead time</th>
                 <th className="px-4 py-2.5 font-medium">Status</th>
+                <th className="px-4 py-2.5 font-medium"></th>
               </tr>
             </thead>
             <tbody>
@@ -154,6 +178,11 @@ function SkuListPage() {
                     <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{sku.minThreshold.toLocaleString()}</td>
                     <td className="px-4 py-2.5 text-right tabular-nums">{sku.productionTimelineDays}d</td>
                     <td className="px-4 py-2.5"><StatusBadge status={low ? "Low Stock" : "Healthy"} /></td>
+                    <td className="px-4 py-2.5">
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={(e) => handleDelete(sku.id, sku.name, e)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </td>
                   </tr>
                 );
               })}
@@ -207,8 +236,8 @@ function SkuListPage() {
               <Textarea rows={2} value={form.description} onChange={set("description")} placeholder="Short product description" />
             </div>
             <div className="space-y-1.5">
-              <Label>Image URL</Label>
-              <Input placeholder="https://..." value={form.image} onChange={set("image")} />
+              <Label>Product Image</Label>
+              <ImageUpload value={form.image} onChange={(url) => setForm(f => ({ ...f, image: url }))} />
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">

@@ -1,4 +1,5 @@
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -14,8 +15,14 @@ import { inventoryRoutes } from "./modules/inventory/routes.ts";
 import { dashboardRoutes } from "./modules/dashboard/routes.ts";
 import { userRoutes } from "./modules/users/routes.ts";
 import { procurementRoutes } from "./modules/procurement/routes.ts";
+import { uploadRoutes } from "./modules/upload/routes.ts";
 
-const app = new Hono().basePath("/api");
+const root = new Hono();
+
+// Serve uploaded images at /uploads/* (outside /api prefix)
+root.use("/uploads/*", serveStatic({ root: "./public" }));
+
+const app = root.basePath("/api");
 
 app.use(
   "*",
@@ -25,18 +32,19 @@ app.use("*", logger());
 
 app.get("/health", (c) => c.json({ ok: true, timestamp: new Date().toISOString() }));
 
-app.route("/vendors",        vendorRoutes);
-app.route("/manufacturers",  manufacturerRoutes);
-app.route("/skus",           skuRoutes);
-app.route("/skus",           skuItemRoutes);
+app.route("/vendors",         vendorRoutes);
+app.route("/manufacturers",   manufacturerRoutes);
+app.route("/skus",            skuRoutes);
+app.route("/skus",            skuItemRoutes);
 app.route("/purchase-orders", purchaseOrderRoutes);
-app.route("/production",     productionRoutes);
-app.route("/shipments",      shipmentRoutes);
-app.route("/inventory",      inventoryRoutes);
-app.route("/dashboard",      dashboardRoutes);
-app.route("/users",          userRoutes);
-app.route("/procurement",    procurementRoutes);
+app.route("/production",      productionRoutes);
+app.route("/shipments",       shipmentRoutes);
+app.route("/inventory",       inventoryRoutes);
+app.route("/dashboard",       dashboardRoutes);
+app.route("/users",           userRoutes);
+app.route("/procurement",     procurementRoutes);
+app.route("/upload",          uploadRoutes);
 
-serve({ fetch: app.fetch, port: env.PORT }, () => {
+serve({ fetch: root.fetch, port: env.PORT }, () => {
   console.log(`🚀  SkinOps API running on http://localhost:${env.PORT}/api`);
 });

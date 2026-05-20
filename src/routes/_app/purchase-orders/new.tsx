@@ -41,9 +41,10 @@ function NewPOWizard() {
   const [skuId, setSkuId]     = useState(skus[0]?.id ?? "");
   const [material, setMaterial] = useState("Aluminium Can");
   const [vendorId, setVendorId] = useState(vendors[0]?.id ?? "");
-  const [qty, setQty]   = useState(10000);
-  const [rate, setRate] = useState(28.5);
-  const [eta, setEta]   = useState("2026-05-15");
+  const [qty, setQty]     = useState(10000);
+  const [rate, setRate]   = useState(28.5);
+  const [gstRate, setGstRate] = useState(18);
+  const [eta, setEta]     = useState("2026-05-15");
   const [notes, setNotes] = useState("Please ensure batch certificates are sent along with dispatch.");
   const [submitting, setSubmitting] = useState(false);
 
@@ -56,6 +57,9 @@ function NewPOWizard() {
   const submit = async () => {
     setSubmitting(true);
     try {
+      const subtotal  = qty * rate;
+      const gstAmt    = Math.round(subtotal * gstRate / 100 * 100) / 100;
+      const grandTotal = subtotal + gstAmt;
       await api.purchaseOrders.create({
         id:               crypto.randomUUID(),
         poNumber:         genPoNumber(),
@@ -64,7 +68,9 @@ function NewPOWizard() {
         materialType:     material,
         quantity:         qty,
         rate:             rate as any,
-        total:            (qty * rate) as any,
+        gstRate,
+        gstAmount:        gstAmt as any,
+        total:            grandTotal as any,
         dispatchDate:     todayStr(),
         expectedDelivery: eta,
         status:           "Pending",
@@ -131,13 +137,50 @@ function NewPOWizard() {
           </div>
         )}
 
-        {step === 2 && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="space-y-1.5"><Label>Quantity</Label><Input type="number" value={qty} onChange={(e) => setQty(+e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Rate per unit (₹)</Label><Input type="number" step="0.1" value={rate} onChange={(e) => setRate(+e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Total</Label><div className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm font-semibold tabular-nums">₹{(qty * rate).toLocaleString()}</div></div>
-          </div>
-        )}
+        {step === 2 && (() => {
+          const subtotal = qty * rate;
+          const gstAmt   = Math.round(subtotal * gstRate / 100 * 100) / 100;
+          const grandTotal = subtotal + gstAmt;
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label>Quantity</Label>
+                  <Input type="number" value={qty} onChange={(e) => setQty(+e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Rate per unit (₹)</Label>
+                  <Input type="number" step="0.01" value={rate} onChange={(e) => setRate(+e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>GST Rate</Label>
+                  <Select value={String(gstRate)} onValueChange={(v) => setGstRate(Number(v))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[0, 5, 12, 18, 28].map((g) => (
+                        <SelectItem key={g} value={String(g)}>{g}%{g === 18 ? " (Standard)" : g === 28 ? " (Luxury)" : g === 0 ? " (Exempt)" : ""}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="rounded-lg border bg-muted/40 p-4 text-sm space-y-2">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal ({qty.toLocaleString()} × ₹{rate})</span>
+                  <span className="tabular-nums">₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>GST @ {gstRate}%</span>
+                  <span className="tabular-nums">₹{gstAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2 font-semibold">
+                  <span>Grand Total</span>
+                  <span className="tabular-nums">₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {step === 3 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -157,7 +200,10 @@ function NewPOWizard() {
                 <div><dt className="text-xs text-muted-foreground">Vendor</dt><dd>{vendor?.name}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Vendor email</dt><dd>{vendor?.email}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Quantity</dt><dd className="tabular-nums">{qty.toLocaleString()}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Total</dt><dd className="tabular-nums">₹{(qty * rate).toLocaleString()}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">Rate / unit</dt><dd className="tabular-nums">₹{rate}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">Subtotal</dt><dd className="tabular-nums">₹{(qty * rate).toLocaleString()}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">GST ({gstRate}%)</dt><dd className="tabular-nums">₹{(Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">Grand Total</dt><dd className="tabular-nums font-semibold">₹{(qty * rate + Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Expected delivery</dt><dd>{eta}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Payment terms</dt><dd>{vendor?.paymentTerms}</dd></div>
               </dl>
@@ -166,7 +212,7 @@ function NewPOWizard() {
               <div className="flex items-center gap-2 text-sm font-medium"><Mail className="h-4 w-4" />Email preview</div>
               <p className="mt-2 text-xs text-muted-foreground">To: {vendor?.email}</p>
               <p className="text-xs text-muted-foreground">Subject: Purchase Order — {sku?.code} {material} — Qty {qty.toLocaleString()}</p>
-              <p className="mt-3 text-sm whitespace-pre-line">Hi {vendor?.contactPerson},{"\n\n"}Please find our PO for {qty.toLocaleString()} units of {material} for SKU {sku?.code} at ₹{rate}/unit. Expected delivery by {eta}.{"\n\n"}{notes}{"\n\n"}Regards,{"\n"}SkinOps Procurement</p>
+              <p className="mt-3 text-sm whitespace-pre-line">Hi {vendor?.contactPerson},{"\n\n"}Please find our PO for {qty.toLocaleString()} units of {material} for SKU {sku?.code} at ₹{rate}/unit (subtotal ₹{(qty * rate).toLocaleString()}, GST @{gstRate}% ₹{(Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}, grand total ₹{(qty * rate + Math.round(qty * rate * gstRate / 100 * 100) / 100).toLocaleString()}). Expected delivery by {eta}.{"\n\n"}{notes}{"\n\n"}Regards,{"\n"}SkinOps Procurement</p>
             </div>
           </div>
         )}

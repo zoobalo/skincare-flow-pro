@@ -1,5 +1,9 @@
 import { Hono } from "hono";
 import { getAllSkus, getSkuById, createSku, updateSku, deleteSku } from "./queries.ts";
+import { db } from "../../db/client.ts";
+import { purchaseOrders } from "../../db/schema/purchase-orders.ts";
+import { productionBatches } from "../../db/schema/production.ts";
+import { eq, count } from "drizzle-orm";
 
 export const skuRoutes = new Hono()
   .get("/", async (c) => {
@@ -9,9 +13,14 @@ export const skuRoutes = new Hono()
     return c.json(data);
   })
   .get("/:id", async (c) => {
-    const data = await getSkuById(c.req.param("id"));
-    if (!data) return c.json({ error: "SKU not found" }, 404);
-    return c.json(data);
+    try {
+      const data = await getSkuById(c.req.param("id"));
+      if (!data) return c.json({ error: "SKU not found" }, 404);
+      return c.json(data);
+    } catch (err: any) {
+      console.error("GET /skus/:id error:", err);
+      return c.json({ error: err?.message ?? "Failed to fetch SKU" }, 500);
+    }
   })
   .post("/", async (c) => {
     const body = await c.req.json();
@@ -28,7 +37,12 @@ export const skuRoutes = new Hono()
     return c.json(updated);
   })
   .delete("/:id", async (c) => {
-    const [deleted] = await deleteSku(c.req.param("id"));
+    const id = c.req.param("id");
+    const [{ value: poCount }] = await db.select({ value: count() }).from(purchaseOrders).where(eq(purchaseOrders.skuId, id));
+    if (poCount > 0) return c.json({ error: `Cannot delete: ${poCount} purchase order(s) are linked to this SKU. Delete them first.` }, 409);
+    const [{ value: batchCount }] = await db.select({ value: count() }).from(productionBatches).where(eq(productionBatches.skuId, id));
+    if (batchCount > 0) return c.json({ error: `Cannot delete: ${batchCount} production batch(es) are linked to this SKU. Delete them first.` }, 409);
+    const [deleted] = await deleteSku(id);
     if (!deleted) return c.json({ error: "SKU not found" }, 404);
     return c.json({ ok: true });
   });

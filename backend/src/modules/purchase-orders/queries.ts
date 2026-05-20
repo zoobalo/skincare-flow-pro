@@ -34,3 +34,9 @@ export const updatePurchaseOrderStatus = (id: string, status: POStatus) =>
     .set({ status, updatedAt: new Date() })
     .where(eq(purchaseOrders.id, id))
     .returning();
+
+export const updatePurchaseOrder = (id: string, data: Partial<typeof purchaseOrders.$inferInsert>) =>
+  db.update(purchaseOrders).set({ ...data, updatedAt: new Date() }).where(eq(purchaseOrders.id, id)).returning();
+
+export const deletePurchaseOrder = (id: string) =>
+  db.delete(purchaseOrders).where(eq(purchaseOrders.id, id)).returning();

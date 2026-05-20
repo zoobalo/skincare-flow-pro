@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Plus, Star } from "lucide-react";
+import { Plus, Star, Trash2 } from "lucide-react";
+import { ContactsEditor } from "@/components/contacts-editor";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { ApiContact } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/vendors/")({
   loader: () => api.vendors.list(),
@@ -16,23 +18,13 @@ export const Route = createFileRoute("/_app/vendors/")({
   head: () => ({ meta: [{ title: "Vendors — SkinOps" }] }),
 });
 
-const cols: Column<ApiVendor>[] = [
-  { key: "name",        header: "Vendor",      accessor: (r) => r.name,         cell: (r) => <Link to="/vendors/$vendorId" params={{ vendorId: r.id }} className="font-medium text-primary hover:underline">{r.name}</Link> },
-  { key: "city",        header: "City",         accessor: (r) => r.city,         cell: (r) => r.city },
-  { key: "materials",   header: "Materials",    accessor: (r) => r.materials.join(", "), cell: (r) => <span className="text-muted-foreground">{r.materials.join(", ")}</span> },
-  { key: "lead",        header: "Lead time",    accessor: (r) => r.leadTimeDays, cell: (r) => <span className="tabular-nums">{r.leadTimeDays}d</span>, className: "text-right" },
-  { key: "rating",      header: "Rating",       accessor: (r) => r.rating,       cell: (r) => <span className="inline-flex items-center gap-1 tabular-nums"><Star className="h-3.5 w-3.5 fill-warning text-warning" />{r.rating}</span> },
-  { key: "reliability", header: "Reliability",  accessor: (r) => r.reliability,  cell: (r) => <span className="tabular-nums">{r.reliability}%</span>, className: "text-right" },
-  { key: "delay",       header: "Delay %",      accessor: (r) => r.delayPercent, cell: (r) => <span className={`tabular-nums ${r.delayPercent > 10 ? "text-destructive" : "text-success"}`}>{r.delayPercent}%</span>, className: "text-right" },
-  { key: "running",     header: "Running",      accessor: (r) => r.runningOrders,cell: (r) => <span className="tabular-nums">{r.runningOrders}</span>, className: "text-right" },
-  { key: "spend",       header: "Total spend",  accessor: (r) => r.totalSpend,   cell: (r) => <span className="tabular-nums">₹{(r.totalSpend / 100000).toFixed(1)}L</span>, className: "text-right" },
-];
 
 const EMPTY = {
   name: "", contactPerson: "", mobile: "", email: "", gst: "",
   address: "", city: "", materials: "",
   leadTimeDays: 21, paymentTerms: "Net 30", rating: 4.0,
   reliability: 85, delayPercent: 10, totalOrders: 0, runningOrders: 0, totalSpend: 0,
+  contacts: [] as ApiContact[],
 };
 
 function VendorsPage() {
@@ -41,6 +33,31 @@ function VendorsPage() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ ...EMPTY });
+
+  const handleDelete = async (v: ApiVendor) => {
+    if (!confirm(`Delete "${v.name}"? This cannot be undone.`)) return;
+    const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/vendors/${v.id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success(`"${v.name}" deleted.`);
+      await router.invalidate();
+    } else {
+      const body = await res.json().catch(() => ({}));
+      toast.error(body.error ?? "Failed to delete vendor.");
+    }
+  };
+
+  const cols: Column<ApiVendor>[] = [
+    { key: "name",        header: "Vendor",      accessor: (r) => r.name,         cell: (r) => <Link to="/vendors/$vendorId" params={{ vendorId: r.id }} className="font-medium text-primary hover:underline">{r.name}</Link> },
+    { key: "city",        header: "City",         accessor: (r) => r.city,         cell: (r) => r.city },
+    { key: "materials",   header: "Materials",    accessor: (r) => r.materials.join(", "), cell: (r) => <span className="text-muted-foreground">{r.materials.join(", ")}</span> },
+    { key: "lead",        header: "Lead time",    accessor: (r) => r.leadTimeDays, cell: (r) => <span className="tabular-nums">{r.leadTimeDays}d</span>, className: "text-right" },
+    { key: "rating",      header: "Rating",       accessor: (r) => r.rating,       cell: (r) => <span className="inline-flex items-center gap-1 tabular-nums"><Star className="h-3.5 w-3.5 fill-warning text-warning" />{r.rating}</span> },
+    { key: "reliability", header: "Reliability",  accessor: (r) => r.reliability,  cell: (r) => <span className="tabular-nums">{r.reliability}%</span>, className: "text-right" },
+    { key: "delay",       header: "Delay %",      accessor: (r) => r.delayPercent, cell: (r) => <span className={`tabular-nums ${r.delayPercent > 10 ? "text-destructive" : "text-success"}`}>{r.delayPercent}%</span>, className: "text-right" },
+    { key: "running",     header: "Running",      accessor: (r) => r.runningOrders,cell: (r) => <span className="tabular-nums">{r.runningOrders}</span>, className: "text-right" },
+    { key: "spend",       header: "Total spend",  accessor: (r) => r.totalSpend,   cell: (r) => <span className="tabular-nums">₹{(r.totalSpend / 100000).toFixed(1)}L</span>, className: "text-right" },
+    { key: "actions",     header: "",             accessor: (r) => r.id,           cell: (r) => <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(r)}><Trash2 className="h-3.5 w-3.5" /></Button> },
+  ];
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -62,6 +79,7 @@ function VendorsPage() {
         totalOrders: Number(form.totalOrders),
         runningOrders: Number(form.runningOrders),
         totalSpend: Number(form.totalSpend) as any,
+        contacts: form.contacts,
       });
       toast.success(`Vendor "${form.name}" added.`);
       setOpen(false);
@@ -154,6 +172,9 @@ function VendorsPage() {
                 <Label>Delay %</Label>
                 <Input type="number" min="0" max="100" value={form.delayPercent} onChange={set("delayPercent")} />
               </div>
+            </div>
+            <div className="border-t pt-4">
+              <ContactsEditor contacts={form.contacts} onChange={(contacts) => setForm((f) => ({ ...f, contacts }))} />
             </div>
           </div>
           <SheetFooter className="mt-6">

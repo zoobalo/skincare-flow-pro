@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, ChevronRight, Edit, Plus, Trash2 } from "lucide-react";
+import { ImageUpload } from "@/components/image-upload";
 import { ProgressRail } from "@/components/progress-rail";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
 import { useState } from "react";
@@ -32,10 +33,12 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
 const SKU_CATEGORIES = ["Sun Care", "Serums", "Moisturizers", "Cleansers", "Toners", "Exfoliators", "Eye Care", "Lip Care", "Body Care"];
 const SKU_TYPES = ["Aerosol Spray", "Glass Dropper", "Pump Bottle", "Tube", "Jar", "Cream Tube", "Lotion Bottle", "Toner Bottle", "Stick"];
 const RAW_UNITS = ["ml", "g", "kg", "L", "pcs", "mg"];
+const PO_STATUSES = ["Pending", "Approved", "In Production", "Dispatched", "Delivered", "Delayed"] as const;
+const GST_RATES = [0, 5, 12, 18, 28] as const;
 
 const EMPTY_PACK = { name: "", vendorId: "", moq: 1000, leadTimeDays: 14, currentStock: 0, transitStock: 0, costPerUnit: 0, lastPurchaseDate: "" };
 const EMPTY_RM   = { name: "", vendorId: "", qtyPerUnit: 1, unit: "ml", currentStock: 0, costPerUnit: 0 };
-const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false };
+const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false, materialCategory: "", materialItemId: "" };
 
 function SkuDetailPage() {
   const { sku, manufacturers, vendors } = Route.useLoaderData();
@@ -62,7 +65,7 @@ function SkuDetailPage() {
   // Add Raw Material sheet
   const [rmOpen, setRmOpen] = useState(false);
   const [rmSaving, setRmSaving] = useState(false);
-  const [rmForm, setRmForm] = useState({ ...EMPTY_RM, vendorId: vendors[0]?.id ?? "" });
+  const [rmForm, setRmForm] = useState({ ...EMPTY_RM, vendorId: manufacturers[0]?.id ?? "" });
 
   // Add Production Batch sheet
   const [batchOpen, setBatchOpen] = useState(false);
@@ -73,13 +76,37 @@ function SkuDetailPage() {
   const [editBatchOpen, setEditBatchOpen] = useState(false);
   const [editBatchSaving, setEditBatchSaving] = useState(false);
   const [editBatchId, setEditBatchId] = useState<string | null>(null);
-  const [editBatchForm, setEditBatchForm] = useState({ ...EMPTY_BATCH, manufacturerId: manufacturers[0]?.id ?? "" });
+  const [editBatchForm, setEditBatchForm] = useState({ ...EMPTY_BATCH, manufacturerId: manufacturers[0]?.id ?? "", materialCategory: "", materialItemId: "" });
+
+  // Edit Packaging sheet
+  const [editPackOpen, setEditPackOpen] = useState(false);
+  const [editPackSaving, setEditPackSaving] = useState(false);
+  const [editPackId, setEditPackId] = useState<string | null>(null);
+  const [editPackForm, setEditPackForm] = useState({ ...EMPTY_PACK, vendorId: vendors[0]?.id ?? "" });
+
+  // Edit Raw Material sheet
+  const [editRmOpen, setEditRmOpen] = useState(false);
+  const [editRmSaving, setEditRmSaving] = useState(false);
+  const [editRmId, setEditRmId] = useState<string | null>(null);
+  const [editRmForm, setEditRmForm] = useState({ ...EMPTY_RM, vendorId: manufacturers[0]?.id ?? "" });
+
+  // Edit PO (from PO History) sheet
+  const [editPoOpen, setEditPoOpen] = useState(false);
+  const [editPoSaving, setEditPoSaving] = useState(false);
+  const [editPoId, setEditPoId] = useState<string | null>(null);
+  const [editPoForm, setEditPoForm] = useState({
+    vendorId: "", materialType: "", quantity: 0, rate: 0, gstRate: 18, gstAmount: 0, total: 0,
+    dispatchDate: "", expectedDelivery: "", status: "Pending" as typeof PO_STATUSES[number], paymentDue: "", notes: "",
+  });
 
   const setEdit      = (f: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEditForm(p => ({ ...p, [f]: e.target.value }));
   const setPack      = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setPackForm(p => ({ ...p, [f]: e.target.value }));
   const setRm        = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setRmForm(p => ({ ...p, [f]: e.target.value }));
   const setBatch     = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setBatchForm(p => ({ ...p, [f]: e.target.value }));
   const setEditBatch = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setEditBatchForm(p => ({ ...p, [f]: e.target.value }));
+  const setEditPack  = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setEditPackForm(p => ({ ...p, [f]: e.target.value }));
+  const setEditRm    = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setEditRmForm(p => ({ ...p, [f]: e.target.value }));
+  const setEditPo    = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setEditPoForm(p => ({ ...p, [f]: e.target.value }));
 
   const reload = () => router.invalidate();
 
@@ -101,11 +128,11 @@ function SkuDetailPage() {
   };
 
   const saveRawMaterial = async () => {
-    if (!rmForm.name || !rmForm.vendorId) { toast.error("Name and vendor are required."); return; }
+    if (!rmForm.name || !rmForm.vendorId) { toast.error("Name and manufacturer are required."); return; }
     setRmSaving(true);
     try {
       await api.skus.addRawMaterial(sku.id, { ...rmForm, qtyPerUnit: +rmForm.qtyPerUnit, currentStock: +rmForm.currentStock, costPerUnit: +rmForm.costPerUnit });
-      toast.success("Raw material added."); setRmOpen(false); setRmForm({ ...EMPTY_RM, vendorId: vendors[0]?.id ?? "" }); reload();
+      toast.success("Raw material added."); setRmOpen(false); setRmForm({ ...EMPTY_RM, vendorId: manufacturers[0]?.id ?? "" }); reload();
     } catch { toast.error("Failed to add raw material."); } finally { setRmSaving(false); }
   };
 
@@ -115,8 +142,13 @@ function SkuDetailPage() {
     }
     setBatchSaving(true);
     try {
-      await api.production.create({ ...batchForm, skuId: sku.id, quantity: +batchForm.quantity });
-      toast.success("Production batch created."); setBatchOpen(false); setBatchForm({ ...EMPTY_BATCH, manufacturerId: manufacturers[0]?.id ?? "" }); reload();
+      const matName = batchForm.materialCategory === "Packaging"
+        ? sku.packaging.find(p => p.id === batchForm.materialItemId)?.name ?? null
+        : batchForm.materialCategory === "Raw Material"
+        ? sku.rawMaterials.find(r => r.id === batchForm.materialItemId)?.name ?? null
+        : null;
+      await api.production.create({ ...batchForm, skuId: sku.id, quantity: +batchForm.quantity, materialCategory: batchForm.materialCategory || null, materialItemId: batchForm.materialItemId || null, materialItemName: matName });
+      setBatchOpen(false); setBatchForm({ ...EMPTY_BATCH, manufacturerId: manufacturers[0]?.id ?? "" }); await reload(); toast.success("Production batch created.");
     } catch { toast.error("Failed to create batch."); } finally { setBatchSaving(false); }
   };
 
@@ -140,6 +172,8 @@ function SkuDetailPage() {
       startedAt: batch.startedAt.slice(0, 10),
       expectedCompletion: batch.expectedCompletion.slice(0, 10),
       delayed: batch.delayed,
+      materialCategory: batch.materialCategory ?? "",
+      materialItemId: batch.materialItemId ?? "",
     });
     setEditBatchOpen(true);
   };
@@ -148,14 +182,63 @@ function SkuDetailPage() {
     if (!editBatchId) return;
     setEditBatchSaving(true);
     try {
-      await api.production.update(editBatchId, { ...editBatchForm, quantity: +editBatchForm.quantity });
-      toast.success("Batch updated."); setEditBatchOpen(false); reload();
+      const matName = editBatchForm.materialCategory === "Packaging"
+        ? sku.packaging.find(p => p.id === editBatchForm.materialItemId)?.name ?? null
+        : editBatchForm.materialCategory === "Raw Material"
+        ? sku.rawMaterials.find(r => r.id === editBatchForm.materialItemId)?.name ?? null
+        : null;
+      await api.production.update(editBatchId, { ...editBatchForm, quantity: +editBatchForm.quantity, materialCategory: editBatchForm.materialCategory || null, materialItemId: editBatchForm.materialItemId || null, materialItemName: matName });
+      setEditBatchOpen(false); await reload(); toast.success("Batch updated.");
     } catch { toast.error("Failed to update batch."); } finally { setEditBatchSaving(false); }
   };
 
   const deleteBatch = async (id: string) => {
     if (!confirm("Delete this production batch?")) return;
     try { await api.production.delete(id); toast.success("Deleted."); reload(); } catch { toast.error("Failed to delete."); }
+  };
+
+  const openEditPack = (p: typeof sku.packaging[0]) => {
+    setEditPackId(p.id);
+    setEditPackForm({ name: p.name, vendorId: p.vendorId, moq: p.moq, leadTimeDays: p.leadTimeDays, currentStock: p.currentStock, transitStock: p.transitStock, costPerUnit: p.costPerUnit, lastPurchaseDate: p.lastPurchaseDate ?? "" });
+    setEditPackOpen(true);
+  };
+  const saveEditPack = async () => {
+    if (!editPackId) return;
+    setEditPackSaving(true);
+    try {
+      await api.skus.updatePackaging(editPackId, { ...editPackForm, moq: +editPackForm.moq, leadTimeDays: +editPackForm.leadTimeDays, currentStock: +editPackForm.currentStock, transitStock: +editPackForm.transitStock, costPerUnit: +editPackForm.costPerUnit, lastPurchaseDate: editPackForm.lastPurchaseDate || null });
+      toast.success("Packaging updated."); setEditPackOpen(false); reload();
+    } catch { toast.error("Failed to update packaging."); } finally { setEditPackSaving(false); }
+  };
+
+  const openEditRm = (rm: typeof sku.rawMaterials[0]) => {
+    setEditRmId(rm.id);
+    setEditRmForm({ name: rm.name, vendorId: rm.vendorId, qtyPerUnit: rm.qtyPerUnit, unit: rm.unit, currentStock: rm.currentStock, costPerUnit: rm.costPerUnit });
+    setEditRmOpen(true);
+  };
+  const saveEditRm = async () => {
+    if (!editRmId) return;
+    setEditRmSaving(true);
+    try {
+      await api.skus.updateRawMaterial(editRmId, { ...editRmForm, qtyPerUnit: +editRmForm.qtyPerUnit, currentStock: +editRmForm.currentStock, costPerUnit: +editRmForm.costPerUnit });
+      toast.success("Raw material updated."); setEditRmOpen(false); reload();
+    } catch { toast.error("Failed to update raw material."); } finally { setEditRmSaving(false); }
+  };
+
+  const openEditPo = (p: typeof sku.purchaseOrders[0]) => {
+    setEditPoId(p.id);
+    setEditPoForm({ vendorId: p.vendorId, materialType: p.materialType, quantity: p.quantity, rate: p.rate, gstRate: p.gstRate ?? 18, gstAmount: p.gstAmount ?? 0, total: p.total, dispatchDate: p.dispatchDate, expectedDelivery: p.expectedDelivery, status: p.status, paymentDue: p.paymentDue != null ? String(p.paymentDue) : "", notes: p.notes ?? "" });
+    setEditPoOpen(true);
+  };
+  const saveEditPo = async () => {
+    if (!editPoId) return;
+    setEditPoSaving(true);
+    try {
+      const subtotal   = Number(editPoForm.quantity) * Number(editPoForm.rate);
+      const gstAmt     = Math.round(subtotal * Number(editPoForm.gstRate) / 100 * 100) / 100;
+      await api.purchaseOrders.update(editPoId, { ...editPoForm, quantity: +editPoForm.quantity, rate: +editPoForm.rate as any, gstRate: +editPoForm.gstRate, gstAmount: gstAmt as any, total: (subtotal + gstAmt) as any, paymentDue: editPoForm.paymentDue ? +editPoForm.paymentDue as any : null, notes: editPoForm.notes || null });
+      toast.success("Purchase order updated."); setEditPoOpen(false); reload();
+    } catch { toast.error("Failed to update purchase order."); } finally { setEditPoSaving(false); }
   };
 
   return (
@@ -212,10 +295,11 @@ function SkuDetailPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h4 className="text-sm font-semibold">{p.name}</h4>
-                    <span className="text-xs text-muted-foreground">{p.vendorId}</span>
+                    <span className="text-xs text-muted-foreground">{vendors.find(v => v.id === p.vendorId)?.name ?? p.vendorId}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="text-right text-xs text-muted-foreground">MOQ<br /><span className="font-semibold tabular-nums text-foreground">{p.moq.toLocaleString()}</span></div>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditPack(p)}><Edit className="h-3.5 w-3.5" /></Button>
                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deletePackaging(p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                   </div>
                 </div>
@@ -243,7 +327,7 @@ function SkuDetailPage() {
             {sku.rawMaterials.length > 0 && (
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr><th className="px-4 py-2.5 font-medium">Material</th><th className="px-4 py-2.5 font-medium text-right">Qty / unit</th><th className="px-4 py-2.5 font-medium text-right">Stock</th><th className="px-4 py-2.5 font-medium text-right">Cost</th><th className="px-4 py-2.5 font-medium"></th></tr>
+                  <tr><th className="px-4 py-2.5 font-medium">Material</th><th className="px-4 py-2.5 font-medium text-right">Qty / unit</th><th className="px-4 py-2.5 font-medium text-right">Stock</th><th className="px-4 py-2.5 font-medium text-right">Cost</th><th className="px-4 py-2.5 font-medium w-20"></th></tr>
                 </thead>
                 <tbody>
                   {sku.rawMaterials.map((rm) => (
@@ -253,7 +337,10 @@ function SkuDetailPage() {
                       <td className="px-4 py-2.5 text-right tabular-nums">{rm.currentStock} {rm.unit}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">₹{rm.costPerUnit}</td>
                       <td className="px-4 py-2.5 text-right">
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deleteRawMaterial(rm.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditRm(rm)}><Edit className="h-3.5 w-3.5" /></Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deleteRawMaterial(rm.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -272,22 +359,35 @@ function SkuDetailPage() {
             <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No production batches yet. Click "Create Production Batch" to track manufacturing.</div>
           )}
           <div className="space-y-4">
-            {sku.productionBatches.map((batch) => (
-              <div key={batch.id} className="rounded-xl border bg-card p-5">
-                <div className="mb-4 flex items-center justify-between gap-2">
-                  <div>
-                    <div className="font-semibold">{batch.batchNumber}</div>
-                    <p className="text-xs text-muted-foreground">{batch.quantity.toLocaleString()} units · ETA {batch.expectedCompletion}</p>
+            {[...sku.productionBatches].sort((a, b) => (a.currentStage === "Completed" ? 1 : 0) - (b.currentStage === "Completed" ? 1 : 0)).map((batch) => {
+              const completed = batch.currentStage === "Completed";
+              return (
+                <div key={batch.id} className={`rounded-xl border bg-card p-5 ${completed ? "opacity-70" : ""}`}>
+                  <div className="mb-4 flex items-center justify-between gap-2">
+                    <div>
+                      <div className="font-semibold">{batch.batchNumber}</div>
+                      <p className="text-xs text-muted-foreground">{batch.quantity.toLocaleString()} units · ETA {batch.expectedCompletion}</p>
+                      {batch.materialCategory && batch.materialItemName && (
+                        <p className="mt-0.5 text-xs text-primary font-medium">{batch.materialCategory}: {batch.materialItemName}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={completed ? "Completed" : batch.delayed ? "Delayed" : "In Production"} />
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditBatch(batch)}><Edit className="h-3.5 w-3.5" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deleteBatch(batch.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={batch.delayed ? "Delayed" : "In Production"} />
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditBatch(batch)}><Edit className="h-3.5 w-3.5" /></Button>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deleteBatch(batch.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                  </div>
+                  {completed ? (
+                    <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-950/30 px-4 py-2.5 text-sm font-medium text-green-700 dark:text-green-400">
+                      <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                      All stages complete — batch delivered to warehouse
+                    </div>
+                  ) : (
+                    <ProgressRail stages={PRODUCTION_STAGES} current={batch.currentStage as any} delayed={batch.delayed} />
+                  )}
                 </div>
-                <ProgressRail stages={PRODUCTION_STAGES} current={batch.currentStage as any} delayed={batch.delayed} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </TabsContent>
 
@@ -296,10 +396,10 @@ function SkuDetailPage() {
           <div className="overflow-x-auto rounded-xl border bg-card">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr><th className="px-4 py-2.5 font-medium">PO #</th><th className="px-4 py-2.5 font-medium">Vendor</th><th className="px-4 py-2.5 font-medium">Material</th><th className="px-4 py-2.5 font-medium text-right">Qty</th><th className="px-4 py-2.5 font-medium text-right">Total</th><th className="px-4 py-2.5 font-medium">Status</th></tr>
+                <tr><th className="px-4 py-2.5 font-medium">PO #</th><th className="px-4 py-2.5 font-medium">Vendor</th><th className="px-4 py-2.5 font-medium">Material</th><th className="px-4 py-2.5 font-medium text-right">Qty</th><th className="px-4 py-2.5 font-medium text-right">Total</th><th className="px-4 py-2.5 font-medium">Status</th><th className="px-4 py-2.5 font-medium w-16"></th></tr>
               </thead>
               <tbody>
-                {sku.purchaseOrders.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No PO history yet.</td></tr>}
+                {sku.purchaseOrders.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No PO history yet.</td></tr>}
                 {sku.purchaseOrders.map((p) => (
                   <tr key={p.id} className="border-t">
                     <td className="px-4 py-2.5 font-medium">{p.poNumber}</td>
@@ -308,6 +408,7 @@ function SkuDetailPage() {
                     <td className="px-4 py-2.5 text-right tabular-nums">{p.quantity.toLocaleString()}</td>
                     <td className="px-4 py-2.5 text-right tabular-nums">₹{p.total.toLocaleString()}</td>
                     <td className="px-4 py-2.5"><StatusBadge status={p.status} /></td>
+                    <td className="px-4 py-2.5 text-right"><Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditPo(p)}><Edit className="h-3.5 w-3.5" /></Button></td>
                   </tr>
                 ))}
               </tbody>
@@ -346,7 +447,10 @@ function SkuDetailPage() {
               </div>
             </div>
             <div className="space-y-1.5"><Label>Description</Label><Textarea rows={2} value={editForm.description} onChange={setEdit("description")} /></div>
-            <div className="space-y-1.5"><Label>Image URL</Label><Input value={editForm.image} onChange={setEdit("image")} /></div>
+            <div className="space-y-1.5">
+              <Label>Product Image</Label>
+              <ImageUpload value={editForm.image} onChange={(url) => setEditForm(f => ({ ...f, image: url }))} />
+            </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5"><Label>Current Stock</Label><Input type="number" value={editForm.currentInventory} onChange={setEdit("currentInventory")} /></div>
               <div className="space-y-1.5"><Label>Min Threshold</Label><Input type="number" value={editForm.minThreshold} onChange={setEdit("minThreshold")} /></div>
@@ -396,10 +500,10 @@ function SkuDetailPage() {
           <SheetHeader><SheetTitle>Add Raw Material</SheetTitle></SheetHeader>
           <div className="mt-6 grid grid-cols-1 gap-4">
             <div className="space-y-1.5"><Label>Material Name *</Label><Input placeholder="e.g. Avobenzone (3%)" value={rmForm.name} onChange={setRm("name")} /></div>
-            <div className="space-y-1.5"><Label>Vendor *</Label>
+            <div className="space-y-1.5"><Label>Manufacturer *</Label>
               <Select value={rmForm.vendorId} onValueChange={(v) => setRmForm(f => ({ ...f, vendorId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select vendor" /></SelectTrigger>
-                <SelectContent>{vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+                <SelectTrigger><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
+                <SelectContent>{manufacturers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -436,10 +540,41 @@ function SkuDetailPage() {
                 <SelectContent>{manufacturers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {/* Material category + item */}
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Link to Material (optional)</p>
+              <div className="space-y-1.5">
+                <Label>Material Category</Label>
+                <Select value={editBatchForm.materialCategory} onValueChange={(v) => setEditBatchForm(f => ({ ...f, materialCategory: v, materialItemId: "" }))}>
+                  <SelectTrigger><SelectValue placeholder="Select category…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Packaging">Packaging</SelectItem>
+                    <SelectItem value="Raw Material">Raw Material</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {editBatchForm.materialCategory && (
+                <div className="space-y-1.5">
+                  <Label>{editBatchForm.materialCategory === "Packaging" ? "Packaging Item" : "Raw Material"}</Label>
+                  <Select value={editBatchForm.materialItemId} onValueChange={(v) => setEditBatchForm(f => ({ ...f, materialItemId: v }))}>
+                    <SelectTrigger><SelectValue placeholder={`Select ${editBatchForm.materialCategory.toLowerCase()}…`} /></SelectTrigger>
+                    <SelectContent>
+                      {editBatchForm.materialCategory === "Packaging"
+                        ? sku.packaging.map(p => <SelectItem key={p.id} value={p.id}>{p.name} <span className="text-muted-foreground">· Stock {p.currentStock.toLocaleString()}</span></SelectItem>)
+                        : sku.rawMaterials.map(r => <SelectItem key={r.id} value={r.id}>{r.name} <span className="text-muted-foreground">· {r.currentStock} {r.unit}</span></SelectItem>)
+                      }
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
             <div className="space-y-1.5"><Label>Current Stage</Label>
               <Select value={editBatchForm.currentStage} onValueChange={(v) => setEditBatchForm(f => ({ ...f, currentStage: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PRODUCTION_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {PRODUCTION_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  <SelectItem value="Completed">✓ Completed</SelectItem>
+                </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -454,6 +589,120 @@ function SkuDetailPage() {
           <SheetFooter className="mt-6">
             <Button variant="outline" onClick={() => setEditBatchOpen(false)}>Cancel</Button>
             <Button onClick={saveEditBatch} disabled={editBatchSaving}>{editBatchSaving ? "Saving…" : "Save changes"}</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Edit Packaging Sheet ── */}
+      <Sheet key={editPackId ?? "ep"} open={editPackOpen} onOpenChange={setEditPackOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>Edit Packaging Material</SheetTitle></SheetHeader>
+          <div className="mt-6 grid grid-cols-1 gap-4">
+            <div className="space-y-1.5"><Label>Item Name *</Label><Input value={editPackForm.name} onChange={setEditPack("name")} /></div>
+            <div className="space-y-1.5"><Label>Vendor *</Label>
+              <Select value={editPackForm.vendorId} onValueChange={(v) => setEditPackForm(f => ({ ...f, vendorId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select vendor" /></SelectTrigger>
+                <SelectContent>{vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5"><Label>MOQ (units)</Label><Input type="number" value={editPackForm.moq} onChange={setEditPack("moq")} /></div>
+              <div className="space-y-1.5"><Label>Lead time (days)</Label><Input type="number" value={editPackForm.leadTimeDays} onChange={setEditPack("leadTimeDays")} /></div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5"><Label>Current Stock</Label><Input type="number" value={editPackForm.currentStock} onChange={setEditPack("currentStock")} /></div>
+              <div className="space-y-1.5"><Label>Transit Stock</Label><Input type="number" value={editPackForm.transitStock} onChange={setEditPack("transitStock")} /></div>
+              <div className="space-y-1.5"><Label>Cost / unit (₹)</Label><Input type="number" step="0.01" value={editPackForm.costPerUnit} onChange={setEditPack("costPerUnit")} /></div>
+            </div>
+            <div className="space-y-1.5"><Label>Last Purchase Date</Label><Input type="date" value={editPackForm.lastPurchaseDate} onChange={setEditPack("lastPurchaseDate")} /></div>
+          </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setEditPackOpen(false)}>Cancel</Button>
+            <Button onClick={saveEditPack} disabled={editPackSaving}>{editPackSaving ? "Saving…" : "Save changes"}</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Edit Raw Material Sheet ── */}
+      <Sheet key={editRmId ?? "er"} open={editRmOpen} onOpenChange={setEditRmOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>Edit Raw Material</SheetTitle></SheetHeader>
+          <div className="mt-6 grid grid-cols-1 gap-4">
+            <div className="space-y-1.5"><Label>Material Name *</Label><Input value={editRmForm.name} onChange={setEditRm("name")} /></div>
+            <div className="space-y-1.5"><Label>Manufacturer *</Label>
+              <Select value={editRmForm.vendorId} onValueChange={(v) => setEditRmForm(f => ({ ...f, vendorId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
+                <SelectContent>{manufacturers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5"><Label>Qty / unit</Label><Input type="number" step="0.01" value={editRmForm.qtyPerUnit} onChange={setEditRm("qtyPerUnit")} /></div>
+              <div className="space-y-1.5"><Label>Unit</Label>
+                <Select value={editRmForm.unit} onValueChange={(v) => setEditRmForm(f => ({ ...f, unit: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{RAW_UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5"><Label>Current Stock</Label><Input type="number" step="0.01" value={editRmForm.currentStock} onChange={setEditRm("currentStock")} /></div>
+            </div>
+            <div className="space-y-1.5"><Label>Cost / unit (₹)</Label><Input type="number" step="0.01" value={editRmForm.costPerUnit} onChange={setEditRm("costPerUnit")} /></div>
+          </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setEditRmOpen(false)}>Cancel</Button>
+            <Button onClick={saveEditRm} disabled={editRmSaving}>{editRmSaving ? "Saving…" : "Save changes"}</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Edit PO Sheet ── */}
+      <Sheet key={editPoId ?? "epo"} open={editPoOpen} onOpenChange={setEditPoOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>Edit Purchase Order</SheetTitle></SheetHeader>
+          <div className="mt-6 grid grid-cols-1 gap-4">
+            <div className="space-y-1.5"><Label>Vendor</Label>
+              <Select value={editPoForm.vendorId} onValueChange={(v) => setEditPoForm(f => ({ ...f, vendorId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select vendor" /></SelectTrigger>
+                <SelectContent>{vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Material Type</Label><Input value={editPoForm.materialType} onChange={setEditPo("materialType")} /></div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5"><Label>Quantity</Label><Input type="number" value={editPoForm.quantity} onChange={setEditPo("quantity")} /></div>
+              <div className="space-y-1.5"><Label>Rate (₹)</Label><Input type="number" step="0.01" value={editPoForm.rate} onChange={setEditPo("rate")} /></div>
+              <div className="space-y-1.5"><Label>GST Rate</Label>
+                <Select value={String(editPoForm.gstRate)} onValueChange={(v) => setEditPoForm(f => ({ ...f, gstRate: Number(v) }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{GST_RATES.map(g => <SelectItem key={g} value={String(g)}>{g}%</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            {(() => {
+              const subtotal = Number(editPoForm.quantity) * Number(editPoForm.rate);
+              const gstAmt   = Math.round(subtotal * Number(editPoForm.gstRate) / 100 * 100) / 100;
+              return (
+                <div className="rounded-lg border bg-muted/40 p-3 text-xs space-y-1.5">
+                  <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span className="tabular-nums">₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between text-muted-foreground"><span>GST @ {editPoForm.gstRate}%</span><span className="tabular-nums">₹{gstAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between border-t pt-1.5 font-semibold text-sm"><span>Grand Total</span><span className="tabular-nums">₹{(subtotal + gstAmt).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                </div>
+              );
+            })()}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5"><Label>Dispatch Date</Label><Input type="date" value={editPoForm.dispatchDate} onChange={setEditPo("dispatchDate")} /></div>
+              <div className="space-y-1.5"><Label>Expected Delivery</Label><Input type="date" value={editPoForm.expectedDelivery} onChange={setEditPo("expectedDelivery")} /></div>
+            </div>
+            <div className="space-y-1.5"><Label>Status</Label>
+              <Select value={editPoForm.status} onValueChange={(v) => setEditPoForm(f => ({ ...f, status: v as any }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{PO_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Payment Due (₹)</Label><Input type="number" step="0.01" placeholder="Leave blank if none" value={editPoForm.paymentDue} onChange={setEditPo("paymentDue")} /></div>
+            <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Optional notes" value={editPoForm.notes} onChange={setEditPo("notes")} /></div>
+          </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setEditPoOpen(false)}>Cancel</Button>
+            <Button onClick={saveEditPo} disabled={editPoSaving}>{editPoSaving ? "Saving…" : "Save changes"}</Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
@@ -473,10 +722,41 @@ function SkuDetailPage() {
                 <SelectContent>{manufacturers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {/* Material category + item */}
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Link to Material (optional)</p>
+              <div className="space-y-1.5">
+                <Label>Material Category</Label>
+                <Select value={batchForm.materialCategory} onValueChange={(v) => setBatchForm(f => ({ ...f, materialCategory: v, materialItemId: "" }))}>
+                  <SelectTrigger><SelectValue placeholder="Select category…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Packaging">Packaging</SelectItem>
+                    <SelectItem value="Raw Material">Raw Material</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {batchForm.materialCategory && (
+                <div className="space-y-1.5">
+                  <Label>{batchForm.materialCategory === "Packaging" ? "Packaging Item" : "Raw Material"}</Label>
+                  <Select value={batchForm.materialItemId} onValueChange={(v) => setBatchForm(f => ({ ...f, materialItemId: v }))}>
+                    <SelectTrigger><SelectValue placeholder={`Select ${batchForm.materialCategory.toLowerCase()}…`} /></SelectTrigger>
+                    <SelectContent>
+                      {batchForm.materialCategory === "Packaging"
+                        ? sku.packaging.map(p => <SelectItem key={p.id} value={p.id}>{p.name} <span className="text-muted-foreground">· Stock {p.currentStock.toLocaleString()}</span></SelectItem>)
+                        : sku.rawMaterials.map(r => <SelectItem key={r.id} value={r.id}>{r.name} <span className="text-muted-foreground">· {r.currentStock} {r.unit}</span></SelectItem>)
+                      }
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
             <div className="space-y-1.5"><Label>Current Stage</Label>
               <Select value={batchForm.currentStage} onValueChange={(v) => setBatchForm(f => ({ ...f, currentStage: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PRODUCTION_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {PRODUCTION_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  <SelectItem value="Completed">✓ Completed</SelectItem>
+                </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">

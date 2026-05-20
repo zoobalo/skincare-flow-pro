@@ -10,7 +10,8 @@ export type ProductionStage =
   | "Packing Process"
   | "QC Approved"
   | "Final Dispatch"
-  | "Warehouse Received";
+  | "Warehouse Received"
+  | "Completed";
 
 export const PRODUCTION_STAGES: ProductionStage[] = [
   "PO Generated",

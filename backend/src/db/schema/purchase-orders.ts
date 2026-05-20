@@ -22,6 +22,8 @@ export const purchaseOrders = pgTable("purchase_orders", {
   materialType:     text("material_type").notNull(),
   quantity:         integer("quantity").notNull(),
   rate:             numeric("rate", { precision: 10, scale: 2 }).notNull(),
+  gstRate:          integer("gst_rate").notNull().default(18),
+  gstAmount:        numeric("gst_amount", { precision: 14, scale: 2 }).notNull().default("0"),
   total:            numeric("total", { precision: 14, scale: 2 }).notNull(),
   dispatchDate:     date("dispatch_date", { mode: "string" }).notNull(),
   expectedDelivery: date("expected_delivery", { mode: "string" }).notNull(),

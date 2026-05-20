@@ -1,5 +1,9 @@
 import { Hono } from "hono";
 import { getAllManufacturers, getManufacturerById, createManufacturer, updateManufacturer, deleteManufacturer } from "./queries.ts";
+import { db } from "../../db/client.ts";
+import { skus } from "../../db/schema/skus.ts";
+import { productionBatches } from "../../db/schema/production.ts";
+import { eq, count } from "drizzle-orm";
 
 export const manufacturerRoutes = new Hono()
   .get("/", async (c) => {
@@ -17,13 +21,24 @@ export const manufacturerRoutes = new Hono()
     return c.json(created, 201);
   })
   .patch("/:id", async (c) => {
-    const body = await c.req.json();
-    const [updated] = await updateManufacturer(c.req.param("id"), body);
-    if (!updated) return c.json({ error: "Manufacturer not found" }, 404);
-    return c.json(updated);
+    try {
+      const body = await c.req.json();
+      const { name, location, city, email, gst, contactPerson, mobile, capacityPerMonth, qcPassRate, leadTimeDays, paymentTerms, rating, reliability, delayPercent, contacts } = body;
+      const [updated] = await updateManufacturer(c.req.param("id"), { name, location, city, email, gst, contactPerson, mobile, capacityPerMonth, qcPassRate, leadTimeDays, paymentTerms, rating, reliability, delayPercent, contacts });
+      if (!updated) return c.json({ error: "Manufacturer not found" }, 404);
+      return c.json(updated);
+    } catch (err: any) {
+      console.error("PATCH /manufacturers/:id error:", err);
+      return c.json({ error: err?.message ?? "Failed to update manufacturer" }, 500);
+    }
   })
   .delete("/:id", async (c) => {
-    const [deleted] = await deleteManufacturer(c.req.param("id"));
+    const id = c.req.param("id");
+    const [{ value: skuCount }] = await db.select({ value: count() }).from(skus).where(eq(skus.manufacturerId, id));
+    if (skuCount > 0) return c.json({ error: `Cannot delete: ${skuCount} SKU(s) are linked to this manufacturer. Reassign or delete them first.` }, 409);
+    const [{ value: batchCount }] = await db.select({ value: count() }).from(productionBatches).where(eq(productionBatches.manufacturerId, id));
+    if (batchCount > 0) return c.json({ error: `Cannot delete: ${batchCount} production batch(es) are linked to this manufacturer. Delete them first.` }, 409);
+    const [deleted] = await deleteManufacturer(id);
     if (!deleted) return c.json({ error: "Manufacturer not found" }, 404);
     return c.json({ ok: true });
   });
