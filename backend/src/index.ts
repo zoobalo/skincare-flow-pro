@@ -28,9 +28,18 @@ root.use("/uploads/*", serveStatic({ root: "./public" }));
 
 const app = root.basePath("/api");
 
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+
 app.use(
   "*",
-  cors({ origin: (origin) => (origin?.startsWith("http://localhost") ? origin : null) })
+  cors({
+    origin: (origin) => {
+      if (!origin) return null;
+      if (origin.startsWith("http://localhost")) return origin;
+      if (ALLOWED_ORIGINS.includes(origin)) return origin;
+      return null;
+    },
+  })
 );
 app.use("*", logger());
 

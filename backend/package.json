@@ -4,6 +4,8 @@
   "description": "Zoobalo backend — Drizzle ORM + PostgreSQL",
   "type": "module",
   "scripts": {
+    "build": "echo 'No build step — running tsx at runtime'",
+    "start": "tsx src/index.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/seed.ts",
@@ -15,13 +17,13 @@
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.38.3",
     "hono": "^4.12.19",
-    "pg": "^8.13.3"
+    "pg": "^8.13.3",
+    "tsx": "^4.19.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
     "@types/pg": "^8.11.13",
     "drizzle-kit": "^0.29.1",
-    "tsx": "^4.19.3",
     "typescript": "^5.8.3"
   }
 }
