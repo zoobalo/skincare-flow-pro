@@ -1,5 +1,6 @@
-import { createFileRoute, Outlet, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { getToken } from "@/lib/auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Topbar } from "@/components/topbar";
 import { Toaster } from "@/components/ui/sonner";
@@ -8,6 +9,9 @@ import { PullToRefreshIndicator } from "@/components/pull-to-refresh";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 export const Route = createFileRoute("/_app")({
+  beforeLoad: () => {
+    if (!getToken()) throw redirect({ to: "/login" });
+  },
   component: AppLayout,
 });
 

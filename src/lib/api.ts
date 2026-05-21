@@ -1,10 +1,26 @@
 const BASE = `${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api`;
 
+function authHeaders(): HeadersInit {
+  const token = localStorage.getItem("zoobalo_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function get<T>(path: string): Promise<T> {
-  const r = await fetch(BASE + path);
+  const r = await fetch(BASE + path, { headers: authHeaders() });
+  if (r.status === 401) { window.location.href = "/login"; throw new Error("Unauthorized"); }
   if (!r.ok) throw new Error(`API ${path} → ${r.status}`);
   return r.json() as Promise<T>;
 }
+
+// Auth API
+export const auth = {
+  login:  (email: string, password: string) =>
+    fetch(`${BASE}/auth/login`,  { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ email, password }) }).then(r => r.json()),
+  signup: (name: string, email: string, password: string) =>
+    fetch(`${BASE}/auth/signup`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ name, email, password }) }).then(r => r.json()),
+  me: () =>
+    fetch(`${BASE}/auth/me`, { headers: authHeaders() }).then(r => r.json()),
+};
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 
@@ -226,21 +242,21 @@ export const api = {
       return { ...coerceVendor(v), purchaseOrders: (v.purchaseOrders ?? []).map(coercePo) } as ApiVendor & { purchaseOrders: ApiPo[] };
     },
     create: (data: Partial<ApiVendor>) =>
-      fetch(`${BASE}/vendors`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/vendors`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiVendor>) =>
-      fetch(`${BASE}/vendors/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/vendors/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
-      fetch(`${BASE}/vendors/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/vendors/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   manufacturers: {
     list: async () => (await get<any[]>("/manufacturers")).map(coerceManufacturer),
     create: (data: Partial<ApiManufacturer>) =>
-      fetch(`${BASE}/manufacturers`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/manufacturers`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiManufacturer>) =>
-      fetch(`${BASE}/manufacturers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/manufacturers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
-      fetch(`${BASE}/manufacturers/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/manufacturers/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   skus: {
@@ -261,35 +277,35 @@ export const api = {
       } as ApiSkuDetail;
     },
     create: (data: Partial<ApiSku>) =>
-      fetch(`${BASE}/skus`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/skus`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiSku>) =>
-      fetch(`${BASE}/skus/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/skus/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
-      fetch(`${BASE}/skus/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/skus/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
     addPackaging: (skuId: string, data: Partial<ApiPackagingItem>) =>
-      fetch(`${BASE}/skus/${skuId}/packaging`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/skus/${skuId}/packaging`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     updatePackaging: (id: string, data: Partial<ApiPackagingItem>) =>
-      fetch(`${BASE}/skus/packaging/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/skus/packaging/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deletePackaging: (id: string) =>
-      fetch(`${BASE}/skus/packaging/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/skus/packaging/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
     addRawMaterial: (skuId: string, data: Partial<ApiRawMaterial>) =>
-      fetch(`${BASE}/skus/${skuId}/raw-materials`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/skus/${skuId}/raw-materials`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     updateRawMaterial: (id: string, data: Partial<ApiRawMaterial>) =>
-      fetch(`${BASE}/skus/raw-materials/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/skus/raw-materials/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteRawMaterial: (id: string) =>
-      fetch(`${BASE}/skus/raw-materials/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/skus/raw-materials/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
     addTest: (skuId: string, data: Partial<ApiSkuTest>) =>
-      fetch(`${BASE}/skus/${skuId}/tests`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/skus/${skuId}/tests`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     updateTest: (id: string, data: Partial<ApiSkuTest>) =>
-      fetch(`${BASE}/skus/tests/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/skus/tests/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteTest: (id: string) =>
-      fetch(`${BASE}/skus/tests/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/skus/tests/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
     addDispatch: (skuId: string, data: Partial<ApiSkuDispatch>) =>
-      fetch(`${BASE}/skus/${skuId}/dispatches`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/skus/${skuId}/dispatches`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     updateDispatch: (id: string, data: Partial<ApiSkuDispatch>) =>
-      fetch(`${BASE}/skus/dispatches/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/skus/dispatches/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteDispatch: (id: string) =>
-      fetch(`${BASE}/skus/dispatches/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/skus/dispatches/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   purchaseOrders: {
@@ -317,17 +333,17 @@ export const api = {
         body: JSON.stringify(data),
       }).then((r) => r.json()),
     delete: (id: string) =>
-      fetch(`${BASE}/purchase-orders/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/purchase-orders/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   production: {
     list: () => get<ApiBatch[]>("/production"),
     create: (data: Partial<ApiBatch>) =>
-      fetch(`${BASE}/production`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/production`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiBatch>) =>
-      fetch(`${BASE}/production/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/production/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
-      fetch(`${BASE}/production/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/production/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   shipments: {
@@ -347,41 +363,41 @@ export const api = {
   npd: {
     list: () => get<ApiNpd[]>("/npd"),
     create: (data: Partial<ApiNpd>) =>
-      fetch(`${BASE}/npd`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/npd`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiNpd>) =>
-      fetch(`${BASE}/npd/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/npd/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
-      fetch(`${BASE}/npd/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/npd/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   directory: {
     list: () => get<ApiDirectoryEntry[]>("/directory"),
     create: (data: Partial<ApiDirectoryEntry>) =>
-      fetch(`${BASE}/directory`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/directory`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiDirectoryEntry>) =>
-      fetch(`${BASE}/directory/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/directory/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
-      fetch(`${BASE}/directory/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/directory/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   productionRemarks: {
     list: () => get<ApiProductionRemark[]>("/production-remarks"),
     create: (data: Partial<ApiProductionRemark>) =>
-      fetch(`${BASE}/production-remarks`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/production-remarks`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiProductionRemark>) =>
-      fetch(`${BASE}/production-remarks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/production-remarks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
-      fetch(`${BASE}/production-remarks/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/production-remarks/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   tasks: {
     list: () => get<ApiTask[]>("/tasks"),
     create: (data: Partial<ApiTask>) =>
-      fetch(`${BASE}/tasks`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/tasks`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiTask>) =>
-      fetch(`${BASE}/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+      fetch(`${BASE}/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
-      fetch(`${BASE}/tasks/${id}`, { method: "DELETE" }).then((r) => r.json()),
+      fetch(`${BASE}/tasks/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   procurement: {

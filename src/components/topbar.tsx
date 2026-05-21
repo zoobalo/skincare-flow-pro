@@ -5,10 +5,13 @@ import { useTheme } from "@/lib/theme";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getUser, clearSession } from "@/lib/auth";
 
 export function Topbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
+  const user = getUser();
+  const initials = user?.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) ?? "?";
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:gap-3 md:px-4">
       <Button variant="ghost" size="icon" onClick={onToggleSidebar} aria-label="Toggle sidebar" className="shrink-0">
@@ -38,10 +41,10 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="ml-1 flex items-center gap-2 rounded-md p-1 hover:bg-muted">
-              <Avatar className="h-7 w-7"><AvatarFallback className="text-xs">PO</AvatarFallback></Avatar>
+              <Avatar className="h-7 w-7"><AvatarFallback className="text-xs">{initials}</AvatarFallback></Avatar>
               <div className="hidden text-left md:block">
-                <div className="text-xs font-medium leading-tight">Priya O.</div>
-                <div className="text-[10px] leading-tight text-muted-foreground">Ops Manager</div>
+                <div className="text-xs font-medium leading-tight">{user?.name ?? "—"}</div>
+                <div className="text-[10px] leading-tight text-muted-foreground">{user?.role ?? "—"}</div>
               </div>
             </button>
           </DropdownMenuTrigger>
@@ -49,7 +52,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
             <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
             <DropdownMenuItem asChild><Link to="/users">Team</Link></DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate({ to: "/login" })}>Sign out</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { clearSession(); navigate({ to: "/login" }); }}>Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

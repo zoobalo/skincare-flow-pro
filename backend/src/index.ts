@@ -20,10 +20,11 @@ import { taskRoutes } from "./modules/tasks/routes.ts";
 import { npdRoutes } from "./modules/npd/routes.ts";
 import { productionRemarkRoutes } from "./modules/production-remarks/routes.ts";
 import { directoryRoutes } from "./modules/directory/routes.ts";
+import { authRoutes } from "./modules/auth/routes.ts";
+import { requireAuth } from "./modules/auth/middleware.ts";
 
 const root = new Hono();
 
-// Serve uploaded images at /uploads/* (outside /api prefix)
 root.use("/uploads/*", serveStatic({ root: "./public" }));
 
 const app = root.basePath("/api");
@@ -45,20 +46,26 @@ app.use("*", logger());
 
 app.get("/health", (c) => c.json({ ok: true, timestamp: new Date().toISOString() }));
 
-app.route("/vendors",         vendorRoutes);
-app.route("/manufacturers",   manufacturerRoutes);
-app.route("/skus",            skuRoutes);
-app.route("/skus",            skuItemRoutes);
-app.route("/purchase-orders", purchaseOrderRoutes);
-app.route("/production",      productionRoutes);
-app.route("/shipments",       shipmentRoutes);
-app.route("/inventory",       inventoryRoutes);
-app.route("/dashboard",       dashboardRoutes);
-app.route("/users",           userRoutes);
-app.route("/procurement",     procurementRoutes);
-app.route("/upload",          uploadRoutes);
-app.route("/tasks",           taskRoutes);
-app.route("/npd",               npdRoutes);
+// Public auth routes (no token required)
+app.route("/auth", authRoutes);
+
+// All other routes require a valid JWT
+app.use("*", requireAuth);
+
+app.route("/vendors",            vendorRoutes);
+app.route("/manufacturers",      manufacturerRoutes);
+app.route("/skus",               skuRoutes);
+app.route("/skus",               skuItemRoutes);
+app.route("/purchase-orders",    purchaseOrderRoutes);
+app.route("/production",         productionRoutes);
+app.route("/shipments",          shipmentRoutes);
+app.route("/inventory",          inventoryRoutes);
+app.route("/dashboard",          dashboardRoutes);
+app.route("/users",              userRoutes);
+app.route("/procurement",        procurementRoutes);
+app.route("/upload",             uploadRoutes);
+app.route("/tasks",              taskRoutes);
+app.route("/npd",                npdRoutes);
 app.route("/production-remarks", productionRemarkRoutes);
 app.route("/directory",          directoryRoutes);
 

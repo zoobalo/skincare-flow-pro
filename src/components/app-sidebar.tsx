@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { isAdmin } from "@/lib/auth";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Factory, Boxes, PackageOpen, FlaskConical,
   GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser,
@@ -41,7 +42,7 @@ const nav = [
     { to: "/reports", label: "Reports", icon: FileBarChart },
   ]},
   { group: "Admin", items: [
-    { to: "/users", label: "User Management", icon: UserCog },
+    { to: "/users", label: "User Management", icon: UserCog, adminOnly: true },
     { to: "/settings", label: "Settings", icon: Settings },
   ]},
 ] as const;
@@ -54,6 +55,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ collapsed, mobileOpen, onMobileClose }: AppSidebarProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const admin = isAdmin();
 
   return (
     <aside
@@ -85,7 +87,7 @@ export function AppSidebar({ collapsed, mobileOpen, onMobileClose }: AppSidebarP
               <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{group.group}</p>
             )}
             <ul className="space-y-0.5">
-              {group.items.map((item) => {
+              {group.items.filter((item) => !("adminOnly" in item && item.adminOnly && !admin)).map((item) => {
                 const active = pathname === item.to || (item.to !== "/dashboard" && pathname.startsWith(item.to));
                 const Icon = item.icon;
                 return (
