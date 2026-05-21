@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 const STORAGE_KEY = "skinops-theme";
 
 export function applyTheme(theme: "light" | "dark") {
+  if (typeof window === "undefined") return;
   const root = document.documentElement;
   if (theme === "dark") root.classList.add("dark");
   else root.classList.remove("dark");

@@ -38,6 +38,7 @@ export function DataTable<T extends { id: string }>({
   const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const exportCsv = () => {
+    if (typeof window === "undefined") return;
     const header = columns.map((c) => `"${c.header}"`).join(",");
     const body = filtered.map((r) => columns.map((c) => {
       const v = c.accessor ? c.accessor(r) : "";

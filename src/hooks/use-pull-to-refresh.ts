@@ -6,6 +6,7 @@ export function usePullToRefresh(onRefresh: () => Promise<void> | void) {
   const pulling = useRef(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const THRESHOLD = 72;
 
     const onTouchStart = (e: TouchEvent) => {
