@@ -28,7 +28,7 @@ function POPrintPage() {
         }
       `}</style>
 
-      <div className="mb-4 flex items-center gap-3 print:hidden">
+      <div className="mb-4 flex flex-wrap items-center gap-3 print:hidden">
         <Button variant="outline" size="sm" asChild>
           <Link to="/purchase-orders"><ArrowLeft className="mr-1.5 h-4 w-4" />Back</Link>
         </Button>

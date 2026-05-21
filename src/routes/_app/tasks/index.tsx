@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { api, type ApiTask, type ApiSku } from "@/lib/api";
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/_app/tasks/")({
     const [tasks, skus] = await Promise.all([api.tasks.list(), api.skus.list()]);
     return { tasks, skus };
   },
+  pendingComponent: PageSkeleton,
   component: TasksPage,
   head: () => ({ meta: [{ title: "Task Management — Zoobalo" }] }),
 });
@@ -253,7 +255,7 @@ function TasksPage() {
               <Input placeholder="e.g. Follow up with vendor on PO delay" value={form.title} onChange={setF("title")} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v as ApiTask["status"] }))}>

@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { api, type ApiNpd, type ApiNpdImageGroup } from "@/lib/api";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/npd/")({
   loader: () => api.npd.list(),
+  pendingComponent: PageSkeleton,
   component: NpdPage,
   head: () => ({ meta: [{ title: "NPD — Zoobalo" }] }),
 });

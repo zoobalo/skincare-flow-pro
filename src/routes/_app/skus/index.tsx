@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/_app/skus/")({
     const [skus, manufacturers] = await Promise.all([api.skus.list(), api.manufacturers.list()]);
     return { skus, manufacturers };
   },
+  pendingComponent: PageSkeleton,
   component: SkuListPage,
   head: () => ({ meta: [{ title: "SKU Management — Zoobalo" }] }),
 });

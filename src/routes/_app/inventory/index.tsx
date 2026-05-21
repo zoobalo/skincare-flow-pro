@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { KpiCard } from "@/components/kpi-card";
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/_app/inventory/")({
       }));
     return { summary, packaging, rawMaterials, skus, vendorMap, stockValue, lowItems, agingData };
   },
+  pendingComponent: PageSkeleton,
   component: InventoryPage,
   head: () => ({ meta: [{ title: "Inventory — Zoobalo" }] }),
 });

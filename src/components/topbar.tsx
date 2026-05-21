@@ -10,22 +10,31 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <Button variant="ghost" size="icon" onClick={onToggleSidebar} aria-label="Toggle sidebar">
+    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:gap-3 md:px-4">
+      <Button variant="ghost" size="icon" onClick={onToggleSidebar} aria-label="Toggle sidebar" className="shrink-0">
         <Menu className="h-4 w-4" />
       </Button>
+
       <div className="relative hidden flex-1 max-w-md md:block">
         <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input placeholder="Search SKUs, vendors, POs, batches…" className="pl-8" />
       </div>
+
       <div className="ml-auto flex items-center gap-1">
+        {/* Mobile search button */}
+        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Search">
+          <Search className="h-4 w-4" />
+        </Button>
+
         <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
+
         <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
           <Bell className="h-4 w-4" />
           <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
         </Button>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="ml-1 flex items-center gap-2 rounded-md p-1 hover:bg-muted">

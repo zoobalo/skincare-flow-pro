@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { api, type ApiProductionRemark, type ApiSku } from "@/lib/api";
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/_app/production-remarks/")({
     const [remarks, skus] = await Promise.all([api.productionRemarks.list(), api.skus.list()]);
     return { remarks, skus };
   },
+  pendingComponent: PageSkeleton,
   component: ProductionRemarksPage,
   head: () => ({ meta: [{ title: "Production Remarks — Zoobalo" }] }),
 });
@@ -156,7 +158,7 @@ function ProductionRemarksPage() {
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/40 text-xs text-muted-foreground uppercase tracking-wide">

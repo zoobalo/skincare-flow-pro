@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, Link, useRouter, useNavigate } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { api, type ApiPo } from "@/lib/api";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/_app/purchase-orders/")({
     ]);
     return { purchaseOrders, vendors, skus };
   },
+  pendingComponent: PageSkeleton,
   component: POPage,
   head: () => ({ meta: [{ title: "Purchase Orders — Zoobalo" }] }),
 });
@@ -250,7 +252,7 @@ function POPage() {
               </Select>
             </div>
             <div className="space-y-1.5"><Label>Material Type</Label><Input value={editForm.materialType} onChange={set("materialType")} /></div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5"><Label>Quantity</Label><Input type="number" value={editForm.quantity} onChange={set("quantity")} /></div>
               <div className="space-y-1.5"><Label>Rate (₹)</Label><Input type="number" step="0.01" value={editForm.rate} onChange={set("rate")} /></div>
               <div className="space-y-1.5">
@@ -275,7 +277,7 @@ function POPage() {
                 </div>
               );
             })()}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Dispatch Date</Label><Input type="date" value={editForm.dispatchDate} onChange={set("dispatchDate")} /></div>
               <div className="space-y-1.5"><Label>Expected Delivery</Label><Input type="date" value={editForm.expectedDelivery} onChange={set("expectedDelivery")} /></div>
             </div>
@@ -294,7 +296,7 @@ function POPage() {
               return (
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary">Payment Tracking</p>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <Label>Amount Paid (₹)</Label>
                       <Input type="number" step="0.01" min="0" placeholder="0.00" value={editForm.amountPaid} onChange={set("amountPaid")} />

@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { api } from "@/lib/api";
@@ -13,6 +14,7 @@ import type { ApiManufacturer, ApiContact } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/manufacturers/")({
   loader: () => api.manufacturers.list(),
+  pendingComponent: PageSkeleton,
   component: ManufacturersPage,
   head: () => ({ meta: [{ title: "Manufacturers — Zoobalo" }] }),
 });

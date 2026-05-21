@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
@@ -14,6 +15,7 @@ import type { ApiContact } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/vendors/")({
   loader: () => api.vendors.list(),
+  pendingComponent: PageSkeleton,
   component: VendorsPage,
   head: () => ({ meta: [{ title: "Vendors — Zoobalo" }] }),
 });
@@ -166,15 +168,15 @@ function VendorsPage() {
               <Label>Vendor Name *</Label>
               <Input value={editForm.name} onChange={setEdit("name")} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Contact Person</Label><Input value={editForm.contactPerson} onChange={setEdit("contactPerson")} /></div>
               <div className="space-y-1.5"><Label>Mobile</Label><Input value={editForm.mobile} onChange={setEdit("mobile")} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Email *</Label><Input type="email" value={editForm.email} onChange={setEdit("email")} /></div>
               <div className="space-y-1.5"><Label>GST Number</Label><Input value={editForm.gst} onChange={setEdit("gst")} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>City *</Label><Input value={editForm.city} onChange={setEdit("city")} /></div>
               <div className="space-y-1.5"><Label>Address</Label><Input value={editForm.address} onChange={setEdit("address")} /></div>
             </div>
@@ -182,11 +184,11 @@ function VendorsPage() {
               <Label>Materials Supplied (comma separated)</Label>
               <Input value={editForm.materials} onChange={setEdit("materials")} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Lead time (days)</Label><Input type="number" value={editForm.leadTimeDays} onChange={setEdit("leadTimeDays")} /></div>
               <div className="space-y-1.5"><Label>Payment Terms</Label><Input value={editForm.paymentTerms} onChange={setEdit("paymentTerms")} /></div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5"><Label>Rating (0–5)</Label><Input type="number" step="0.1" min="0" max="5" value={editForm.rating} onChange={setEdit("rating")} /></div>
               <div className="space-y-1.5"><Label>Reliability %</Label><Input type="number" min="0" max="100" value={editForm.reliability} onChange={setEdit("reliability")} /></div>
               <div className="space-y-1.5"><Label>Delay %</Label><Input type="number" min="0" max="100" value={editForm.delayPercent} onChange={setEdit("delayPercent")} /></div>
@@ -213,7 +215,7 @@ function VendorsPage() {
               <Label>Vendor Name *</Label>
               <Input placeholder="e.g. Alpha Aluminium Co." value={form.name} onChange={set("name")} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Contact Person</Label>
                 <Input placeholder="Full name" value={form.contactPerson} onChange={set("contactPerson")} />
@@ -223,7 +225,7 @@ function VendorsPage() {
                 <Input placeholder="+91 98..." value={form.mobile} onChange={set("mobile")} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Email *</Label>
                 <Input type="email" placeholder="vendor@company.com" value={form.email} onChange={set("email")} />
@@ -233,7 +235,7 @@ function VendorsPage() {
                 <Input placeholder="27AAAPL1234C1Z5" value={form.gst} onChange={set("gst")} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>City *</Label>
                 <Input placeholder="Mumbai" value={form.city} onChange={set("city")} />
@@ -247,7 +249,7 @@ function VendorsPage() {
               <Label>Materials Supplied (comma separated)</Label>
               <Input placeholder="Aluminium Can, Valve, Cap" value={form.materials} onChange={set("materials")} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Lead time (days)</Label>
                 <Input type="number" value={form.leadTimeDays} onChange={set("leadTimeDays")} />
@@ -257,7 +259,7 @@ function VendorsPage() {
                 <Input placeholder="Net 30" value={form.paymentTerms} onChange={set("paymentTerms")} />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>Rating (0–5)</Label>
                 <Input type="number" step="0.1" min="0" max="5" value={form.rating} onChange={set("rating")} />

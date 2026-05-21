@@ -120,7 +120,7 @@ export function PODocument(props: PODocumentProps) {
   return (
     <div
       id="po-document"
-      className="mx-auto max-w-4xl rounded-xl border bg-white text-black shadow-sm"
+      className="mx-auto w-full max-w-4xl rounded-xl border bg-white text-black shadow-sm overflow-x-auto"
       style={{ fontFamily: "Arial, sans-serif", fontSize: 13 }}
     >
       {/* Company header */}

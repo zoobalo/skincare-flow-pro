@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/users/")({
   loader: () => api.users.list(),
+  pendingComponent: PageSkeleton,
   component: UsersPage,
   head: () => ({ meta: [{ title: "User Management — Zoobalo" }] }),
 });

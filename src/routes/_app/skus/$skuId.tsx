@@ -499,7 +499,7 @@ function SkuDetailPage() {
           {(sku as any).tests?.length === 0 && (
             <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No tests yet. Click "Add Test" to record test results.</div>
           )}
-          <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="overflow-x-auto rounded-xl border bg-card">
             {(sku as any).tests?.length > 0 && (
               <table className="w-full text-sm">
                 <thead>
@@ -609,7 +609,7 @@ function SkuDetailPage() {
               <Label>Goods Name *</Label>
               <Input placeholder="e.g. SPF 50 Sunscreen 50ml" value={dispatchForm.goodsName} onChange={(e) => setDispatchForm(f => ({ ...f, goodsName: e.target.value }))} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Number of Units *</Label>
                 <Input type="number" value={dispatchForm.quantity || ""} onChange={(e) => setDispatchForm(f => ({ ...f, quantity: +e.target.value }))} placeholder="0" />
@@ -619,7 +619,7 @@ function SkuDetailPage() {
                 <Input type="date" value={dispatchForm.dispatchDate} onChange={(e) => setDispatchForm(f => ({ ...f, dispatchDate: e.target.value }))} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>From</Label>
                 <Input placeholder="Origin location" value={dispatchForm.from} onChange={(e) => setDispatchForm(f => ({ ...f, from: e.target.value }))} />
@@ -629,7 +629,7 @@ function SkuDetailPage() {
                 <Input placeholder="Destination location" value={dispatchForm.to} onChange={(e) => setDispatchForm(f => ({ ...f, to: e.target.value }))} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Transporter Name</Label>
                 <Input placeholder="e.g. BlueDart, DTDC" value={(dispatchForm as any).transporterName} onChange={(e) => setDispatchForm(f => ({ ...f, transporterName: e.target.value }))} />
@@ -639,7 +639,7 @@ function SkuDetailPage() {
                 <Input placeholder="e.g. MH12AB1234" value={(dispatchForm as any).vehicleNumber} onChange={(e) => setDispatchForm(f => ({ ...f, vehicleNumber: e.target.value }))} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>LR / Docket Number</Label>
                 <Input placeholder="Lorry receipt number" value={(dispatchForm as any).lrNumber} onChange={(e) => setDispatchForm(f => ({ ...f, lrNumber: e.target.value }))} />
@@ -723,7 +723,7 @@ function SkuDetailPage() {
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader><SheetTitle>Edit SKU — {sku.code}</SheetTitle></SheetHeader>
           <div className="mt-6 grid grid-cols-1 gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>SKU Code</Label><Input value={editForm.code} onChange={setEdit("code")} /></div>
               <div className="space-y-1.5"><Label>Category</Label>
                 <Select value={editForm.category} onValueChange={(v) => setEditForm(f => ({ ...f, category: v }))}>
@@ -733,7 +733,7 @@ function SkuDetailPage() {
               </div>
             </div>
             <div className="space-y-1.5"><Label>Product Name</Label><Input value={editForm.name} onChange={setEdit("name")} /></div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Type</Label>
                 <Select value={editForm.type} onValueChange={(v) => setEditForm(f => ({ ...f, type: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -752,7 +752,7 @@ function SkuDetailPage() {
               <Label>Product Image</Label>
               <ImageUpload value={editForm.image} onChange={(url) => setEditForm(f => ({ ...f, image: url }))} />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5"><Label>Current Stock</Label><Input type="number" value={editForm.currentInventory} onChange={setEdit("currentInventory")} /></div>
               <div className="space-y-1.5"><Label>Min Threshold</Label><Input type="number" value={editForm.minThreshold} onChange={setEdit("minThreshold")} /></div>
               <div className="space-y-1.5"><Label>Lead time (days)</Label><Input type="number" value={editForm.productionTimelineDays} onChange={setEdit("productionTimelineDays")} /></div>
@@ -777,11 +777,11 @@ function SkuDetailPage() {
                 <SelectContent>{vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>MOQ (units)</Label><Input type="number" value={packForm.moq} onChange={setPack("moq")} /></div>
               <div className="space-y-1.5"><Label>Lead time (days)</Label><Input type="number" value={packForm.leadTimeDays} onChange={setPack("leadTimeDays")} /></div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5"><Label>Current Stock</Label><Input type="number" value={packForm.currentStock} onChange={setPack("currentStock")} /></div>
               <div className="space-y-1.5"><Label>Transit Stock</Label><Input type="number" value={packForm.transitStock} onChange={setPack("transitStock")} /></div>
               <div className="space-y-1.5"><Label>Cost / unit (₹)</Label><Input type="number" step="0.01" value={packForm.costPerUnit} onChange={setPack("costPerUnit")} /></div>
@@ -808,7 +808,7 @@ function SkuDetailPage() {
                 <SelectContent>{manufacturers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5"><Label>Qty / unit</Label><Input type="number" step="0.01" value={rmForm.qtyPerUnit} onChange={setRm("qtyPerUnit")} /></div>
               <div className="space-y-1.5"><Label>Unit</Label>
                 <Select value={rmForm.unit} onValueChange={(v) => setRmForm(f => ({ ...f, unit: v }))}>
@@ -832,7 +832,7 @@ function SkuDetailPage() {
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader><SheetTitle>Edit Production Batch</SheetTitle></SheetHeader>
           <div className="mt-6 grid grid-cols-1 gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Batch Number</Label><Input value={editBatchForm.batchNumber} onChange={setEditBatch("batchNumber")} /></div>
               <div className="space-y-1.5"><Label>Quantity (units)</Label><Input type="number" value={editBatchForm.quantity} onChange={setEditBatch("quantity")} /></div>
             </div>
@@ -905,7 +905,7 @@ function SkuDetailPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Start Date</Label><Input type="date" value={editBatchForm.startedAt} onChange={setEditBatch("startedAt")} /></div>
               <div className="space-y-1.5"><Label>Expected Completion</Label><Input type="date" value={editBatchForm.expectedCompletion} onChange={setEditBatch("expectedCompletion")} /></div>
             </div>
@@ -937,11 +937,11 @@ function SkuDetailPage() {
                 <SelectContent>{vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>MOQ (units)</Label><Input type="number" value={editPackForm.moq} onChange={setEditPack("moq")} /></div>
               <div className="space-y-1.5"><Label>Lead time (days)</Label><Input type="number" value={editPackForm.leadTimeDays} onChange={setEditPack("leadTimeDays")} /></div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5"><Label>Current Stock</Label><Input type="number" value={editPackForm.currentStock} onChange={setEditPack("currentStock")} /></div>
               <div className="space-y-1.5"><Label>Transit Stock</Label><Input type="number" value={editPackForm.transitStock} onChange={setEditPack("transitStock")} /></div>
               <div className="space-y-1.5"><Label>Cost / unit (₹)</Label><Input type="number" step="0.01" value={editPackForm.costPerUnit} onChange={setEditPack("costPerUnit")} /></div>
@@ -968,7 +968,7 @@ function SkuDetailPage() {
                 <SelectContent>{manufacturers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5"><Label>Qty / unit</Label><Input type="number" step="0.01" value={editRmForm.qtyPerUnit} onChange={setEditRm("qtyPerUnit")} /></div>
               <div className="space-y-1.5"><Label>Unit</Label>
                 <Select value={editRmForm.unit} onValueChange={(v) => setEditRmForm(f => ({ ...f, unit: v }))}>
@@ -999,7 +999,7 @@ function SkuDetailPage() {
               </Select>
             </div>
             <div className="space-y-1.5"><Label>Material Type</Label><Input value={editPoForm.materialType} onChange={setEditPo("materialType")} /></div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5"><Label>Quantity</Label><Input type="number" value={editPoForm.quantity} onChange={setEditPo("quantity")} /></div>
               <div className="space-y-1.5"><Label>Rate (₹)</Label><Input type="number" step="0.01" value={editPoForm.rate} onChange={setEditPo("rate")} /></div>
               <div className="space-y-1.5"><Label>GST Rate</Label>
@@ -1020,7 +1020,7 @@ function SkuDetailPage() {
                 </div>
               );
             })()}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Dispatch Date</Label><Input type="date" value={editPoForm.dispatchDate} onChange={setEditPo("dispatchDate")} /></div>
               <div className="space-y-1.5"><Label>Expected Delivery</Label><Input type="date" value={editPoForm.expectedDelivery} onChange={setEditPo("expectedDelivery")} /></div>
             </div>
@@ -1045,7 +1045,7 @@ function SkuDetailPage() {
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader><SheetTitle>Create Production Batch</SheetTitle></SheetHeader>
           <div className="mt-6 grid grid-cols-1 gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Batch Number *</Label><Input placeholder="e.g. BATCH-2026-001" value={batchForm.batchNumber} onChange={setBatch("batchNumber")} /></div>
               <div className="space-y-1.5"><Label>Quantity (units)</Label><Input type="number" value={batchForm.quantity} onChange={setBatch("quantity")} /></div>
             </div>
@@ -1118,7 +1118,7 @@ function SkuDetailPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Start Date *</Label><Input type="date" value={batchForm.startedAt} onChange={setBatch("startedAt")} /></div>
               <div className="space-y-1.5"><Label>Expected Completion *</Label><Input type="date" value={batchForm.expectedCompletion} onChange={setBatch("expectedCompletion")} /></div>
             </div>

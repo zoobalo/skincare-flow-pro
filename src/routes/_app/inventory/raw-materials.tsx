@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { api } from "@/lib/api";
@@ -8,6 +9,7 @@ export const Route = createFileRoute("/_app/inventory/raw-materials")({
     const vendorMap = Object.fromEntries(vendors.map((v) => [v.id, v.name]));
     return { items, vendorMap };
   },
+  pendingComponent: PageSkeleton,
   component: RawPage,
   head: () => ({ meta: [{ title: "Raw Materials — Zoobalo" }] }),
 });

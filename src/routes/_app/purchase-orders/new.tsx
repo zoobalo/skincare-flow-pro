@@ -260,7 +260,7 @@ function NewPOWizard() {
                     onChange={(e) => setItem(idx, "description", e.target.value)}
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="space-y-1.5">
                     <Label>Quantity</Label>
                     <Input type="number" value={item.qty || ""} onChange={(e) => setItem(idx, "qty", +e.target.value)} placeholder="0" />

@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/_app/procurement/")({
     const totalDue = duePayments.reduce((acc, p) => acc + (p.paymentDue ?? 0), 0);
     return { mrpAlerts, pendingApprovals, duePayments, totalDue };
   },
+  pendingComponent: PageSkeleton,
   component: ProcurementPage,
   head: () => ({ meta: [{ title: "Procurement — Zoobalo" }] }),
 });

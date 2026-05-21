@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { fmtDate } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
@@ -43,6 +44,7 @@ export const Route = createFileRoute("/_app/dashboard")({
       recentPOs: recentPOs.slice(0, 6),
     };
   },
+  pendingComponent: PageSkeleton,
   component: DashboardPage,
   head: () => ({ meta: [{ title: "Dashboard — Zoobalo" }, { name: "description", content: "Operations overview: KPIs, charts, and quick actions." }] }),
 });
