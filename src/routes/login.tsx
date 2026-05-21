@@ -9,10 +9,13 @@ import { saveSession, getToken } from "@/lib/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
-  beforeLoad: () => {
-    // Client-only: if already logged in, skip the login page
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
+  beforeLoad: ({ search }) => {
+    // Client-only: if already logged in, go back to where they came from
     if (typeof window !== "undefined" && getToken()) {
-      throw redirect({ to: "/dashboard" });
+      throw redirect({ to: search.redirect ?? "/dashboard" });
     }
   },
   component: LoginPage,

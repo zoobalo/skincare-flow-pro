@@ -12,8 +12,8 @@ export const Route = createFileRoute("/_app")({
   // Redirect to login on both server and client when no token.
   // On the server, getToken() always returns null (no localStorage),
   // so SSR never renders authenticated pages — no empty-data hydration issues.
-  beforeLoad: () => {
-    if (!getToken()) throw redirect({ to: "/login" });
+  beforeLoad: ({ location }) => {
+    if (!getToken()) throw redirect({ to: "/login", search: { redirect: location.pathname } });
   },
   component: AppLayout,
 });
