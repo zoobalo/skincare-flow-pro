@@ -5,7 +5,7 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
   return (
     <div className="grid min-h-screen w-full grid-cols-1 bg-background lg:grid-cols-2">
       <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary/90 via-primary to-primary/70 p-10 text-primary-foreground lg:flex">
-        <Link to="/login" className="flex items-center gap-2">
+        <Link to="/login" search={{ redirect: undefined }} className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-foreground/15 backdrop-blur">
             <Sparkles className="h-5 w-5" />
           </div>

@@ -52,7 +52,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
             <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
             <DropdownMenuItem asChild><Link to="/users">Team</Link></DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { clearSession(); navigate({ to: "/login" }); }}>Sign out</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { clearSession(); navigate({ to: "/login", search: { redirect: undefined } }); }}>Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

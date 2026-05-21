@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_app")({
   beforeLoad: () => {
     // Client-only — localStorage is unavailable during SSR
     if (typeof window !== "undefined" && !getToken()) {
-      throw redirect({ to: "/login" });
+      throw redirect({ to: "/login", search: { redirect: undefined } });
     }
   },
   component: AppLayout,

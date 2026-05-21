@@ -16,7 +16,7 @@ function ForgotPage() {
     <AuthShell
       title="Reset your password"
       subtitle="We'll email you a secure reset link"
-      footer={<><Link to="/login" className="font-medium text-primary hover:underline">Back to sign in</Link></>}
+      footer={<><Link to="/login" search={{ redirect: undefined }} className="font-medium text-primary hover:underline">Back to sign in</Link></>}
     >
       {sent ? (
         <div className="rounded-lg border bg-success/10 p-4 text-sm text-foreground">

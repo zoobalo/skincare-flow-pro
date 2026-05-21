@@ -39,7 +39,7 @@ function SignupPage() {
     <AuthShell
       title="Create your account"
       subtitle="Join your Zoobalo workspace"
-      footer={<>Already have an account? <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link></>}
+      footer={<>Already have an account? <Link to="/login" search={{ redirect: undefined }} className="font-medium text-primary hover:underline">Sign in</Link></>}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
