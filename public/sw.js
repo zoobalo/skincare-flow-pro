@@ -1,8 +1,8 @@
-const STATIC_CACHE = "zoobalo-static-v3";
-const API_CACHE    = "zoobalo-api-v3";
+const STATIC_CACHE = "zoobalo-static-v4";
+const API_CACHE    = "zoobalo-api-v4";
 const ALL_CACHES   = [STATIC_CACHE, API_CACHE];
 
-const STATIC_PRECACHE = ["/", "/dashboard", "/manifest.json", "/icons/icon.svg"];
+const STATIC_PRECACHE = ["/manifest.json", "/icons/icon.svg"];
 
 // Read-only API routes safe to cache
 const CACHEABLE_API = [
@@ -26,7 +26,9 @@ function isCacheableApi(url) {
 // ── Install: pre-cache static shell ──────────────────────────────────────────
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(STATIC_CACHE).then((c) => c.addAll(STATIC_PRECACHE))
+    caches.open(STATIC_CACHE).then((c) =>
+      Promise.allSettled(STATIC_PRECACHE.map((url) => c.add(url)))
+    )
   );
   self.skipWaiting();
 });
