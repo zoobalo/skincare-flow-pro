@@ -1,4 +1,4 @@
-import { pgTable, text, integer, numeric, timestamp, date, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, numeric, timestamp, date, boolean, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { manufacturers } from "./manufacturers.ts";
 import { purchaseOrders } from "./purchase-orders.ts";
@@ -18,7 +18,10 @@ export const skus = pgTable("skus", {
   productionTimelineDays: integer("production_timeline_days").notNull().default(30),
   createdAt:             timestamp("created_at").defaultNow().notNull(),
   updatedAt:             timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("sku_manufacturer_idx").on(t.manufacturerId),
+  index("sku_category_idx").on(t.category),
+]);
 
 export const packagingItems = pgTable("packaging_items", {
   id:               text("id").primaryKey(),
@@ -32,7 +35,9 @@ export const packagingItems = pgTable("packaging_items", {
   transitDeliveryDate:  date("transit_delivery_date", { mode: "string" }),
   costPerUnit:          numeric("cost_per_unit", { precision: 10, scale: 2 }).notNull(),
   lastPurchaseDate:     date("last_purchase_date", { mode: "string" }),
-});
+}, (t) => [
+  index("packaging_sku_idx").on(t.skuId),
+]);
 
 export const skuRawMaterials = pgTable("sku_raw_materials", {
   id:          text("id").primaryKey(),
@@ -43,7 +48,9 @@ export const skuRawMaterials = pgTable("sku_raw_materials", {
   unit:        text("unit").notNull(),
   currentStock: numeric("current_stock", { precision: 12, scale: 4 }).notNull().default("0"),
   costPerUnit: numeric("cost_per_unit", { precision: 10, scale: 2 }).notNull(),
-});
+}, (t) => [
+  index("raw_material_sku_idx").on(t.skuId),
+]);
 
 export const skuDispatches = pgTable("sku_dispatches", {
   id:               text("id").primaryKey(),
@@ -62,7 +69,9 @@ export const skuDispatches = pgTable("sku_dispatches", {
   notes:            text("notes").notNull().default(""),
   createdAt:        timestamp("created_at").defaultNow().notNull(),
   updatedAt:        timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("dispatch_sku_idx").on(t.skuId),
+]);
 
 export const skuTests = pgTable("sku_tests", {
   id:         text("id").primaryKey(),
@@ -71,7 +80,9 @@ export const skuTests = pgTable("sku_tests", {
   result:     text("result").notNull().default(""),
   createdAt:  timestamp("created_at").defaultNow().notNull(),
   updatedAt:  timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("test_sku_idx").on(t.skuId),
+]);
 
 export const skusRelations = relations(skus, ({ one, many }) => ({
   manufacturer:    one(manufacturers, { fields: [skus.manufacturerId], references: [manufacturers.id] }),

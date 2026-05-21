@@ -1,4 +1,4 @@
-import { pgTable, text, integer, numeric, timestamp, date, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, numeric, timestamp, date, jsonb, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { vendors } from "./vendors.ts";
 import { skus } from "./skus.ts";
@@ -48,7 +48,12 @@ export const purchaseOrders = pgTable("purchase_orders", {
   terms:            text("terms"),
   createdAt:        timestamp("created_at").defaultNow().notNull(),
   updatedAt:        timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("po_vendor_idx").on(t.vendorId),
+  index("po_sku_idx").on(t.skuId),
+  index("po_status_idx").on(t.status),
+  index("po_dispatch_date_idx").on(t.dispatchDate),
+]);
 
 export const purchaseOrdersRelations = relations(purchaseOrders, ({ one }) => ({
   vendor: one(vendors, { fields: [purchaseOrders.vendorId], references: [vendors.id] }),

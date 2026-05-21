@@ -1,4 +1,4 @@
-import { pgTable, text, numeric, timestamp, date } from "drizzle-orm/pg-core";
+import { pgTable, text, numeric, timestamp, date, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { purchaseOrders } from "./purchase-orders.ts";
 
@@ -21,7 +21,10 @@ export const shipments = pgTable("shipments", {
   linkedPoNumber:   text("linked_po_number").references(() => purchaseOrders.poNumber),
   createdAt:        timestamp("created_at").defaultNow().notNull(),
   updatedAt:        timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("shipment_status_idx").on(t.status),
+  index("shipment_po_idx").on(t.linkedPoNumber),
+]);
 
 export const shipmentsRelations = relations(shipments, ({ one }) => ({
   purchaseOrder: one(purchaseOrders, {

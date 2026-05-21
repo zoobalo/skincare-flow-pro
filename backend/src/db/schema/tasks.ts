@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, date } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, date, index } from "drizzle-orm/pg-core";
 
 export const TASK_STATUSES  = ["None", "Initiated", "Done"] as const;
 export const TASK_URGENCIES = ["Low", "Medium", "High", "Very High"] as const;
@@ -19,7 +19,10 @@ export const tasks = pgTable("tasks", {
   deadlineDate: date("deadline_date", { mode: "string" }),
   createdAt:   timestamp("created_at").defaultNow().notNull(),
   updatedAt:   timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("task_status_idx").on(t.status),
+  index("task_urgency_idx").on(t.urgency),
+]);
 
 export type Task    = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;

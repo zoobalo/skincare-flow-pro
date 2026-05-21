@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, timestamp, date, serial, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, timestamp, date, serial, jsonb, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { skus } from "./skus.ts";
 import { manufacturers } from "./manufacturers.ts";
@@ -36,7 +36,13 @@ export const productionBatches = pgTable("production_batches", {
   comment:            text("comment"),
   createdAt:          timestamp("created_at").defaultNow().notNull(),
   updatedAt:          timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("batch_sku_idx").on(t.skuId),
+  index("batch_manufacturer_idx").on(t.manufacturerId),
+  index("batch_stage_idx").on(t.currentStage),
+  index("batch_delayed_idx").on(t.delayed),
+  index("batch_started_at_idx").on(t.startedAt),
+]);
 
 export const batchStageHistory = pgTable("batch_stage_history", {
   id:      serial("id").primaryKey(),
@@ -44,7 +50,9 @@ export const batchStageHistory = pgTable("batch_stage_history", {
   stage:   text("stage").notNull().$type<ProductionStage>(),
   date:    date("date", { mode: "string" }).notNull(),
   note:    text("note"),
-});
+}, (t) => [
+  index("stage_history_batch_idx").on(t.batchId),
+]);
 
 export const productionBatchesRelations = relations(productionBatches, ({ one, many }) => ({
   sku:          one(skus,          { fields: [productionBatches.skuId],          references: [skus.id] }),
