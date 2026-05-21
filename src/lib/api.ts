@@ -9,7 +9,11 @@ function authHeaders(): HeadersInit {
 async function get<T>(path: string): Promise<T> {
   if (typeof window === "undefined") return [] as unknown as T;
   const r = await fetch(BASE + path, { headers: authHeaders() });
-  if (r.status === 401) { window.location.href = "/login"; throw new Error("Unauthorized"); }
+  if (r.status === 401) {
+    const dest = encodeURIComponent(window.location.pathname);
+    window.location.href = `/login?redirect=${dest}`;
+    throw new Error("Unauthorized");
+  }
   if (!r.ok) throw new Error(`API ${path} → ${r.status}`);
   return r.json() as Promise<T>;
 }
