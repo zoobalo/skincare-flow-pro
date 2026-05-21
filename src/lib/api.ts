@@ -1,13 +1,14 @@
 const BASE = `${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api`;
 
 function authHeaders(): HeadersInit {
+  if (typeof window === "undefined") return {};
   const token = localStorage.getItem("zoobalo_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function get<T>(path: string): Promise<T> {
   const r = await fetch(BASE + path, { headers: authHeaders() });
-  if (r.status === 401) { window.location.href = "/login"; throw new Error("Unauthorized"); }
+  if (r.status === 401) { if (typeof window !== "undefined") window.location.href = "/login"; throw new Error("Unauthorized"); }
   if (!r.ok) throw new Error(`API ${path} → ${r.status}`);
   return r.json() as Promise<T>;
 }
