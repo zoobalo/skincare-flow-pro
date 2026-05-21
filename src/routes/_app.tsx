@@ -15,6 +15,9 @@ export const Route = createFileRoute("/_app")({
       throw redirect({ to: "/login" });
     }
   },
+  // staleTime: 0 forces client to always re-run loaders after SSR hydration,
+  // preventing empty [] from SSR being treated as fresh data by the client.
+  staleTime: 0,
   component: AppLayout,
 });
 
