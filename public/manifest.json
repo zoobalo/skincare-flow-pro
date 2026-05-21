@@ -1,0 +1,20 @@
+{
+  "name": "Zoobalo — Procurement & Operations",
+  "short_name": "Zoobalo",
+  "description": "Enterprise procurement, inventory, and production management for skincare manufacturing.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#6466f1",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "en"
+}
