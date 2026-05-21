@@ -1,5 +1,5 @@
-const STATIC_CACHE = "zoobalo-static-v2";
-const API_CACHE    = "zoobalo-api-v2";
+const STATIC_CACHE = "zoobalo-static-v3";
+const API_CACHE    = "zoobalo-api-v3";
 const ALL_CACHES   = [STATIC_CACHE, API_CACHE];
 
 const STATIC_PRECACHE = ["/", "/dashboard", "/manifest.json", "/icons/icon.svg"];
@@ -49,23 +49,24 @@ self.addEventListener("fetch", (e) => {
 
   const url = new URL(e.request.url);
 
-  // API routes: stale-while-revalidate (serve cache instantly, update in background)
+  // API routes: network-first (always fetch fresh data, fall back to cache when offline)
   if (isCacheableApi(url)) {
     e.respondWith(
-      caches.open(API_CACHE).then(async (cache) => {
-        const cached = await cache.match(e.request);
-        const fetchPromise = fetch(e.request)
-          .then((res) => {
-            if (res.ok) cache.put(e.request, res.clone());
-            return res;
-          })
-          .catch(() => null);
-
-        // Return cached immediately if available; otherwise wait for network
-        return cached ?? fetchPromise ?? new Response(JSON.stringify({ error: "offline" }), {
-          headers: { "Content-Type": "application/json" },
-        });
-      })
+      fetch(e.request)
+        .then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(API_CACHE).then((c) => c.put(e.request, clone));
+          }
+          return res;
+        })
+        .catch(() =>
+          caches.match(e.request).then(
+            (cached) => cached ?? new Response(JSON.stringify({ error: "offline" }), {
+              headers: { "Content-Type": "application/json" },
+            })
+          )
+        )
     );
     return;
   }

@@ -10,7 +10,10 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: () => {
-    if (!getToken()) throw redirect({ to: "/login" });
+    // Only check auth in the browser — localStorage is unavailable during SSR
+    if (typeof window !== "undefined" && !getToken()) {
+      throw redirect({ to: "/login" });
+    }
   },
   component: AppLayout,
 });
