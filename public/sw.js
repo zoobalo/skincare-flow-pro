@@ -1,5 +1,5 @@
-const STATIC_CACHE = "zoobalo-static-v5";
-const API_CACHE    = "zoobalo-api-v5";
+const STATIC_CACHE = "zoobalo-static-v6";
+const API_CACHE    = "zoobalo-api-v6";
 const ALL_CACHES   = [STATIC_CACHE, API_CACHE];
 
 const STATIC_PRECACHE = ["/manifest.json", "/icons/icon.svg"];
@@ -93,12 +93,17 @@ self.addEventListener("fetch", (e) => {
   // Skip cross-origin requests
   if (url.origin !== self.location.origin) return;
 
-  // Static assets + pages: network-first, fall back to cache
+  // Static assets: network-first, cache only non-HTML files (JS/CSS/images).
+  // HTML pages are never cached — they change on every deployment and
+  // serving a stale HTML with old chunk hashes causes 404 on the JS files.
   e.respondWith(
     fetch(e.request)
       .then((res) => {
-        const clone = res.clone();
-        caches.open(STATIC_CACHE).then((c) => c.put(e.request, clone));
+        const ct = res.headers.get("content-type") ?? "";
+        if (!ct.includes("text/html")) {
+          const clone = res.clone();
+          caches.open(STATIC_CACHE).then((c) => c.put(e.request, clone));
+        }
         return res;
       })
       .catch(() => caches.match(e.request))
