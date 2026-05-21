@@ -1,5 +1,5 @@
-const STATIC_CACHE = "zoobalo-static-v4";
-const API_CACHE    = "zoobalo-api-v4";
+const STATIC_CACHE = "zoobalo-static-v5";
+const API_CACHE    = "zoobalo-api-v5";
 const ALL_CACHES   = [STATIC_CACHE, API_CACHE];
 
 const STATIC_PRECACHE = ["/manifest.json", "/icons/icon.svg"];
@@ -47,33 +47,49 @@ self.addEventListener("activate", (e) => {
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
-
   const url = new URL(e.request.url);
 
-  // API routes: network-first (always fetch fresh data, fall back to cache when offline)
+  // Mutations: pass through to network AND invalidate related GET cache entries
+  if (e.request.method !== "GET") {
+    if (isCacheableApi(url)) {
+      e.waitUntil(
+        caches.open(API_CACHE).then((c) =>
+          c.keys().then((keys) => {
+            const base = "/" + url.pathname.split("/").slice(1, 3).join("/"); // e.g. /api/tasks
+            return Promise.all(
+              keys
+                .filter((k) => new URL(k.url).pathname.startsWith(base))
+                .map((k) => c.delete(k))
+            );
+          })
+        )
+      );
+    }
+    return;
+  }
+
+  // API routes: stale-while-revalidate (return cache instantly, update in background)
   if (isCacheableApi(url)) {
     e.respondWith(
-      fetch(e.request)
-        .then((res) => {
-          if (res.ok) {
-            const clone = res.clone();
-            caches.open(API_CACHE).then((c) => c.put(e.request, clone));
-          }
-          return res;
-        })
-        .catch(() =>
-          caches.match(e.request).then(
-            (cached) => cached ?? new Response(JSON.stringify({ error: "offline" }), {
-              headers: { "Content-Type": "application/json" },
+      caches.open(API_CACHE).then((c) =>
+        c.match(e.request).then((cached) => {
+          const networkFetch = fetch(e.request)
+            .then((res) => {
+              if (res.ok) c.put(e.request, res.clone());
+              return res;
             })
-          )
-        )
+            .catch(() =>
+              cached ?? new Response(JSON.stringify({ error: "offline" }), {
+                headers: { "Content-Type": "application/json" },
+              })
+            );
+          return cached ?? networkFetch;
+        })
+      )
     );
     return;
   }
 
-  // Non-API write operations (POST/mutations already filtered above)
   // Skip cross-origin requests
   if (url.origin !== self.location.origin) return;
 
