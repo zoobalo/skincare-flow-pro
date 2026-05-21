@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Upload, X } from "lucide-react";
+import { getToken } from "@/lib/auth";
 
 const API_BASE = `${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}`;
 const MAX_MB   = 1;
@@ -33,7 +34,12 @@ export function ImageUpload({ value, onChange }: Props) {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res  = await fetch(`${API_BASE}/api/upload`, { method: "POST", body: fd });
+      const token = getToken();
+      const res  = await fetch(`${API_BASE}/api/upload`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
       const body = await res.json();
       if (!res.ok) { setError(body.error ?? "Upload failed."); return; }
       onChange(`${API_BASE}${body.url}`);
