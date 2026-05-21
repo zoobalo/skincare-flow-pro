@@ -328,19 +328,19 @@ export const api = {
     updateStatus: (id: string, status: string) =>
       fetch(`${BASE}/purchase-orders/${id}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ status }),
       }).then((r) => r.json()),
     create: (data: Partial<ApiPo>) =>
       fetch(`${BASE}/purchase-orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(data),
       }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiPo>) =>
       fetch(`${BASE}/purchase-orders/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(data),
       }).then((r) => r.json()),
     delete: (id: string) =>
