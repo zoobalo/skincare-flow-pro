@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getToken } from "@/lib/auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Topbar } from "@/components/topbar";
@@ -27,6 +27,10 @@ function AppLayout() {
   const router = useRouter();
 
   const { refreshing } = usePullToRefresh(() => router.invalidate());
+
+  // SSR runs loaders without a token and returns empty data.
+  // After hydration, invalidate so all loaders re-run on the client with the real token.
+  useEffect(() => { router.invalidate(); }, []);
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground overflow-x-hidden">
