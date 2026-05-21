@@ -1,14 +1,20 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { auth } from "@/lib/api";
-import { saveSession } from "@/lib/auth";
+import { saveSession, getToken } from "@/lib/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
+  beforeLoad: () => {
+    // Client-only: if already logged in, skip the login page
+    if (typeof window !== "undefined" && getToken()) {
+      throw redirect({ to: "/dashboard" });
+    }
+  },
   component: LoginPage,
   head: () => ({ meta: [{ title: "Sign in — Zoobalo" }] }),
 });

@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect, useRouter } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { getToken } from "@/lib/auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Topbar } from "@/components/topbar";
@@ -9,15 +9,12 @@ import { PullToRefreshIndicator } from "@/components/pull-to-refresh";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 export const Route = createFileRoute("/_app")({
+  // Redirect to login on both server and client when no token.
+  // On the server, getToken() always returns null (no localStorage),
+  // so SSR never renders authenticated pages — no empty-data hydration issues.
   beforeLoad: () => {
-    // Only check auth in the browser — localStorage is unavailable during SSR
-    if (typeof window !== "undefined" && !getToken()) {
-      throw redirect({ to: "/login" });
-    }
+    if (!getToken()) throw redirect({ to: "/login" });
   },
-  // staleTime: 0 forces client to always re-run loaders after SSR hydration,
-  // preventing empty [] from SSR being treated as fresh data by the client.
-  staleTime: 0,
   component: AppLayout,
 });
 
@@ -27,10 +24,6 @@ function AppLayout() {
   const router = useRouter();
 
   const { refreshing } = usePullToRefresh(() => router.invalidate());
-
-  // SSR runs loaders without a token and returns empty data.
-  // After hydration, invalidate so all loaders re-run on the client with the real token.
-  useEffect(() => { router.invalidate(); }, []);
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground overflow-x-hidden">
