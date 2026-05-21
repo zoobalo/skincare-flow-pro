@@ -7,12 +7,17 @@ function authHeaders(): HeadersInit {
 }
 
 async function get<T>(path: string): Promise<T> {
-  if (typeof window === "undefined") return undefined as unknown as T;
+  if (typeof window === "undefined") return [] as unknown as T;
   const r = await fetch(BASE + path, { headers: authHeaders() });
   if (r.status === 401) { window.location.href = "/login"; throw new Error("Unauthorized"); }
   if (!r.ok) throw new Error(`API ${path} → ${r.status}`);
   return r.json() as Promise<T>;
 }
+
+const EMPTY_DASHBOARD: DashboardResponse = {
+  kpis: { totalPOs: 0, pendingApprovals: 0, activeProduction: 0, inTransit: 0, delayedBatches: 0, lowStockSkus: 0, totalSpend: 0, totalDuePayments: 0, totalVendors: 0, totalSkus: 0 },
+  charts: { procurementSpend: [], monthlyProduction: [], poStatusBreakdown: {}, vendorReliability: [], shipmentStatusBreakdown: {} },
+};
 
 // Auth API
 export const auth = {
@@ -234,7 +239,7 @@ export function fmtMonth(iso: string) {
 
 export const api = {
   dashboard: {
-    kpis: () => get<DashboardResponse>("/dashboard/kpis"),
+    kpis: () => typeof window === "undefined" ? Promise.resolve(EMPTY_DASHBOARD) : get<DashboardResponse>("/dashboard/kpis"),
   },
 
   vendors: {
