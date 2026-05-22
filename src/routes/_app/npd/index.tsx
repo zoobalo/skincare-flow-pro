@@ -223,7 +223,7 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
 
     const HEADERS = [
       "Product Name", "Launch Month", "RM Status", "PM Status",
-      "Group Name", "Image", "Open Full Size", "Group Comment", "General Comments",
+      "Group Name", "Image", "Open Full Size", "Group Comment", "General Comments", "_id",
     ];
 
     const rows: string[][] = [HEADERS];
@@ -237,27 +237,28 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
       ];
 
       if (item.images.length === 0) {
-        rows.push([...base, "", "", "", "", cell(item.comments || "")]);
+        rows.push([...base, "", "", "", "", cell(item.comments || ""), `${item.id}_noimg`]);
         return;
       }
 
-      item.images.forEach((group) => {
+      item.images.forEach((group, gi) => {
         const groupName    = cell(group.name || "Unnamed Group");
         const groupComment = cell(group.comment || "");
 
         if (group.images.length === 0) {
-          rows.push([...base, groupName, "", "", groupComment, cell(item.comments || "")]);
+          rows.push([...base, groupName, "", "", groupComment, cell(item.comments || ""), `${item.id}_g${gi}_noimg`]);
           return;
         }
 
-        group.images.forEach((url, i) => {
+        group.images.forEach((url, ii) => {
           rows.push([
             ...base,
             groupName,
             `=IMAGE("${url}")`,
             `=HYPERLINK("${url}","🔍 Open")`,
             groupComment,
-            i === 0 ? cell(item.comments || "") : "",
+            ii === 0 ? cell(item.comments || "") : "",
+            `${item.id}_g${gi}_i${ii}`,
           ]);
         });
       });
