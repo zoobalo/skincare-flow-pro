@@ -42,7 +42,10 @@ export const getSkuById = (id: string) =>
       },
       productionBatches: {
         orderBy: (b, { desc }) => [desc(b.startedAt)],
-        with: { stageHistory: { orderBy: (h, { asc }) => [asc(h.date)] } },
+        with: {
+          stageHistory: { orderBy: (h, { asc }) => [asc(h.date)] },
+          vendor: { columns: { id: true, name: true, city: true } },
+        },
       },
       tests:      { orderBy: (t, { asc }) => [asc(t.createdAt)] },
       dispatches: { orderBy: (d, { desc }) => [desc(d.dispatchDate)] },

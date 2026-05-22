@@ -463,6 +463,9 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                     <div>
                       <div className="font-semibold">{batch.batchNumber}</div>
                       <p className="text-xs text-muted-foreground">{batch.quantity.toLocaleString()} units · ETA {fmtDate(batch.expectedCompletion)}</p>
+                      {(batch as any).vendor?.name && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">Vendor: <span className="font-medium text-foreground">{(batch as any).vendor.name}</span></p>
+                      )}
                       {batch.materialCategory && batch.materialItemName && (
                         <p className="mt-0.5 text-xs text-primary font-medium">{batch.materialCategory}: {batch.materialItemName}</p>
                       )}
