@@ -14,8 +14,8 @@ export const productionRoutes = new Hono()
   .post("/", async (c) => {
     try {
       const body = await c.req.json();
-      const { batchNumber, skuId, manufacturerId, quantity, currentStage, startedAt, expectedCompletion, delayed, materialCategory, materialItemId, materialItemName, applicableStages, comment } = body;
-      const [created] = await createBatch({ id: crypto.randomUUID(), batchNumber, skuId, manufacturerId, quantity, currentStage, startedAt, expectedCompletion, delayed: delayed ?? false, materialCategory: materialCategory ?? null, materialItemId: materialItemId ?? null, materialItemName: materialItemName ?? null, applicableStages: applicableStages ?? null, comment: comment ?? null });
+      const { batchNumber, skuId, manufacturerId, vendorId, quantity, currentStage, startedAt, expectedCompletion, delayed, materialCategory, materialItemId, materialItemName, applicableStages, comment } = body;
+      const [created] = await createBatch({ id: crypto.randomUUID(), batchNumber, skuId, manufacturerId, vendorId: vendorId ?? null, quantity, currentStage, startedAt, expectedCompletion, delayed: delayed ?? false, materialCategory: materialCategory ?? null, materialItemId: materialItemId ?? null, materialItemName: materialItemName ?? null, applicableStages: applicableStages ?? null, comment: comment ?? null });
       return c.json(created, 201);
     } catch (err: any) {
       console.error("POST /production error:", err);
@@ -25,8 +25,8 @@ export const productionRoutes = new Hono()
   .patch("/:id", async (c) => {
     try {
       const body = await c.req.json();
-      const { batchNumber, skuId, manufacturerId, quantity, currentStage, startedAt, expectedCompletion, delayed, materialCategory, materialItemId, materialItemName, applicableStages, comment } = body;
-      const [updated] = await updateBatch(c.req.param("id"), { batchNumber, skuId, manufacturerId, quantity, currentStage, startedAt, expectedCompletion, delayed, materialCategory: materialCategory ?? null, materialItemId: materialItemId ?? null, materialItemName: materialItemName ?? null, applicableStages: applicableStages ?? null, comment: comment ?? null });
+      const { batchNumber, skuId, manufacturerId, vendorId, quantity, currentStage, startedAt, expectedCompletion, delayed, materialCategory, materialItemId, materialItemName, applicableStages, comment } = body;
+      const [updated] = await updateBatch(c.req.param("id"), { batchNumber, skuId, manufacturerId, vendorId: vendorId ?? null, quantity, currentStage, startedAt, expectedCompletion, delayed, materialCategory: materialCategory ?? null, materialItemId: materialItemId ?? null, materialItemName: materialItemName ?? null, applicableStages: applicableStages ?? null, comment: comment ?? null });
       if (!updated) return c.json({ error: "Batch not found" }, 404);
       return c.json(updated);
     } catch (err: any) {
