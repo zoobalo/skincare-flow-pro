@@ -227,7 +227,7 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
 
     const HEADERS = [
       "Product Name", "Launch Month", "RM Status", "PM Status",
-      "Group Name", "Image", "Group Comment", "General Comments",
+      "Group Name", "Image", "Open Full Size", "Group Comment", "General Comments",
     ];
 
     const rows: string[][] = [HEADERS];
@@ -241,7 +241,7 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
       ];
 
       if (item.images.length === 0) {
-        rows.push([...base, "", "", "", cell(item.comments || "")]);
+        rows.push([...base, "", "", "", "", cell(item.comments || "")]);
         return;
       }
 
@@ -250,7 +250,7 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
         const groupComment = cell(group.comment || "");
 
         if (group.images.length === 0) {
-          rows.push([...base, groupName, "", groupComment, cell(item.comments || "")]);
+          rows.push([...base, groupName, "", "", groupComment, cell(item.comments || "")]);
           return;
         }
 
@@ -258,9 +258,10 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
           rows.push([
             ...base,
             groupName,
-            `=IMAGE("${url}")`,           // Google Sheets IMAGE formula
+            `=IMAGE("${url}")`,                          // thumbnail in cell
+            `=HYPERLINK("${url}","🔍 Open")`,            // clickable link to full size
             groupComment,
-            i === 0 ? cell(item.comments || "") : "", // general comments only on first image row
+            i === 0 ? cell(item.comments || "") : "",
           ]);
         });
       });
