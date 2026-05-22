@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { api } from "@/lib/api";
 import { fmtDate } from "@/lib/utils";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ChevronRight, Edit, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Edit, Eye, Plus, Trash2 } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { ProgressRail } from "@/components/progress-rail";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
@@ -59,6 +59,7 @@ function SkuDetailPage() {
 
 function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/api").ApiSkuDetail; manufacturers: import("@/lib/api").ApiManufacturer[]; vendors: import("@/lib/api").ApiVendor[] }) {
   const router = useRouter();
+  const navigate = useNavigate();
   const mfg = sku.manufacturer;
   const totalPackagingValue = sku.packaging.reduce((acc, p) => acc + p.currentStock * p.costPerUnit, 0);
   const low = sku.currentInventory < sku.minThreshold;
@@ -128,7 +129,8 @@ function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/
   const [editPoId, setEditPoId] = useState<string | null>(null);
   const [editPoForm, setEditPoForm] = useState({
     vendorId: "", materialType: "", quantity: 0, rate: 0, gstRate: 18, gstAmount: 0, total: 0,
-    dispatchDate: "", expectedDelivery: "", status: "Pending" as typeof PO_STATUSES[number], paymentDue: "", notes: "",
+    dispatchDate: "", expectedDelivery: "", status: "Pending" as typeof PO_STATUSES[number],
+    amountPaid: "", paymentDueDate: "", notes: "", terms: "",
   });
 
   const setEdit      = (f: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEditForm(p => ({ ...p, [f]: e.target.value }));
@@ -261,18 +263,38 @@ function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/
 
   const openEditPo = (p: typeof sku.purchaseOrders[0]) => {
     setEditPoId(p.id);
-    setEditPoForm({ vendorId: p.vendorId, materialType: p.materialType, quantity: p.quantity, rate: p.rate, gstRate: p.gstRate ?? 18, gstAmount: p.gstAmount ?? 0, total: p.total, dispatchDate: p.dispatchDate, expectedDelivery: p.expectedDelivery, status: p.status, paymentDue: p.paymentDue != null ? String(p.paymentDue) : "", notes: p.notes ?? "" });
+    setEditPoForm({
+      vendorId: p.vendorId, materialType: p.materialType, quantity: p.quantity, rate: p.rate,
+      gstRate: p.gstRate ?? 18, gstAmount: p.gstAmount ?? 0, total: p.total,
+      dispatchDate: p.dispatchDate, expectedDelivery: p.expectedDelivery, status: p.status,
+      amountPaid: (p as any).amountPaid != null ? String((p as any).amountPaid) : "",
+      paymentDueDate: (p as any).paymentDueDate ?? "",
+      notes: p.notes ?? "", terms: (p as any).terms ?? "",
+    });
     setEditPoOpen(true);
   };
   const saveEditPo = async () => {
     if (!editPoId) return;
     setEditPoSaving(true);
     try {
-      const subtotal   = Number(editPoForm.quantity) * Number(editPoForm.rate);
-      const gstAmt     = Math.round(subtotal * Number(editPoForm.gstRate) / 100 * 100) / 100;
-      await api.purchaseOrders.update(editPoId, { ...editPoForm, quantity: +editPoForm.quantity, rate: +editPoForm.rate as any, gstRate: +editPoForm.gstRate, gstAmount: gstAmt as any, total: (subtotal + gstAmt) as any, paymentDue: editPoForm.paymentDue ? +editPoForm.paymentDue as any : null, notes: editPoForm.notes || null });
+      const subtotal = Number(editPoForm.quantity) * Number(editPoForm.rate);
+      const gstAmt   = Math.round(subtotal * Number(editPoForm.gstRate) / 100 * 100) / 100;
+      await api.purchaseOrders.update(editPoId, {
+        ...editPoForm,
+        quantity: +editPoForm.quantity, rate: +editPoForm.rate as any, gstRate: +editPoForm.gstRate,
+        gstAmount: gstAmt as any, total: (subtotal + gstAmt) as any,
+        amountPaid: editPoForm.amountPaid ? +editPoForm.amountPaid as any : null,
+        paymentDueDate: editPoForm.paymentDueDate || null,
+        notes: editPoForm.notes || null, terms: editPoForm.terms || null,
+      });
       toast.success("Purchase order updated."); setEditPoOpen(false); reload();
     } catch { toast.error("Failed to update purchase order."); } finally { setEditPoSaving(false); }
+  };
+  const deletePoFromHistory = async (id: string, poNumber: string) => {
+    if (!confirm(`Delete PO ${poNumber}? This cannot be undone.`)) return;
+    const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/purchase-orders/${id}`, { method: "DELETE" });
+    if (res.ok) { toast.success(`${poNumber} deleted.`); reload(); }
+    else { const b = await res.json().catch(() => ({})); toast.error(b.error ?? "Failed to delete."); }
   };
 
   return (
@@ -472,9 +494,10 @@ function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/
           )}
           <div className="space-y-3">
             {sku.purchaseOrders.map((p) => {
-              const paid    = (p as any).amountPaid ?? 0;
+              const paid    = Number((p as any).amountPaid ?? 0);
               const pending = Math.max(0, p.total - paid);
               const fmt     = (n: number) => `₹${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              const showPayment = p.status !== "To be sent" && (paid > 0 || (p as any).paymentDueDate != null);
               return (
                 <div key={p.id} className="rounded-xl border bg-card p-4 space-y-3">
                   {/* Header */}
@@ -485,27 +508,30 @@ function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <StatusBadge status={p.status} />
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="View PO" onClick={() => navigate({ to: "/purchase-orders/$poId", params: { poId: p.id } })}><Eye className="h-3.5 w-3.5" /></Button>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditPo(p)}><Edit className="h-3.5 w-3.5" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deletePoFromHistory(p.id, p.poNumber)}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   </div>
 
                   {/* Order details */}
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs sm:grid-cols-4">
+                    <div><div className="text-muted-foreground">SKU</div><div className="font-medium">{sku.code}</div></div>
                     <div><div className="text-muted-foreground">Material</div><div className="font-medium">{p.materialType}</div></div>
                     <div><div className="text-muted-foreground">Quantity</div><div className="font-medium tabular-nums">{p.quantity.toLocaleString()}</div></div>
                     <div><div className="text-muted-foreground">Rate / unit</div><div className="font-medium tabular-nums">₹{p.rate}</div></div>
-                    <div><div className="text-muted-foreground">Expected delivery</div><div className="font-medium">{fmtDate(p.expectedDelivery)}</div></div>
                   </div>
 
                   {/* Pricing */}
-                  <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-xs border-t pt-3">
+                  <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-xs border-t pt-3 sm:grid-cols-4">
                     <div><div className="text-muted-foreground">GST ({p.gstRate ?? 0}%)</div><div className="font-medium tabular-nums">{fmt(p.gstAmount ?? 0)}</div></div>
                     <div><div className="text-muted-foreground">Grand Total</div><div className="font-semibold tabular-nums">{fmt(p.total)}</div></div>
-                    <div><div className="text-muted-foreground">Notes</div><div className="font-medium truncate">{p.notes || "—"}</div></div>
+                    <div><div className="text-muted-foreground">Expected delivery</div><div className="font-medium">{fmtDate(p.expectedDelivery)}</div></div>
+                    <div className="hidden sm:block"><div className="text-muted-foreground">Notes</div><div className="font-medium truncate max-w-[160px]">{p.notes || "—"}</div></div>
                   </div>
 
-                  {/* Payment tracking — only for Sent POs */}
-                  {p.status === "Sent" && (
+                  {/* Payment tracking */}
+                  {showPayment && (
                     <div className="grid grid-cols-3 gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-xs">
                       <div>
                         <div className="text-muted-foreground mb-0.5">Amount Paid</div>
@@ -1102,8 +1128,43 @@ function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/
                 <SelectContent>{PO_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5"><Label>Payment Due (₹)</Label><Input type="number" step="0.01" placeholder="Leave blank if none" value={editPoForm.paymentDue} onChange={setEditPo("paymentDue")} /></div>
+            {(() => {
+              const total   = Number(editPoForm.quantity) * Number(editPoForm.rate) * (1 + Number(editPoForm.gstRate) / 100);
+              const paid    = Number(editPoForm.amountPaid) || 0;
+              const pending = Math.max(0, total - paid);
+              const fmt     = (n: number) => `₹${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              return (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">Payment Tracking</p>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>Amount Paid (₹)</Label>
+                      <Input type="number" step="0.01" min="0" placeholder="0.00" value={editPoForm.amountPaid} onChange={setEditPo("amountPaid")} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Amount Pending (₹)</Label>
+                      <div className={`flex h-9 items-center rounded-md border px-3 text-sm tabular-nums font-medium ${pending > 0 ? "border-destructive/40 bg-destructive/5 text-destructive" : "border-success/40 bg-success/5 text-success"}`}>
+                        {fmt(pending)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Due Date for Pending Payment</Label>
+                    <Input type="date" value={editPoForm.paymentDueDate} onChange={setEditPo("paymentDueDate")} />
+                  </div>
+                  <div className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground grid grid-cols-3 gap-2">
+                    <div><span className="block font-medium text-foreground">{fmt(total)}</span>Grand Total</div>
+                    <div><span className="block font-medium text-foreground">{fmt(paid)}</span>Paid</div>
+                    <div><span className={`block font-medium ${pending > 0 ? "text-destructive" : "text-success"}`}>{fmt(pending)}</span>Pending</div>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Optional notes" value={editPoForm.notes} onChange={setEditPo("notes")} /></div>
+            <div className="space-y-1.5">
+              <Label>Terms & Conditions</Label>
+              <Textarea rows={6} className="font-mono text-xs" placeholder="Enter terms and conditions…" value={editPoForm.terms} onChange={setEditPo("terms")} />
+            </div>
           </div>
           <SheetFooter className="mt-6">
             <Button variant="outline" onClick={() => setEditPoOpen(false)}>Cancel</Button>

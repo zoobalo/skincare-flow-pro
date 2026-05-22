@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, type ApiProductionRemark, type POLineItem } from "@/lib/api";
+import { PRODUCTION_STAGES } from "@/lib/mock/types";
 import { PODocument, buildPoHtml } from "@/components/po-document";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Check, ChevronLeft, ChevronRight, Mail, MessageSquareWarning, Plus, Trash2 } from "lucide-react";
@@ -108,11 +109,36 @@ function NewPOWizard() {
     terms:            terms || null,
   });
 
+  const createBatchFromPo = async () => {
+    try {
+      await api.production.create({
+        id:                 crypto.randomUUID(),
+        batchNumber:        `BATCH-${poNumber}`,
+        skuId,
+        manufacturerId:     sku?.manufacturerId ?? "",
+        quantity:           computedItems.reduce((s, r) => s + r.quantity, 0),
+        currentStage:       "PO Generated",
+        startedAt:          poDate,
+        expectedCompletion: eta,
+        delayed:            false,
+        applicableStages:   [...PRODUCTION_STAGES] as any,
+        materialCategory:   null,
+        materialItemId:     null,
+        materialItemName:   null,
+        comment:            `Auto-created from PO ${poNumber}`,
+      } as any);
+      toast.success("Production batch created automatically.");
+    } catch {
+      toast("Production batch could not be auto-created — add it manually in the SKU's Production tab.", { duration: 5000 });
+    }
+  };
+
   const handleSend = async () => {
     setSubmitting(true);
     try {
       await api.purchaseOrders.create(buildPayload("Sent") as any);
       toast.success(`PO ${poNumber} sent to ${vendor?.email ?? "vendor"}.`);
+      await createBatchFromPo();
       navigate({ to: "/purchase-orders" });
     } catch {
       toast.error("Failed to send purchase order.");
@@ -126,6 +152,7 @@ function NewPOWizard() {
     try {
       await api.purchaseOrders.create(buildPayload("To be sent") as any);
       toast.success(`PO ${poNumber} saved. Not yet sent to vendor.`);
+      await createBatchFromPo();
       navigate({ to: "/purchase-orders" });
     } catch {
       toast.error("Failed to save purchase order.");
