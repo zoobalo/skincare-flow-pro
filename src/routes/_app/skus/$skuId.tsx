@@ -54,7 +54,10 @@ const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, curre
 function SkuDetailPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <div className="flex items-center justify-center p-20 text-muted-foreground text-sm">Loading…</div>;
-  const { sku, manufacturers, vendors } = loaderData;
+  return <SkuDetailContent sku={loaderData.sku} manufacturers={loaderData.manufacturers} vendors={loaderData.vendors} />;
+}
+
+function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/api").ApiSkuDetail; manufacturers: import("@/lib/api").ApiManufacturer[]; vendors: import("@/lib/api").ApiVendor[] }) {
   const router = useRouter();
   const mfg = sku.manufacturer;
   const totalPackagingValue = sku.packaging.reduce((acc, p) => acc + p.currentStock * p.costPerUnit, 0);
