@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/purchase-orders/")({
   loader: async () => {
+    if (typeof window === "undefined") return null;
     const [purchaseOrders, vendors, skus] = await Promise.all([
       api.purchaseOrders.list(),
       api.vendors.list(),
@@ -41,7 +42,16 @@ const EMPTY_FORM = {
 };
 
 function POPage() {
-  const { purchaseOrders, vendors, skus } = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <PageSkeleton />;
+  return <POContent purchaseOrders={loaderData.purchaseOrders} vendors={loaderData.vendors} skus={loaderData.skus} />;
+}
+
+function POContent({ purchaseOrders, vendors, skus }: {
+  purchaseOrders: Awaited<ReturnType<typeof api.purchaseOrders.list>>;
+  vendors: Awaited<ReturnType<typeof api.vendors.list>>;
+  skus: Awaited<ReturnType<typeof api.skus.list>>;
+}) {
   const router   = useRouter();
   const navigate = useNavigate();
 
@@ -288,11 +298,11 @@ function POPage() {
                 <SelectContent>{PO_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            {editForm.status !== "To be sent" && (() => {
-              const total      = Number(editForm.quantity) * Number(editForm.rate) * (1 + Number(editForm.gstRate) / 100);
-              const paid       = Number(editForm.amountPaid) || 0;
-              const pending    = Math.max(0, total - paid);
-              const fmt        = (n: number) => `₹${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            {(() => {
+              const total   = Number(editForm.quantity) * Number(editForm.rate) * (1 + Number(editForm.gstRate) / 100);
+              const paid    = Number(editForm.amountPaid) || 0;
+              const pending = Math.max(0, total - paid);
+              const fmt     = (n: number) => `₹${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
               return (
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary">Payment Tracking</p>
