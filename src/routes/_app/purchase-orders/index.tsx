@@ -25,6 +25,7 @@ export const Route = createFileRoute("/_app/purchase-orders/")({
     return { purchaseOrders, vendors, skus };
   },
   pendingComponent: PageSkeleton,
+  gcTime: 0,
   component: POPage,
   head: () => ({ meta: [{ title: "Purchase Orders — Zoobalo" }] }),
 });

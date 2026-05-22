@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_app/production/")({
     return api.production.list();
   },
   pendingComponent: PageSkeleton,
+  gcTime: 0,
   component: ProductionPage,
   head: () => ({ meta: [{ title: "Production Tracking — Zoobalo" }] }),
 });
