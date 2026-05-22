@@ -20,7 +20,12 @@ cpSync("dist/server", ".vercel/output/functions/__server.func", { recursive: tru
 
 writeFileSync(
   ".vercel/output/functions/__server.func/.vc-config.json",
-  JSON.stringify({ runtime: "edge", entrypoint: "index.js" }, null, 2)
+  JSON.stringify({
+    runtime: "nodejs20.x",
+    handler: "index.js",
+    launcherType: "Nodejs",
+    supportsResponseStreaming: true,
+  }, null, 2)
 );
 
 writeFileSync(
