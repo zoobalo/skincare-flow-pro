@@ -60,7 +60,11 @@ function SkuDetailPage() {
     description: sku.description, image: sku.image, manufacturerId: sku.manufacturerId,
     currentInventory: sku.currentInventory, minThreshold: sku.minThreshold,
     productionTimelineDays: sku.productionTimelineDays,
+    mrp: sku.mrp ?? "",
+    usp: sku.usp ?? "",
+    importantLinks: sku.importantLinks ?? "[]",
   });
+  const [linkInput, setLinkInput] = useState({ label: "", url: "" });
 
   // Add Packaging sheet
   const [packOpen, setPackOpen] = useState(false);
@@ -130,7 +134,7 @@ function SkuDetailPage() {
   const saveEdit = async () => {
     setEditSaving(true);
     try {
-      await api.skus.update(sku.id, { ...editForm, currentInventory: +editForm.currentInventory, minThreshold: +editForm.minThreshold, productionTimelineDays: +editForm.productionTimelineDays });
+      await api.skus.update(sku.id, { ...editForm, currentInventory: +editForm.currentInventory, minThreshold: +editForm.minThreshold, productionTimelineDays: +editForm.productionTimelineDays, mrp: editForm.mrp !== "" ? +editForm.mrp : null });
       toast.success("SKU updated."); setEditOpen(false); reload();
     } catch { toast.error("Failed to update SKU."); } finally { setEditSaving(false); }
   };
@@ -302,6 +306,28 @@ function SkuDetailPage() {
               <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Manufacturer</div><div className="mt-1 text-base font-semibold">{mfg?.name ?? "—"}</div><div className="mt-1 text-xs text-muted-foreground">{mfg?.location} {mfg?.qcPassRate ? `· QC ${mfg.qcPassRate}%` : ""}</div></div>
               <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Packaging stock value</div><div className="mt-1 text-2xl font-semibold tabular-nums">₹{Math.round(totalPackagingValue).toLocaleString()}</div><div className="mt-1 text-xs text-muted-foreground">Across {sku.packaging.length} items</div></div>
               <div className="col-span-2 rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Product description</div><p className="mt-1.5 text-sm">{sku.description || "—"}</p></div>
+              {sku.mrp != null && (
+                <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">MRP</div><div className="mt-1 text-2xl font-semibold tabular-nums">₹{Number(sku.mrp).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</div></div>
+              )}
+              {sku.usp && (
+                <div className={`${sku.mrp != null ? "" : "col-span-2"} rounded-xl border bg-card p-4`}><div className="text-xs text-muted-foreground">USP</div><p className="mt-1.5 text-sm whitespace-pre-line">{sku.usp}</p></div>
+              )}
+              {(() => {
+                const links: { label: string; url: string }[] = JSON.parse(sku.importantLinks || "[]");
+                if (!links.length) return null;
+                return (
+                  <div className="col-span-2 rounded-xl border bg-card p-4">
+                    <div className="text-xs text-muted-foreground mb-2">Important Links</div>
+                    <div className="flex flex-wrap gap-2">
+                      {links.map((lnk, i) => (
+                        <a key={i} href={lnk.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium text-primary hover:bg-accent transition-colors">
+                          {lnk.label || lnk.url}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </TabsContent>
@@ -756,6 +782,40 @@ function SkuDetailPage() {
               <div className="space-y-1.5"><Label>Current Stock</Label><Input type="number" value={editForm.currentInventory} onChange={setEdit("currentInventory")} /></div>
               <div className="space-y-1.5"><Label>Min Threshold</Label><Input type="number" value={editForm.minThreshold} onChange={setEdit("minThreshold")} /></div>
               <div className="space-y-1.5"><Label>Lead time (days)</Label><Input type="number" value={editForm.productionTimelineDays} onChange={setEdit("productionTimelineDays")} /></div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>MRP (₹)</Label>
+              <Input type="number" step="0.01" placeholder="e.g. 499.00" value={editForm.mrp} onChange={setEdit("mrp")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>USP</Label>
+              <Textarea rows={3} placeholder="Unique selling points of this product…" value={editForm.usp} onChange={setEdit("usp")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Important Links</Label>
+              <div className="space-y-2">
+                {(JSON.parse(editForm.importantLinks || "[]") as { label: string; url: string }[]).map((lnk, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm">
+                    <span className="flex-1 truncate">{lnk.label || lnk.url}</span>
+                    <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => {
+                      const links = JSON.parse(editForm.importantLinks || "[]") as { label: string; url: string }[];
+                      links.splice(i, 1);
+                      setEditForm(f => ({ ...f, importantLinks: JSON.stringify(links) }));
+                    }}>✕</button>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <Input placeholder="Label" value={linkInput.label} onChange={e => setLinkInput(l => ({ ...l, label: e.target.value }))} />
+                  <Input placeholder="URL" value={linkInput.url} onChange={e => setLinkInput(l => ({ ...l, url: e.target.value }))} />
+                  <Button type="button" variant="outline" size="sm" onClick={() => {
+                    if (!linkInput.url) return;
+                    const links = JSON.parse(editForm.importantLinks || "[]") as { label: string; url: string }[];
+                    links.push({ label: linkInput.label || linkInput.url, url: linkInput.url });
+                    setEditForm(f => ({ ...f, importantLinks: JSON.stringify(links) }));
+                    setLinkInput({ label: "", url: "" });
+                  }}>Add</Button>
+                </div>
+              </div>
             </div>
           </div>
           <SheetFooter className="mt-6">

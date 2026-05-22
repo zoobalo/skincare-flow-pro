@@ -16,6 +16,9 @@ export const skus = pgTable("skus", {
   currentInventory:      integer("current_inventory").notNull().default(0),
   minThreshold:          integer("min_threshold").notNull().default(0),
   productionTimelineDays: integer("production_timeline_days").notNull().default(30),
+  mrp:                   numeric("mrp", { precision: 10, scale: 2 }),
+  usp:                   text("usp").notNull().default(""),
+  importantLinks:        text("important_links").notNull().default("[]"),
   createdAt:             timestamp("created_at").defaultNow().notNull(),
   updatedAt:             timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [

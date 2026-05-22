@@ -60,6 +60,7 @@ export type ApiSku = {
   id: string; code: string; name: string; category: string; type: string;
   description: string; image: string; manufacturerId: string;
   currentInventory: number; minThreshold: number; productionTimelineDays: number;
+  mrp: number | null; usp: string; importantLinks: string;
   manufacturer?: { id: string; name: string };
 };
 
