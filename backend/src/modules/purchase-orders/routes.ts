@@ -46,4 +46,22 @@ export const purchaseOrderRoutes = new Hono()
     const [deleted] = await deletePurchaseOrder(c.req.param("id"));
     if (!deleted) return c.json({ error: "Purchase order not found" }, 404);
     return c.json({ ok: true });
+  })
+  .post("/sync-sheet", async (c) => {
+    const scriptUrl = process.env.PO_APPS_SCRIPT_URL;
+    if (!scriptUrl) return c.json({ error: "PO Sheets sync not configured — set PO_APPS_SCRIPT_URL on the server" }, 503);
+    try {
+      const { rows } = await c.req.json();
+      const res  = await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows }),
+        redirect: "follow",
+      });
+      const data = await res.json() as { success: boolean; url?: string; error?: string };
+      if (!data.success) return c.json({ error: data.error ?? "Apps Script returned failure" }, 502);
+      return c.json({ url: data.url });
+    } catch (err: any) {
+      return c.json({ error: err?.message ?? "Failed to reach Apps Script" }, 500);
+    }
   });

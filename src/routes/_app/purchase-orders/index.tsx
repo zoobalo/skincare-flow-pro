@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Mail, Eye, Download } from "lucide-react";
-import * as XLSX from "xlsx";
+import { Plus, Pencil, Trash2, Mail, Eye, TableProperties } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -152,34 +151,61 @@ function POContent({ purchaseOrders, vendors, skus }: {
     return p.poNumber.toLowerCase().includes(needle) || p.materialType.toLowerCase().includes(needle) || (p.vendor?.name ?? "").toLowerCase().includes(needle) || (p.sku?.code ?? "").toLowerCase().includes(needle);
   });
 
-  const downloadExcel = () => {
-    const rows = filtered.map((po) => {
+  const API_BASE = `${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}`;
+
+  const openInGoogleSheets = async () => {
+    const HEADERS = [
+      "PKG type", "Date", "Number", "Party Name", "Item", "SKU CODE",
+      "Quantity", "Rate", "Net Amount", "18% GST", "5% GST", "Total Amount",
+      "Amount Paid", "Amount Pending", "Status", "Expected Delivery", "Notes",
+    ];
+
+    const rows: (string | number)[][] = [HEADERS];
+
+    filtered.forEach((po) => {
       const netAmount = Number(po.quantity ?? 0) * Number(po.rate ?? 0);
       const gst18     = Number(po.gstRate) === 18 ? Number(po.gstAmount ?? 0) : 0;
       const gst5      = Number(po.gstRate) === 5  ? Number(po.gstAmount ?? 0) : 0;
-      return {
-        "PKG type":     po.materialType,
-        "Date":         po.dispatchDate,
-        "Number":       po.poNumber,
-        "Party Name":   po.vendor?.name ?? "",
-        "Item":         po.sku?.name ?? po.materialType,
-        "SKU CODE":     po.sku?.code ?? "",
-        "Quantity":     Number(po.quantity ?? 0),
-        "Rate":         Number(po.rate ?? 0),
-        "Net Amount":   netAmount,
-        "18% GST":      gst18,
-        "5% GST":       gst5,
-        "Total Amount": Number(po.total ?? 0),
-      };
+      const paid      = Number(po.amountPaid ?? 0);
+      const pending   = Math.max(0, Number(po.total ?? 0) - paid);
+      rows.push([
+        po.materialType,
+        po.dispatchDate ?? "",
+        po.poNumber,
+        po.vendor?.name ?? "",
+        po.sku?.name ?? po.materialType,
+        po.sku?.code ?? "",
+        Number(po.quantity ?? 0),
+        Number(po.rate ?? 0),
+        netAmount,
+        gst18,
+        gst5,
+        Number(po.total ?? 0),
+        paid,
+        pending,
+        po.status,
+        po.expectedDelivery ?? "",
+        po.notes ?? "",
+      ]);
     });
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const colWidths = [14, 12, 20, 28, 32, 14, 10, 10, 14, 12, 12, 14];
-    ws["!cols"] = colWidths.map((w) => ({ wch: w }));
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Purchase Orders");
-    XLSX.writeFile(wb, `purchase-orders-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    try {
+      const token = localStorage.getItem("zoobalo_token");
+      const res   = await fetch(`${API_BASE}/api/purchase-orders/sync-sheet`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ rows }),
+      });
+      const data = await res.json() as { url?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Sync failed");
+      window.open(data.url, "_blank");
+      toast.success("Purchase Orders sheet updated! Opening now…");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to sync with Google Sheets.");
+    }
   };
 
   return (
@@ -189,8 +215,8 @@ function POContent({ purchaseOrders, vendors, skus }: {
         description={`${purchaseOrders.length} POs across all vendors and SKUs`}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={downloadExcel} disabled={filtered.length === 0}>
-              <Download className="mr-1.5 h-4 w-4" />Export Excel
+            <Button variant="outline" onClick={openInGoogleSheets} disabled={filtered.length === 0}>
+              <TableProperties className="mr-1.5 h-4 w-4" />Open in Google Sheets
             </Button>
             <Button asChild><Link to="/purchase-orders/new"><Plus className="mr-1.5 h-4 w-4" />Create PO</Link></Button>
           </div>
