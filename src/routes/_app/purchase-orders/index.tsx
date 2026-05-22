@@ -157,7 +157,6 @@ function POContent({ purchaseOrders, vendors, skus }: {
     const HEADERS = [
       "PKG type", "Date", "Number", "Party Name", "Item", "SKU CODE",
       "Quantity", "Rate", "Net Amount", "18% GST", "5% GST", "Total Amount",
-      "Amount Paid", "Amount Pending", "Status", "Expected Delivery", "Notes",
     ];
 
     const rows: (string | number)[][] = [HEADERS];
@@ -166,8 +165,6 @@ function POContent({ purchaseOrders, vendors, skus }: {
       const netAmount = Number(po.quantity ?? 0) * Number(po.rate ?? 0);
       const gst18     = Number(po.gstRate) === 18 ? Number(po.gstAmount ?? 0) : 0;
       const gst5      = Number(po.gstRate) === 5  ? Number(po.gstAmount ?? 0) : 0;
-      const paid      = Number(po.amountPaid ?? 0);
-      const pending   = Math.max(0, Number(po.total ?? 0) - paid);
       rows.push([
         po.materialType,
         po.dispatchDate ?? "",
@@ -181,11 +178,6 @@ function POContent({ purchaseOrders, vendors, skus }: {
         gst18,
         gst5,
         Number(po.total ?? 0),
-        paid,
-        pending,
-        po.status,
-        po.expectedDelivery ?? "",
-        po.notes ?? "",
       ]);
     });
 
