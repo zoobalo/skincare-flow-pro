@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/skus/")({
   loader: async () => {
+    if (typeof window === "undefined") return null;
     const [skus, manufacturers] = await Promise.all([api.skus.list(), api.manufacturers.list()]);
     return { skus, manufacturers };
   },
@@ -34,7 +35,15 @@ const EMPTY_FORM = {
 };
 
 function SkuListPage() {
-  const { skus, manufacturers } = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <PageSkeleton />;
+  return <SkuListContent skus={loaderData.skus} manufacturers={loaderData.manufacturers} />;
+}
+
+function SkuListContent({ skus, manufacturers }: {
+  skus: Awaited<ReturnType<typeof api.skus.list>>;
+  manufacturers: Awaited<ReturnType<typeof api.manufacturers.list>>;
+}) {
   const router = useRouter();
   const [view, setView] = useState<"grid" | "table">("grid");
   const [q, setQ] = useState("");
