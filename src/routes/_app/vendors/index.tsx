@@ -312,7 +312,7 @@ function VendorsContent({ vendors }: { vendors: Awaited<ReturnType<typeof api.ve
             <div className="mt-4 grid grid-cols-3 gap-3 border-t pt-4 text-xs">
               <div><div className="text-muted-foreground">Total orders</div><div className="text-base font-semibold tabular-nums">{v.totalOrders}</div></div>
               <div><div className="text-muted-foreground">Running</div><div className="text-base font-semibold tabular-nums">{v.runningOrders}</div></div>
-              <div><div className="text-muted-foreground">Total spend</div><div className="text-base font-semibold tabular-nums">₹{(v.totalSpend / 100000).toFixed(1)}L</div></div>
+              <div><div className="text-muted-foreground">Total spend</div><div className="text-base font-semibold tabular-nums">₹{((v.totalSpend ?? 0) / 100000).toFixed(1)}L</div></div>
             </div>
             <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
               <div className="flex items-center gap-1">

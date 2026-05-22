@@ -282,7 +282,7 @@ function ManufacturersContent({ manufacturers: allManufacturers }: { manufacture
             </div>
             {/* Key metrics */}
             <div className="mt-4 grid grid-cols-3 gap-3 border-t pt-4 text-xs">
-              <div><div className="text-muted-foreground">Capacity / mo</div><div className="text-base font-semibold tabular-nums">{m.capacityPerMonth.toLocaleString()}</div></div>
+              <div><div className="text-muted-foreground">Capacity / mo</div><div className="text-base font-semibold tabular-nums">{(m.capacityPerMonth ?? 0).toLocaleString()}</div></div>
               <div><div className="text-muted-foreground">Active batches</div><div className="text-base font-semibold tabular-nums">{m.activeBatches}</div></div>
               <div><div className="text-muted-foreground">QC pass rate</div><div className="text-base font-semibold tabular-nums text-success">{m.qcPassRate}%</div></div>
             </div>

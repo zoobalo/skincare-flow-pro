@@ -76,7 +76,7 @@ function ProductionContent({ productionBatches: allBatches }: { productionBatche
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <div className="truncate text-sm font-semibold">{batch.sku?.name}</div>
-                            <div className="text-xs text-muted-foreground">{batch.batchNumber} · {batch.quantity.toLocaleString()} units</div>
+                            <div className="text-xs text-muted-foreground">{batch.batchNumber} · {(batch.quantity ?? 0).toLocaleString()} units</div>
                           </div>
                           {batch.delayed && <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />}
                         </div>
@@ -99,7 +99,7 @@ function ProductionContent({ productionBatches: allBatches }: { productionBatche
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold">{batch.sku?.name}</h3>
-                    <p className="text-xs text-muted-foreground">{batch.batchNumber} · {batch.manufacturer?.name} · {batch.quantity.toLocaleString()} units · ETA {fmtDate(batch.expectedCompletion)}</p>
+                    <p className="text-xs text-muted-foreground">{batch.batchNumber} · {batch.manufacturer?.name} · {(batch.quantity ?? 0).toLocaleString()} units · ETA {fmtDate(batch.expectedCompletion)}</p>
                   </div>
                   <StatusBadge status={batch.delayed ? "Delayed" : "In Production"} />
                 </div>

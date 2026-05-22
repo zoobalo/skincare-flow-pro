@@ -204,7 +204,7 @@ function POContent({ purchaseOrders, vendors, skus }: {
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs sm:grid-cols-4">
                 <div><div className="text-muted-foreground">SKU</div><div className="font-medium">{po.sku?.code ?? "—"}</div></div>
                 <div><div className="text-muted-foreground">Material</div><div className="font-medium">{po.materialType}</div></div>
-                <div><div className="text-muted-foreground">Quantity</div><div className="font-medium tabular-nums">{po.quantity.toLocaleString()}</div></div>
+                <div><div className="text-muted-foreground">Quantity</div><div className="font-medium tabular-nums">{(po.quantity ?? 0).toLocaleString()}</div></div>
                 <div><div className="text-muted-foreground">Rate / unit</div><div className="font-medium tabular-nums">₹{po.rate}</div></div>
               </div>
 
