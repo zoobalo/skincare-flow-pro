@@ -8,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit2, ImageIcon, Upload, X, Calendar, FlaskConical, ChevronLeft, ChevronRight, Search, Download } from "lucide-react";
-import * as XLSX from "xlsx";
+import { Plus, Trash2, Edit2, ImageIcon, Upload, X, Calendar, FlaskConical, ChevronLeft, ChevronRight, Search, TableProperties } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -219,64 +218,66 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
     catch { toast.error("Failed to delete."); }
   };
 
-  const downloadExcel = () => {
-    const wb = XLSX.utils.book_new();
+  const openInGoogleSheets = async () => {
+    // TSV cell: replace inner newlines with space, quote if tab present
+    const cell = (v: string) => {
+      const s = (v ?? "").replace(/\r?\n/g, " ").replace(/\t/g, " ");
+      return s;
+    };
 
-    // ── Sheet 1: Overview (one row per NPD) ──────────────────────────────────
-    const overviewRows = allItems.map((item) => {
-      const totalImages = item.images.reduce((s, g) => s + g.images.length, 0);
-      return {
-        "Product Name":   item.name,
-        "Launch Month":   fmtLaunchMonth(item.launchMonth ?? null),
-        "RM Status":      item.rmStatus || "—",
-        "PM Status":      item.pmStatus || "—",
-        "Comments":       item.comments || "—",
-        "Image Groups":   item.images.length,
-        "Total Images":   totalImages,
-      };
-    });
-    const ws1 = XLSX.utils.json_to_sheet(overviewRows);
-    ws1["!cols"] = [32, 14, 40, 40, 40, 14, 14].map((w) => ({ wch: w }));
-    XLSX.utils.book_append_sheet(wb, ws1, "NPD Overview");
+    const HEADERS = [
+      "Product Name", "Launch Month", "RM Status", "PM Status",
+      "Group Name", "Image", "Group Comment", "General Comments",
+    ];
 
-    // ── Sheet 2: Image Groups (one row per group across all NPDs) ────────────
-    const groupRows: Record<string, string | number>[] = [];
+    const rows: string[][] = [HEADERS];
+
     allItems.forEach((item) => {
+      const base = [
+        cell(item.name),
+        cell(fmtLaunchMonth(item.launchMonth ?? null)),
+        cell(item.rmStatus || ""),
+        cell(item.pmStatus || ""),
+      ];
+
       if (item.images.length === 0) {
-        groupRows.push({
-          "Product Name":   item.name,
-          "Launch Month":   fmtLaunchMonth(item.launchMonth ?? null),
-          "Group Name":     "—",
-          "Image Count":    0,
-          "Image URLs":     "—",
-          "Group Comment":  "—",
-        });
+        rows.push([...base, "", "", "", cell(item.comments || "")]);
         return;
       }
+
       item.images.forEach((group) => {
-        groupRows.push({
-          "Product Name":   item.name,
-          "Launch Month":   fmtLaunchMonth(item.launchMonth ?? null),
-          "Group Name":     group.name || "Unnamed Group",
-          "Image Count":    group.images.length,
-          "Image URLs":     group.images.join("\n"),
-          "Group Comment":  group.comment || "—",
+        const groupName    = cell(group.name || "Unnamed Group");
+        const groupComment = cell(group.comment || "");
+
+        if (group.images.length === 0) {
+          rows.push([...base, groupName, "", groupComment, cell(item.comments || "")]);
+          return;
+        }
+
+        group.images.forEach((url, i) => {
+          rows.push([
+            ...base,
+            groupName,
+            `=IMAGE("${url}")`,           // Google Sheets IMAGE formula
+            groupComment,
+            i === 0 ? cell(item.comments || "") : "", // general comments only on first image row
+          ]);
         });
       });
     });
-    const ws2 = XLSX.utils.json_to_sheet(groupRows);
-    ws2["!cols"] = [32, 14, 24, 12, 60, 40].map((w) => ({ wch: w }));
 
-    // Make image URL cells wrap so each URL is on its own line
-    const range = XLSX.utils.decode_range(ws2["!ref"] ?? "A1");
-    for (let r = range.s.r + 1; r <= range.e.r; r++) {
-      const cell = ws2[XLSX.utils.encode_cell({ r, c: 4 })]; // column E = Image URLs
-      if (cell) cell.s = { alignment: { wrapText: true, vertical: "top" } };
+    const tsv = rows.map((r) => r.join("\t")).join("\n");
+
+    try {
+      await navigator.clipboard.writeText(tsv);
+      window.open("https://sheets.new", "_blank");
+      toast.success(
+        "Google Sheet opened! Switch to it and press Ctrl+V (or Cmd+V on Mac) to paste. Select row 2 onward and set row height to 120px to see images.",
+        { duration: 8000 },
+      );
+    } catch {
+      toast.error("Clipboard access denied. Please allow clipboard permissions and try again.");
     }
-
-    XLSX.utils.book_append_sheet(wb, ws2, "Reference Images");
-
-    XLSX.writeFile(wb, `npd-export-${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   return (
@@ -286,8 +287,8 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
         description={`${allItems.length} product${allItems.length !== 1 ? "s" : ""} in pipeline`}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={downloadExcel} disabled={allItems.length === 0}>
-              <Download className="mr-1.5 h-4 w-4" />Export Excel
+            <Button variant="outline" onClick={openInGoogleSheets} disabled={allItems.length === 0}>
+              <TableProperties className="mr-1.5 h-4 w-4" />Open in Google Sheets
             </Button>
             <Button onClick={openCreate}>
               <Plus className="mr-1.5 h-4 w-4" />Add New NPD
