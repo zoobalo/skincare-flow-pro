@@ -33,7 +33,6 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
     }
     return { sku, manufacturers, vendors };
   },
-  staleTime: 0,
   component: SkuDetailPage,
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.sku?.name ?? "SKU"} — Zoobalo` }] }),
 });

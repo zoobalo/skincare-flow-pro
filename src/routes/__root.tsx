@@ -7,6 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { Suspense } from "react";
 
 import appCss from "../styles.css?url";
 
@@ -127,7 +128,9 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <Suspense>
+        <Outlet />
+      </Suspense>
     </QueryClientProvider>
   );
 }
