@@ -292,9 +292,11 @@ function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/
   };
   const deletePoFromHistory = async (id: string, poNumber: string) => {
     if (!confirm(`Delete PO ${poNumber}? This cannot be undone.`)) return;
-    const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/purchase-orders/${id}`, { method: "DELETE" });
-    if (res.ok) { toast.success(`${poNumber} deleted.`); reload(); }
-    else { const b = await res.json().catch(() => ({})); toast.error(b.error ?? "Failed to delete."); }
+    try {
+      await api.purchaseOrders.delete(id);
+      toast.success(`${poNumber} deleted.`);
+      reload();
+    } catch { toast.error("Failed to delete."); }
   };
 
   return (

@@ -191,13 +191,12 @@ function ManufacturersContent({ manufacturers: allManufacturers }: { manufacture
 
   const handleDelete = async (m: ApiManufacturer) => {
     if (!confirm(`Delete "${m.name}"? This cannot be undone.`)) return;
-    const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/manufacturers/${m.id}`, { method: "DELETE" });
-    if (res.ok) {
+    try {
+      await api.manufacturers.delete(m.id);
       toast.success(`"${m.name}" deleted.`);
       await router.invalidate();
-    } else {
-      const body = await res.json().catch(() => ({}));
-      toast.error(body.error ?? "Failed to delete manufacturer.");
+    } catch {
+      toast.error("Failed to delete manufacturer.");
     }
   };
 

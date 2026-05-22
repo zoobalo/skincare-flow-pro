@@ -66,13 +66,12 @@ function SkuListContent({ skus, manufacturers }: {
     e.preventDefault();
     e.stopPropagation();
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
-    const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/skus/${id}`, { method: "DELETE" });
-    if (res.ok) {
+    try {
+      await api.skus.delete(id);
       toast.success(`"${name}" deleted.`);
       await router.invalidate();
-    } else {
-      const body = await res.json().catch(() => ({}));
-      toast.error(body.error ?? "Failed to delete SKU.");
+    } catch {
+      toast.error("Failed to delete SKU.");
     }
   };
 

@@ -204,13 +204,12 @@ function VendorsContent({ vendors }: { vendors: Awaited<ReturnType<typeof api.ve
 
   const handleDelete = async (v: ApiVendor) => {
     if (!confirm(`Delete "${v.name}"? This cannot be undone.`)) return;
-    const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/vendors/${v.id}`, { method: "DELETE" });
-    if (res.ok) {
+    try {
+      await api.vendors.delete(v.id);
       toast.success(`"${v.name}" deleted.`);
       await router.invalidate();
-    } else {
-      const body = await res.json().catch(() => ({}));
-      toast.error(body.error ?? "Failed to delete vendor.");
+    } catch {
+      toast.error("Failed to delete vendor.");
     }
   };
 

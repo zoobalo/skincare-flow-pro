@@ -130,13 +130,12 @@ function POContent({ purchaseOrders, vendors, skus }: {
 
   const handleDelete = async (po: ApiPo) => {
     if (!confirm(`Delete PO ${po.poNumber}? This cannot be undone.`)) return;
-    const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/purchase-orders/${po.id}`, { method: "DELETE" });
-    if (res.ok) {
+    try {
+      await api.purchaseOrders.delete(po.id);
       toast.success(`${po.poNumber} deleted.`);
       await router.invalidate();
-    } else {
-      const body = await res.json().catch(() => ({}));
-      toast.error(body.error ?? "Failed to delete purchase order.");
+    } catch {
+      toast.error("Failed to delete purchase order.");
     }
   };
 
