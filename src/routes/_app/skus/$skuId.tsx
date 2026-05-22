@@ -24,7 +24,13 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
       api.manufacturers.list(),
       api.vendors.list(),
     ]);
-    if (!sku) throw notFound();
+    // On SSR, auth token isn't available (localStorage) so sku will be null.
+    // Return null here so server and client render the same loading shell.
+    // staleTime: 0 ensures the client re-runs this loader immediately after hydration.
+    if (!sku) {
+      if (typeof window === "undefined") return null;
+      throw notFound();
+    }
     return { sku, manufacturers, vendors };
   },
   staleTime: 0,
@@ -47,7 +53,9 @@ const EMPTY_DISPATCH = { goodsType: "Final Goods", goodsName: "", quantity: 0, d
 const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false, materialCategory: "", materialItemId: "", applicableStages: [...PRODUCTION_STAGES] as string[], comment: "" };
 
 function SkuDetailPage() {
-  const { sku, manufacturers, vendors } = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <div className="flex items-center justify-center p-20 text-muted-foreground text-sm">Loading…</div>;
+  const { sku, manufacturers, vendors } = loaderData;
   const router = useRouter();
   const mfg = sku.manufacturer;
   const totalPackagingValue = sku.packaging.reduce((acc, p) => acc + p.currentStock * p.costPerUnit, 0);
