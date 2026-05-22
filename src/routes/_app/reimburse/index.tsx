@@ -89,7 +89,7 @@ function ReimbursePage() {
       const allThin    = (c = "BBBBBB") => ({ top: thin(c), bottom: thin(c), left: thin(c), right: thin(c) });
       const whiteBrd   = () => ({ top: thin(WHITE), bottom: thin(WHITE), left: thin(WHITE), right: thin(WHITE) });
 
-      const shade = (fill: string) => ({ type: ShadingType.SOLID, fill, color: "auto" });
+      const shade = (fill: string) => ({ type: ShadingType.CLEAR, fill, color: "auto" });
 
       const run = (text: string, opts: { bold?: boolean; size?: number; color?: string; break?: number } = {}) =>
         new TextRun({ text, bold: opts.bold, size: opts.size ?? 22, color: opts.color ?? BLACK, font: "Calibri", break: opts.break });
