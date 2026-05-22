@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type ExcelJS from "exceljs";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,18 +25,11 @@ const EMPTY_SIGS = { preparedBy: "", approvedBy: "" };
 type Row = { id: string; billDate: string; expenseHead: string; claimAmount: string };
 const newRow = (): Row => ({ id: crypto.randomUUID(), billDate: "", expenseHead: "", claimAmount: "" });
 
-// ── Colors (ARGB without #) ──────────────────────────────────────────────────
-const C_TEAL       = "FF2E7D82";
-const C_BLUE       = "FF1F5B97";
-const C_WHITE      = "FFFFFFFF";
-const C_LIGHT_GRAY = "FFF5F5F5";
-const C_BLACK      = "FF000000";
-
 function ReimbursePage() {
-  const [header, setHeader] = useState(EMPTY_HEADER);
-  const [rows,   setRows]   = useState<Row[]>([newRow()]);
-  const [sigs,   setSigs]   = useState(EMPTY_SIGS);
-  const [ready,  setReady]  = useState(false);
+  const [header,    setHeader]    = useState(EMPTY_HEADER);
+  const [rows,      setRows]      = useState<Row[]>([newRow()]);
+  const [sigs,      setSigs]      = useState(EMPTY_SIGS);
+  const [ready,     setReady]     = useState(false);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
@@ -72,169 +64,218 @@ function ReimbursePage() {
   const total = rows.reduce((s, r) => s + (parseFloat(r.claimAmount) || 0), 0);
   const fmt   = (n: number) => n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const exportExcel = async () => {
+  const exportWord = async () => {
     setExporting(true);
     try {
-      const ExcelJS = (await import("exceljs")).default;
-      const wb    = new ExcelJS.Workbook();
-      const sheet = wb.addWorksheet("Reimbursement");
+      const {
+        Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+        WidthType, AlignmentType, ShadingType, HeightRule,
+        convertMillimetersToTwip, VerticalAlign, BorderStyle, PageOrientation,
+      } = await import("docx");
 
-      // ── Column widths ────────────────────────────────────────────────
-      sheet.columns = [
-        { width: 8  },  // A: Sr. No
-        { width: 14 },  // B: Bill Date
-        { width: 42 },  // C: Expenses Head
-        { width: 18 },  // D: Claim Amount
-        { width: 22 },  // E: Approved Amount
-      ];
+      const mm = convertMillimetersToTwip;
 
-      const thinBorder = (color = "FFD0D0D0"): Partial<ExcelJS.Border> => ({ style: "thin", color: { argb: color } });
-      const allBorders = (color?: string) => ({
-        top: thinBorder(color), left: thinBorder(color),
-        bottom: thinBorder(color), right: thinBorder(color),
+      // ── Colors ────────────────────────────────────────────────────────
+      const TEAL  = "2E7D82";
+      const BLUE  = "1F5B97";
+      const LG    = "F2F2F2";
+      const WHITE = "FFFFFF";
+      const BLACK = "000000";
+
+      // ── Border helpers ────────────────────────────────────────────────
+      const none = () => ({ style: BorderStyle.NONE,   size: 0, color: "auto" });
+      const thin = (c = "BBBBBB") => ({ style: BorderStyle.SINGLE, size: 4, color: c });
+      const noBorders  = () => ({ top: none(), bottom: none(), left: none(), right: none() });
+      const allThin    = (c = "BBBBBB") => ({ top: thin(c), bottom: thin(c), left: thin(c), right: thin(c) });
+      const whiteBrd   = () => ({ top: thin(WHITE), bottom: thin(WHITE), left: thin(WHITE), right: thin(WHITE) });
+
+      const shade = (fill: string) => ({ type: ShadingType.SOLID, fill, color: "auto" });
+
+      const run = (text: string, opts: { bold?: boolean; size?: number; color?: string; break?: number } = {}) =>
+        new TextRun({ text, bold: opts.bold, size: opts.size ?? 22, color: opts.color ?? BLACK, font: "Calibri", break: opts.break });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cellPara = (children: any[], align: any = AlignmentType.LEFT) =>
+        new Paragraph({ alignment: align, spacing: { before: 50, after: 50 }, children });
+
+      // ── Column widths (content = 210 - 20 - 20 = 170mm) ──────────────
+      // Sr.No(12) + Date(27) + Head(71) + Claim(30) + Approved(30) = 170mm
+      const CW = [mm(12), mm(27), mm(71), mm(30), mm(30)];
+
+      // ── Company name ──────────────────────────────────────────────────
+      const companyPara = new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 0, after: 100 },
+        children: [run(header.company || "Company Name", { bold: true, size: 48, color: BLUE })],
       });
 
-      // ── Row 1: Company name ──────────────────────────────────────────
-      sheet.mergeCells("A1:E1");
-      const companyCell = sheet.getCell("A1");
-      companyCell.value     = header.company || "Company Name";
-      companyCell.font      = { name: "Calibri", size: 18, bold: true, color: { argb: C_BLUE } };
-      companyCell.alignment = { horizontal: "center", vertical: "middle" };
-      sheet.getRow(1).height = 36;
-
-      // ── Row 2: Form title bar ────────────────────────────────────────
-      sheet.mergeCells("A2:E2");
-      const titleCell    = sheet.getCell("A2");
-      titleCell.value     = "Claims Reimbursement Form";
-      titleCell.font      = { name: "Calibri", size: 12, bold: true, color: { argb: C_WHITE } };
-      titleCell.fill      = { type: "pattern", pattern: "solid", fgColor: { argb: C_TEAL } };
-      titleCell.alignment = { horizontal: "center", vertical: "middle" };
-      sheet.getRow(2).height = 26;
-
-      // ── Row 3: spacer ────────────────────────────────────────────────
-      sheet.getRow(3).height = 10;
-
-      // ── Rows 4–7: Employee info left + date table right ──────────────
-      const infoData = [
-        { label: "Name",        value: header.name,          rLabel: "Date",           rValue: header.date },
-        { label: "Designation", value: header.designation,   rLabel: "Financial Year", rValue: header.financialYear },
-        { label: "Department",  value: header.department,    rLabel: "Approval Date",  rValue: "" },
-        { label: "Period",      value: header.period,        rLabel: "",               rValue: "" },
-      ];
-
-      infoData.forEach(({ label, value, rLabel, rValue }, i) => {
-        const rn  = 4 + i;
-        const row = sheet.getRow(rn);
-        row.height = 18;
-
-        // Left label
-        const lc = sheet.getCell(`A${rn}`);
-        lc.value = `${label}:`;
-        lc.font  = { name: "Calibri", size: 10, bold: true };
-
-        // Left value (B:C merged)
-        sheet.mergeCells(`B${rn}:C${rn}`);
-        const vc = sheet.getCell(`B${rn}`);
-        vc.value = value;
-        vc.font  = { name: "Calibri", size: 10, bold: label === "Name" };
-
-        // Right label + value (bordered table cells)
-        if (rLabel) {
-          const dc = sheet.getCell(`D${rn}`);
-          dc.value     = rLabel;
-          dc.font      = { name: "Calibri", size: 10, bold: true };
-          dc.fill      = { type: "pattern", pattern: "solid", fgColor: { argb: C_LIGHT_GRAY } };
-          dc.border    = allBorders();
-          dc.alignment = { horizontal: "left", indent: 1 };
-
-          const ec = sheet.getCell(`E${rn}`);
-          ec.value     = rValue;
-          ec.font      = { name: "Calibri", size: 10 };
-          ec.border    = allBorders();
-          ec.alignment = { horizontal: "center", vertical: "middle" };
-        }
+      // ── "Claims Reimbursement Form" teal bar ──────────────────────────
+      const titleBar = new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [new TableRow({
+          height: { value: mm(9), rule: HeightRule.EXACT },
+          children: [new TableCell({
+            shading: shade(TEAL),
+            borders: whiteBrd(),
+            verticalAlign: VerticalAlign.CENTER,
+            children: [cellPara([run("Claims Reimbursement Form", { bold: true, size: 28, color: WHITE })], AlignmentType.CENTER)],
+          })],
+        })],
       });
 
-      // ── Row 8: spacer ────────────────────────────────────────────────
-      sheet.getRow(8).height = 10;
+      // ── Employee info + date table (side by side) ─────────────────────
+      const W_LBL = mm(33); const W_VAL = mm(75);
+      const W_GAP = mm(10); const W_RLBL = mm(34); const W_RVAL = mm(18);
 
-      // ── Row 9: Table headers ─────────────────────────────────────────
-      const HEADERS = ["Sr. No", "Bill Date", "Expenses Head", "Claim Amount", "Approved Amount\n(to be filled by HR)"];
-      const hRow = sheet.getRow(9);
-      hRow.height = 32;
-      HEADERS.forEach((h, i) => {
-        const cell     = hRow.getCell(i + 1);
-        cell.value     = h;
-        cell.font      = { name: "Calibri", size: 10, bold: true, color: { argb: C_WHITE } };
-        cell.fill      = { type: "pattern", pattern: "solid", fgColor: { argb: C_TEAL } };
-        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-        cell.border    = allBorders(C_WHITE);
-      });
-
-      // ── Rows 10+: Data rows ──────────────────────────────────────────
-      rows.forEach((r, i) => {
-        const rn      = 10 + i;
-        const dataRow = sheet.getRow(rn);
-        dataRow.height = 18;
-
-        const vals = [i + 1, r.billDate, r.expenseHead, parseFloat(r.claimAmount) || "", ""] as const;
-        const aligns: ExcelJS.Alignment["horizontal"][] = ["center", "center", "left", "right", "center"];
-
-        vals.forEach((val, j) => {
-          const cell     = dataRow.getCell(j + 1);
-          cell.value     = val as ExcelJS.CellValue;
-          cell.font      = { name: "Calibri", size: 10, color: { argb: C_BLACK } };
-          cell.alignment = { horizontal: aligns[j], vertical: "middle" };
-          cell.border    = allBorders();
-          if (i % 2 === 1) {
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF9FAFB" } };
-          }
+      const infoCell = (text: string, w: number, opts: { bold?: boolean; bg?: string; bordered?: boolean; align?: typeof AlignmentType[keyof typeof AlignmentType] } = {}) =>
+        new TableCell({
+          width: { size: w, type: WidthType.DXA },
+          shading: opts.bg ? shade(opts.bg) : undefined,
+          borders: opts.bordered ? allThin() : noBorders(),
+          verticalAlign: VerticalAlign.CENTER,
+          children: [cellPara([run(text, { bold: opts.bold, size: 20 })], opts.align ?? AlignmentType.LEFT)],
         });
+
+      const infoData = [
+        ["Name",        header.name,        "Date",           header.date         ],
+        ["Designation", header.designation, "Financial Year", header.financialYear ],
+        ["Department",  header.department,  "Approval Date",  ""                  ],
+        ["Period",      header.period,      "",               ""                  ],
+      ];
+
+      const infoTable = new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: infoData.map(([lbl, val, rlbl, rval]) =>
+          new TableRow({
+            height: { value: mm(6.5), rule: HeightRule.ATLEAST },
+            children: [
+              infoCell(`${lbl}:`, W_LBL, { bold: true }),
+              infoCell(val, W_VAL, { bold: lbl === "Name" }),
+              infoCell("", W_GAP),
+              rlbl ? infoCell(rlbl, W_RLBL, { bold: true, bg: LG, bordered: true }) : infoCell("", W_RLBL),
+              rlbl ? infoCell(rval, W_RVAL, { bordered: true, align: AlignmentType.CENTER }) : infoCell("", W_RVAL),
+            ],
+          })
+        ),
       });
 
-      // ── Total row ────────────────────────────────────────────────────
-      const totalRn = 10 + rows.length + 1;
-      sheet.getRow(totalRn).height = 20;
+      // ── Expense table ─────────────────────────────────────────────────
+      const hdrCell = (lines: string[], w: number) =>
+        new TableCell({
+          width: { size: w, type: WidthType.DXA },
+          shading: shade(TEAL),
+          borders: whiteBrd(),
+          verticalAlign: VerticalAlign.CENTER,
+          children: [new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 60, after: 60 },
+            children: lines.map((t, i) => run(t, { bold: true, size: 20, color: WHITE, break: i > 0 ? 1 : undefined })),
+          })],
+        });
 
-      const totalLabel = sheet.getCell(`C${totalRn}`);
-      totalLabel.value     = "Total";
-      totalLabel.font      = { name: "Calibri", size: 10, bold: true };
-      totalLabel.alignment = { horizontal: "right" };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const dataCell = (text: string, w: number, align: any = AlignmentType.LEFT, bold = false) =>
+        new TableCell({
+          width: { size: w, type: WidthType.DXA },
+          borders: allThin(),
+          verticalAlign: VerticalAlign.CENTER,
+          children: [cellPara([run(text, { bold, size: 20 })], align)],
+        });
 
-      const totalVal = sheet.getCell(`D${totalRn}`);
-      totalVal.value     = total;
-      totalVal.font      = { name: "Calibri", size: 11, bold: true, color: { argb: C_BLUE } };
-      totalVal.alignment = { horizontal: "right" };
-      totalVal.border    = {
-        top:    { style: "double", color: { argb: C_TEAL } },
-        bottom: { style: "double", color: { argb: C_TEAL } },
-        left:   thinBorder(), right: thinBorder(),
-      };
+      const fmtAmt = (val: string) =>
+        val && parseFloat(val) ? `₹${parseFloat(val).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "";
 
-      // ── Signatures ───────────────────────────────────────────────────
-      const sigRn = totalRn + 3;
-      sheet.getRow(sigRn).height = 18;
-      [
-        { col: "A", label: "Prepared By" }, { col: "B", val: sigs.preparedBy },
-        { col: "D", label: "Approved By" }, { col: "E", val: sigs.approvedBy },
-      ].forEach(({ col, label, val }) => {
-        const cell  = sheet.getCell(`${col}${sigRn}`);
-        cell.value  = label ?? val ?? "";
-        cell.font   = { name: "Calibri", size: 10, bold: !!label };
+      const expenseTable = new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          // Header row
+          new TableRow({
+            height: { value: mm(11), rule: HeightRule.ATLEAST },
+            tableHeader: true,
+            children: [
+              hdrCell(["Sr. No"],               CW[0]),
+              hdrCell(["Bill Date"],             CW[1]),
+              hdrCell(["Expenses Head"],          CW[2]),
+              hdrCell(["Claim Amount"],           CW[3]),
+              hdrCell(["Approved Amount", "(to be filled by HR)"], CW[4]),
+            ],
+          }),
+          // Data rows
+          ...rows.map((r, i) => new TableRow({
+            height: { value: mm(7), rule: HeightRule.ATLEAST },
+            children: [
+              dataCell(String(i + 1), CW[0], AlignmentType.CENTER),
+              dataCell(r.billDate,    CW[1], AlignmentType.CENTER),
+              dataCell(r.expenseHead, CW[2]),
+              dataCell(fmtAmt(r.claimAmount), CW[3], AlignmentType.RIGHT),
+              dataCell("", CW[4]),
+            ],
+          })),
+          // Total row
+          new TableRow({
+            height: { value: mm(8), rule: HeightRule.ATLEAST },
+            children: [
+              dataCell("", CW[0]),
+              dataCell("", CW[1]),
+              dataCell("Total", CW[2], AlignmentType.RIGHT, true),
+              dataCell(`₹${fmt(total)}`, CW[3], AlignmentType.RIGHT, true),
+              dataCell("", CW[4]),
+            ],
+          }),
+        ],
       });
 
-      // ── Download ─────────────────────────────────────────────────────
-      const buffer = await wb.xlsx.writeBuffer();
-      const blob   = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      // ── Signatures ────────────────────────────────────────────────────
+      const sigTable = new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [new TableRow({
+          height: { value: mm(20), rule: HeightRule.ATLEAST },
+          children: [
+            infoCell("Prepared By:", mm(33), { bold: true }),
+            infoCell(sigs.preparedBy, mm(50)),
+            infoCell("", mm(20)),
+            infoCell("Approved By:", mm(33), { bold: true }),
+            infoCell(sigs.approvedBy, mm(34)),
+          ],
+        })],
       });
-      const url = URL.createObjectURL(blob);
-      const a   = document.createElement("a");
+
+      const spacer = () => new Paragraph({ spacing: { before: 0, after: 100 }, children: [] });
+
+      // ── Assemble document ─────────────────────────────────────────────
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              size: {
+                width:  mm(210),
+                height: mm(297),
+                orientation: PageOrientation.PORTRAIT,
+              },
+              margin: { top: mm(20), right: mm(20), bottom: mm(20), left: mm(20) },
+            },
+          },
+          children: [
+            companyPara,
+            titleBar,
+            spacer(),
+            infoTable,
+            spacer(),
+            expenseTable,
+            spacer(),
+            sigTable,
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
       a.href     = url;
-      a.download = `reimbursement-${header.name || "claim"}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.download = `reimbursement-${header.name || "claim"}-${new Date().toISOString().slice(0, 10)}.docx`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Excel exported successfully.");
+      toast.success("Word document exported successfully.");
     } catch (err) {
       console.error(err);
       toast.error("Export failed. Please try again.");
@@ -247,13 +288,13 @@ function ReimbursePage() {
     <div className="space-y-6">
       <PageHeader
         title="Reimbursement"
-        description="Fill expense entries day by day and export when ready to submit"
+        description="Fill expense entries day by day and export as a Word document when ready to submit"
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={clearRows}>Clear Rows</Button>
-            <Button onClick={exportExcel} disabled={exporting || rows.every(r => !r.expenseHead && !r.claimAmount)}>
+            <Button onClick={exportWord} disabled={exporting || rows.every(r => !r.expenseHead && !r.claimAmount)}>
               <Download className="mr-1.5 h-4 w-4" />
-              {exporting ? "Exporting…" : "Export Excel"}
+              {exporting ? "Exporting…" : "Export Word"}
             </Button>
           </div>
         }
@@ -266,7 +307,7 @@ function ReimbursePage() {
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary font-medium">auto-saved</span>
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <div className="space-y-1.5 sm:col-span-3">
+          <div className="space-y-1.5 col-span-2 sm:col-span-3">
             <Label>Company Name</Label>
             <Input placeholder="e.g. Derma Goodness Private Limited" value={header.company} onChange={setH("company")} />
           </div>
@@ -313,10 +354,7 @@ function ReimbursePage() {
                 <th className="px-4 py-3 text-left w-36">Bill Date</th>
                 <th className="px-4 py-3 text-left">Expense Head</th>
                 <th className="px-4 py-3 text-right w-44">Claim Amount (₹)</th>
-                <th className="px-4 py-3 text-right w-48">
-                  Approved Amount (₹)
-                  <span className="ml-1 normal-case text-[10px]">(HR)</span>
-                </th>
+                <th className="px-4 py-3 text-right w-48">Approved Amount (₹) <span className="normal-case text-[10px]">(HR)</span></th>
                 <th className="w-10" />
               </tr>
             </thead>
@@ -334,7 +372,7 @@ function ReimbursePage() {
                     <Input type="number" step="0.01" min="0" className="h-8 text-xs text-right" placeholder="0.00" value={row.claimAmount} onChange={setR(row.id, "claimAmount")} />
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="h-8 flex items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground/60 tracking-wide">
+                    <div className="h-8 flex items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground/60">
                       To be filled by HR
                     </div>
                   </td>
@@ -348,7 +386,7 @@ function ReimbursePage() {
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-muted/40 border-t-2 border-border">
+              <tr className="bg-muted/40 border-t-2">
                 <td colSpan={3} className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total</td>
                 <td className="px-4 py-3 text-right font-bold tabular-nums">₹{fmt(total)}</td>
                 <td colSpan={2} />
