@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Mail, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Mail, Eye, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { StatusBadge } from "@/components/status-badge";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -151,12 +152,49 @@ function POContent({ purchaseOrders, vendors, skus }: {
     return p.poNumber.toLowerCase().includes(needle) || p.materialType.toLowerCase().includes(needle) || (p.vendor?.name ?? "").toLowerCase().includes(needle) || (p.sku?.code ?? "").toLowerCase().includes(needle);
   });
 
+  const downloadExcel = () => {
+    const rows = filtered.map((po) => {
+      const netAmount = Number(po.quantity ?? 0) * Number(po.rate ?? 0);
+      const gst18     = Number(po.gstRate) === 18 ? Number(po.gstAmount ?? 0) : 0;
+      const gst5      = Number(po.gstRate) === 5  ? Number(po.gstAmount ?? 0) : 0;
+      return {
+        "PKG type":     po.materialType,
+        "Date":         po.dispatchDate,
+        "Number":       po.poNumber,
+        "Party Name":   po.vendor?.name ?? "",
+        "Item":         po.sku?.name ?? po.materialType,
+        "SKU CODE":     po.sku?.code ?? "",
+        "Quantity":     Number(po.quantity ?? 0),
+        "Rate":         Number(po.rate ?? 0),
+        "Net Amount":   netAmount,
+        "18% GST":      gst18,
+        "5% GST":       gst5,
+        "Total Amount": Number(po.total ?? 0),
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const colWidths = [14, 12, 20, 28, 32, 14, 10, 10, 14, 12, 12, 14];
+    ws["!cols"] = colWidths.map((w) => ({ wch: w }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Purchase Orders");
+    XLSX.writeFile(wb, `purchase-orders-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Purchase Orders"
         description={`${purchaseOrders.length} POs across all vendors and SKUs`}
-        actions={<Button asChild><Link to="/purchase-orders/new"><Plus className="mr-1.5 h-4 w-4" />Create PO</Link></Button>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={downloadExcel} disabled={filtered.length === 0}>
+              <Download className="mr-1.5 h-4 w-4" />Export Excel
+            </Button>
+            <Button asChild><Link to="/purchase-orders/new"><Plus className="mr-1.5 h-4 w-4" />Create PO</Link></Button>
+          </div>
+        }
       />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-8">
