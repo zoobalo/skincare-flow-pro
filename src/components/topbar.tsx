@@ -1,4 +1,5 @@
 import { Bell, Menu, Moon, Search, Sun } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/lib/theme";
@@ -10,7 +11,8 @@ import { getUser, clearSession } from "@/lib/auth";
 export function Topbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
-  const user = getUser();
+  const [user, setUser] = useState<ReturnType<typeof getUser>>(null);
+  useEffect(() => { setUser(getUser()); }, []);
   const initials = user?.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) ?? "?";
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:gap-3 md:px-4">

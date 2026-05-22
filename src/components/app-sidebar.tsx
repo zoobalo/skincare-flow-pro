@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { isAdmin } from "@/lib/auth";
 import {
@@ -55,7 +56,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ collapsed, mobileOpen, onMobileClose }: AppSidebarProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const admin = isAdmin();
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => { setAdmin(isAdmin()); }, []);
 
   return (
     <aside
