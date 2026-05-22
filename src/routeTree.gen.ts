@@ -23,6 +23,7 @@ import { Route as AppTasksIndexRouteImport } from './routes/_app/tasks/index'
 import { Route as AppSkusIndexRouteImport } from './routes/_app/skus/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppReportsIndexRouteImport } from './routes/_app/reports/index'
+import { Route as AppReimburseIndexRouteImport } from './routes/_app/reimburse/index'
 import { Route as AppPurchaseOrdersIndexRouteImport } from './routes/_app/purchase-orders/index'
 import { Route as AppProductionIndexRouteImport } from './routes/_app/production/index'
 import { Route as AppProductionRemarksIndexRouteImport } from './routes/_app/production-remarks/index'
@@ -107,6 +108,11 @@ const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
 const AppReportsIndexRoute = AppReportsIndexRouteImport.update({
   id: '/reports/',
   path: '/reports/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReimburseIndexRoute = AppReimburseIndexRouteImport.update({
+  id: '/reimburse/',
+  path: '/reimburse/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPurchaseOrdersIndexRoute = AppPurchaseOrdersIndexRouteImport.update({
@@ -215,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/production-remarks/': typeof AppProductionRemarksIndexRoute
   '/production/': typeof AppProductionIndexRoute
   '/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
+  '/reimburse/': typeof AppReimburseIndexRoute
   '/reports/': typeof AppReportsIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/skus/': typeof AppSkusIndexRoute
@@ -246,6 +253,7 @@ export interface FileRoutesByTo {
   '/production-remarks': typeof AppProductionRemarksIndexRoute
   '/production': typeof AppProductionIndexRoute
   '/purchase-orders': typeof AppPurchaseOrdersIndexRoute
+  '/reimburse': typeof AppReimburseIndexRoute
   '/reports': typeof AppReportsIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/skus': typeof AppSkusIndexRoute
@@ -279,6 +287,7 @@ export interface FileRoutesById {
   '/_app/production-remarks/': typeof AppProductionRemarksIndexRoute
   '/_app/production/': typeof AppProductionIndexRoute
   '/_app/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
+  '/_app/reimburse/': typeof AppReimburseIndexRoute
   '/_app/reports/': typeof AppReportsIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/skus/': typeof AppSkusIndexRoute
@@ -312,6 +321,7 @@ export interface FileRouteTypes {
     | '/production-remarks/'
     | '/production/'
     | '/purchase-orders/'
+    | '/reimburse/'
     | '/reports/'
     | '/settings/'
     | '/skus/'
@@ -343,6 +353,7 @@ export interface FileRouteTypes {
     | '/production-remarks'
     | '/production'
     | '/purchase-orders'
+    | '/reimburse'
     | '/reports'
     | '/settings'
     | '/skus'
@@ -375,6 +386,7 @@ export interface FileRouteTypes {
     | '/_app/production-remarks/'
     | '/_app/production/'
     | '/_app/purchase-orders/'
+    | '/_app/reimburse/'
     | '/_app/reports/'
     | '/_app/settings/'
     | '/_app/skus/'
@@ -491,6 +503,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports/'
       preLoaderRoute: typeof AppReportsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reimburse/': {
+      id: '/_app/reimburse/'
+      path: '/reimburse'
+      fullPath: '/reimburse/'
+      preLoaderRoute: typeof AppReimburseIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/purchase-orders/': {
@@ -626,6 +645,7 @@ interface AppRouteChildren {
   AppProductionRemarksIndexRoute: typeof AppProductionRemarksIndexRoute
   AppProductionIndexRoute: typeof AppProductionIndexRoute
   AppPurchaseOrdersIndexRoute: typeof AppPurchaseOrdersIndexRoute
+  AppReimburseIndexRoute: typeof AppReimburseIndexRoute
   AppReportsIndexRoute: typeof AppReportsIndexRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
   AppSkusIndexRoute: typeof AppSkusIndexRoute
@@ -653,6 +673,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProductionRemarksIndexRoute: AppProductionRemarksIndexRoute,
   AppProductionIndexRoute: AppProductionIndexRoute,
   AppPurchaseOrdersIndexRoute: AppPurchaseOrdersIndexRoute,
+  AppReimburseIndexRoute: AppReimburseIndexRoute,
   AppReportsIndexRoute: AppReportsIndexRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
   AppSkusIndexRoute: AppSkusIndexRoute,
