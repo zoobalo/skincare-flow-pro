@@ -76,9 +76,9 @@ function ReimbursePage() {
       const mm = convertMillimetersToTwip;
 
       // ── Colors ────────────────────────────────────────────────────────
-      const TEAL  = "2E7D82";
-      const BLUE  = "1F5B97";
-      const LG    = "F2F2F2";
+      const TEAL  = "2D7FA5";   // steel teal — title bar & table headers
+      const BLUE  = "1C3E72";   // dark navy — company name
+      const LG    = "EBEBEB";   // light gray — date/FY label cells
       const WHITE = "FFFFFF";
       const BLACK = "000000";
 
