@@ -136,8 +136,14 @@ function ReimbursePage() {
           children: [cellPara([run(text, { bold: opts.bold, size: 20 })], opts.align ?? AlignmentType.LEFT)],
         });
 
+      const fmtDate = (d: string) => {
+        if (!d) return "";
+        const [y, m, day] = d.split("-");
+        return `${day}/${m}/${y}`;
+      };
+
       const infoData = [
-        ["Name",        header.name,        "Date",           header.date         ],
+        ["Name",        header.name,        "Date",           fmtDate(header.date)],
         ["Designation", header.designation, "Financial Year", header.financialYear ],
         ["Department",  header.department,  "Approval Date",  ""                  ],
         ["Period",      header.period,      "",               ""                  ],
@@ -205,7 +211,7 @@ function ReimbursePage() {
             height: { value: mm(7), rule: HeightRule.ATLEAST },
             children: [
               dataCell(String(i + 1), CW[0], AlignmentType.CENTER),
-              dataCell(r.billDate,    CW[1], AlignmentType.CENTER),
+              dataCell(fmtDate(r.billDate), CW[1], AlignmentType.CENTER),
               dataCell(r.expenseHead, CW[2]),
               dataCell(fmtAmt(r.claimAmount), CW[3], AlignmentType.RIGHT),
               dataCell("", CW[4]),
