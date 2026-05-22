@@ -946,10 +946,10 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
               </Select>
             </div>
             <div className="space-y-1.5"><Label>Vendor (optional)</Label>
-              <Select value={(editBatchForm as any).vendorId ?? ""} onValueChange={(v) => setEditBatchForm(f => ({ ...f, vendorId: v }))}>
+              <Select value={(editBatchForm as any).vendorId || "__none__"} onValueChange={(v) => setEditBatchForm(f => ({ ...f, vendorId: v === "__none__" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -1203,10 +1203,10 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
               </Select>
             </div>
             <div className="space-y-1.5"><Label>Vendor (optional)</Label>
-              <Select value={batchForm.vendorId} onValueChange={(v) => setBatchForm(f => ({ ...f, vendorId: v }))}>
+              <Select value={batchForm.vendorId || "__none__"} onValueChange={(v) => setBatchForm(f => ({ ...f, vendorId: v === "__none__" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
                 </SelectContent>
               </Select>
