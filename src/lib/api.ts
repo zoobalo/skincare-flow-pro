@@ -281,6 +281,7 @@ export const api = {
     },
     get: async (id: string) => {
       const s = await get<any>(`/skus/${id}`);
+      if (!s?.id) return null;
       return {
         ...s,
         packaging:         (s.packaging         ?? []).map(coercePackaging),

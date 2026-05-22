@@ -27,8 +27,9 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
     if (!sku) throw notFound();
     return { sku, manufacturers, vendors };
   },
+  staleTime: 0,
   component: SkuDetailPage,
-  head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.sku.name ?? "SKU"} — Zoobalo` }] }),
+  head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.sku?.name ?? "SKU"} — Zoobalo` }] }),
 });
 
 const SKU_CATEGORIES = ["Sun Care", "Serums", "Moisturizers", "Cleansers", "Toners", "Exfoliators", "Eye Care", "Lip Care", "Body Care"];
