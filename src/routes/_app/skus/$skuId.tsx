@@ -19,10 +19,12 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/skus/$skuId")({
   loader: async ({ params }) => {
-    const [sku, manufacturers, vendors] = await Promise.all([
+    const [sku, manufacturers, vendors, allPackaging, allRawMaterials] = await Promise.all([
       api.skus.get(params.skuId),
       api.manufacturers.list(),
       api.vendors.list(),
+      api.inventory.packaging(),
+      api.inventory.rawMaterials(),
     ]);
     // On SSR, auth token isn't available (localStorage) so sku will be null.
     // Return null here so server and client render the same loading shell.
@@ -31,7 +33,7 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
       if (typeof window === "undefined") return null;
       throw notFound();
     }
-    return { sku, manufacturers, vendors };
+    return { sku, manufacturers, vendors, allPackaging, allRawMaterials };
   },
   component: SkuDetailPage,
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.sku?.name ?? "SKU"} — Zoobalo` }] }),
@@ -54,10 +56,10 @@ const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, curre
 function SkuDetailPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <div className="flex items-center justify-center p-20 text-muted-foreground text-sm">Loading…</div>;
-  return <SkuDetailContent sku={loaderData.sku} manufacturers={loaderData.manufacturers} vendors={loaderData.vendors} />;
+  return <SkuDetailContent sku={loaderData.sku} manufacturers={loaderData.manufacturers} vendors={loaderData.vendors} allPackaging={loaderData.allPackaging} allRawMaterials={loaderData.allRawMaterials} />;
 }
 
-function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/api").ApiSkuDetail; manufacturers: import("@/lib/api").ApiManufacturer[]; vendors: import("@/lib/api").ApiVendor[] }) {
+function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMaterials }: { sku: import("@/lib/api").ApiSkuDetail; manufacturers: import("@/lib/api").ApiManufacturer[]; vendors: import("@/lib/api").ApiVendor[]; allPackaging: import("@/lib/api").ApiPackagingItem[]; allRawMaterials: import("@/lib/api").ApiRawMaterial[] }) {
   const router = useRouter();
   const navigate = useNavigate();
   const mfg = sku.manufacturer;
@@ -962,8 +964,8 @@ function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/
                     <SelectTrigger><SelectValue placeholder={`Select ${editBatchForm.materialCategory.toLowerCase()}…`} /></SelectTrigger>
                     <SelectContent>
                       {editBatchForm.materialCategory === "Packaging"
-                        ? sku.packaging.map(p => <SelectItem key={p.id} value={p.id}>{p.name} <span className="text-muted-foreground">· Stock {p.currentStock.toLocaleString()}</span></SelectItem>)
-                        : sku.rawMaterials.map(r => <SelectItem key={r.id} value={r.id}>{r.name} <span className="text-muted-foreground">· {r.currentStock} {r.unit}</span></SelectItem>)
+                        ? allPackaging.map(p => <SelectItem key={p.id} value={p.id}>{p.name} <span className="text-muted-foreground">· Stock {(p.currentStock ?? 0).toLocaleString()}</span></SelectItem>)
+                        : allRawMaterials.map(r => <SelectItem key={r.id} value={r.id}>{r.name} <span className="text-muted-foreground">· {r.currentStock} {r.unit}</span></SelectItem>)
                       }
                     </SelectContent>
                   </Select>
@@ -1210,8 +1212,8 @@ function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/
                     <SelectTrigger><SelectValue placeholder={`Select ${batchForm.materialCategory.toLowerCase()}…`} /></SelectTrigger>
                     <SelectContent>
                       {batchForm.materialCategory === "Packaging"
-                        ? sku.packaging.map(p => <SelectItem key={p.id} value={p.id}>{p.name} <span className="text-muted-foreground">· Stock {p.currentStock.toLocaleString()}</span></SelectItem>)
-                        : sku.rawMaterials.map(r => <SelectItem key={r.id} value={r.id}>{r.name} <span className="text-muted-foreground">· {r.currentStock} {r.unit}</span></SelectItem>)
+                        ? allPackaging.map(p => <SelectItem key={p.id} value={p.id}>{p.name} <span className="text-muted-foreground">· Stock {(p.currentStock ?? 0).toLocaleString()}</span></SelectItem>)
+                        : allRawMaterials.map(r => <SelectItem key={r.id} value={r.id}>{r.name} <span className="text-muted-foreground">· {r.currentStock} {r.unit}</span></SelectItem>)
                       }
                     </SelectContent>
                   </Select>
