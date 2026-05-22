@@ -219,11 +219,7 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
   };
 
   const openInGoogleSheets = async () => {
-    // TSV cell: replace inner newlines with space, quote if tab present
-    const cell = (v: string) => {
-      const s = (v ?? "").replace(/\r?\n/g, " ").replace(/\t/g, " ");
-      return s;
-    };
+    const cell = (v: string) => (v ?? "").replace(/\r?\n/g, " ").replace(/\t/g, " ");
 
     const HEADERS = [
       "Product Name", "Launch Month", "RM Status", "PM Status",
@@ -258,8 +254,8 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
           rows.push([
             ...base,
             groupName,
-            `=IMAGE("${url}")`,                          // thumbnail in cell
-            `=HYPERLINK("${url}","🔍 Open")`,            // clickable link to full size
+            `=IMAGE("${url}")`,
+            `=HYPERLINK("${url}","🔍 Open")`,
             groupComment,
             i === 0 ? cell(item.comments || "") : "",
           ]);
@@ -267,17 +263,18 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
       });
     });
 
-    const tsv = rows.map((r) => r.join("\t")).join("\n");
-
     try {
-      await navigator.clipboard.writeText(tsv);
-      window.open("https://sheets.new", "_blank");
-      toast.success(
-        "Google Sheet opened! Switch to it and press Ctrl+V (or Cmd+V on Mac) to paste. Select row 2 onward and set row height to 120px to see images.",
-        { duration: 8000 },
-      );
-    } catch {
-      toast.error("Clipboard access denied. Please allow clipboard permissions and try again.");
+      const res  = await fetch(`${API_BASE}/api/npd/sync-sheet`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows }),
+      });
+      const data = await res.json() as { url?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Sync failed");
+      window.open(data.url, "_blank");
+      toast.success("Google Sheet updated! Opening now…");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to sync with Google Sheets.");
     }
   };
 
