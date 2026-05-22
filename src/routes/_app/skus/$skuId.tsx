@@ -51,7 +51,7 @@ const DISPATCH_STATUSES = ["Dispatched", "In Transit", "Delivered", "Delayed"] a
 const GOODS_TYPES = ["Final Goods", "Packaging Material"] as const;
 const EMPTY_DISPATCH = { goodsType: "Final Goods", goodsName: "", quantity: 0, dispatchDate: "", from: "", to: "", transporterName: "", vehicleNumber: "", lrNumber: "", freight: 0, status: "Dispatched", notes: "" };
 
-const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false, materialCategory: "", materialItemId: "", applicableStages: [...PRODUCTION_STAGES] as string[], comment: "" };
+const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", vendorId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false, materialCategory: "", materialItemId: "", applicableStages: [...PRODUCTION_STAGES] as string[], comment: "" };
 
 function SkuDetailPage() {
   const loaderData = Route.useLoaderData();
@@ -179,11 +179,11 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
     setBatchSaving(true);
     try {
       const matName = batchForm.materialCategory === "Packaging"
-        ? sku.packaging.find(p => p.id === batchForm.materialItemId)?.name ?? null
+        ? allPackaging.find(p => p.id === batchForm.materialItemId)?.name ?? null
         : batchForm.materialCategory === "Raw Material"
-        ? sku.rawMaterials.find(r => r.id === batchForm.materialItemId)?.name ?? null
+        ? allRawMaterials.find(r => r.id === batchForm.materialItemId)?.name ?? null
         : null;
-      await api.production.create({ ...batchForm, skuId: sku.id, quantity: +batchForm.quantity, materialCategory: batchForm.materialCategory || null, materialItemId: batchForm.materialItemId || null, materialItemName: matName });
+      await api.production.create({ ...batchForm, skuId: sku.id, quantity: +batchForm.quantity, vendorId: batchForm.vendorId || null, materialCategory: batchForm.materialCategory || null, materialItemId: batchForm.materialItemId || null, materialItemName: matName });
       setBatchOpen(false); setBatchForm({ ...EMPTY_BATCH, manufacturerId: manufacturers[0]?.id ?? "" }); await reload(); toast.success("Production batch created.");
     } catch { toast.error("Failed to create batch."); } finally { setBatchSaving(false); }
   };
@@ -203,6 +203,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
     setEditBatchForm({
       batchNumber: batch.batchNumber,
       manufacturerId: batch.manufacturerId,
+      vendorId: batch.vendorId ?? "",
       quantity: batch.quantity,
       currentStage: batch.currentStage,
       startedAt: batch.startedAt.slice(0, 10),
@@ -221,11 +222,11 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
     setEditBatchSaving(true);
     try {
       const matName = editBatchForm.materialCategory === "Packaging"
-        ? sku.packaging.find(p => p.id === editBatchForm.materialItemId)?.name ?? null
+        ? allPackaging.find(p => p.id === editBatchForm.materialItemId)?.name ?? null
         : editBatchForm.materialCategory === "Raw Material"
-        ? sku.rawMaterials.find(r => r.id === editBatchForm.materialItemId)?.name ?? null
+        ? allRawMaterials.find(r => r.id === editBatchForm.materialItemId)?.name ?? null
         : null;
-      await api.production.update(editBatchId, { ...editBatchForm, quantity: +editBatchForm.quantity, materialCategory: editBatchForm.materialCategory || null, materialItemId: editBatchForm.materialItemId || null, materialItemName: matName });
+      await api.production.update(editBatchId, { ...editBatchForm, quantity: +editBatchForm.quantity, vendorId: editBatchForm.vendorId || null, materialCategory: editBatchForm.materialCategory || null, materialItemId: editBatchForm.materialItemId || null, materialItemName: matName });
       setEditBatchOpen(false); await reload(); toast.success("Batch updated.");
     } catch { toast.error("Failed to update batch."); } finally { setEditBatchSaving(false); }
   };
@@ -944,6 +945,15 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                 <SelectContent>{manufacturers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5"><Label>Vendor (optional)</Label>
+              <Select value={(editBatchForm as any).vendorId ?? ""} onValueChange={(v) => setEditBatchForm(f => ({ ...f, vendorId: v }))}>
+                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             {/* Material category + item */}
             <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Link to Material (optional)</p>
@@ -1190,6 +1200,15 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
               <Select value={batchForm.manufacturerId} onValueChange={(v) => setBatchForm(f => ({ ...f, manufacturerId: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
                 <SelectContent>{manufacturers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Vendor (optional)</Label>
+              <Select value={batchForm.vendorId} onValueChange={(v) => setBatchForm(f => ({ ...f, vendorId: v }))}>
+                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+                </SelectContent>
               </Select>
             </div>
             {/* Material category + item */}
