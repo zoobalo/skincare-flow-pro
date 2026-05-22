@@ -15,6 +15,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/production-remarks/")({
   loader: async () => {
+    if (typeof window === "undefined") return null;
     const [remarks, skus] = await Promise.all([api.productionRemarks.list(), api.skus.list()]);
     return { remarks, skus };
   },
@@ -37,7 +38,12 @@ const EMPTY: Omit<ApiProductionRemark, "id" | "createdAt" | "updatedAt" | "skuCo
 };
 
 function ProductionRemarksPage() {
-  const { remarks: rawRemarks, skus } = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <PageSkeleton />;
+  return <ProductionRemarksContent remarks={loaderData.remarks} skus={loaderData.skus} />;
+}
+
+function ProductionRemarksContent({ remarks: rawRemarks, skus }: { remarks: Awaited<ReturnType<typeof api.productionRemarks.list>>; skus: Awaited<ReturnType<typeof api.skus.list>> }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 

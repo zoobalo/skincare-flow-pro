@@ -6,14 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Plus, Factory, Pencil, Trash2, Mail, MapPin, Phone, Star } from "lucide-react";
+import { Plus, Factory, Pencil, Trash2, Mail, MapPin, Phone, Star, Search } from "lucide-react";
 import { ContactsEditor } from "@/components/contacts-editor";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ApiManufacturer, ApiContact } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/manufacturers/")({
-  loader: () => api.manufacturers.list(),
+  loader: async () => {
+    if (typeof window === "undefined") return null;
+    return api.manufacturers.list();
+  },
   pendingComponent: PageSkeleton,
   component: ManufacturersPage,
   head: () => ({ meta: [{ title: "Manufacturers — Zoobalo" }] }),
@@ -141,10 +144,20 @@ function ManufacturerSheet({
 }
 
 function ManufacturersPage() {
-  const manufacturers = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <PageSkeleton />;
+  return <ManufacturersContent manufacturers={loaderData} />;
+}
+
+function ManufacturersContent({ manufacturers: allManufacturers }: { manufacturers: Awaited<ReturnType<typeof api.manufacturers.list>> }) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ApiManufacturer | null>(null);
+  const [search, setSearch] = useState("");
+  const manufacturers = allManufacturers.filter((m) => {
+    const q = search.toLowerCase();
+    return !q || m.name.toLowerCase().includes(q) || (m.city ?? "").toLowerCase().includes(q) || m.contactPerson.toLowerCase().includes(q) || (m.email ?? "").toLowerCase().includes(q);
+  });
 
   const handleCreate = async (form: typeof EMPTY) => {
     await api.manufacturers.create({
@@ -192,7 +205,7 @@ function ManufacturersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Manufacturers"
-        description={`${manufacturers.length} active manufacturing partners`}
+        description={`${allManufacturers.length} active manufacturing partners`}
         actions={
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="mr-1.5 h-4 w-4" />Add Manufacturer
@@ -200,9 +213,19 @@ function ManufacturersPage() {
         }
       />
 
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search manufacturers…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
       {manufacturers.length === 0 && (
         <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">
-          No manufacturers yet. Click "Add Manufacturer" to get started.
+          {allManufacturers.length === 0 ? 'No manufacturers yet. Click "Add Manufacturer" to get started.' : "No manufacturers match your search."}
         </div>
       )}
 

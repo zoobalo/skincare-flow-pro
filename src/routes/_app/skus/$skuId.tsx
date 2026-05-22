@@ -140,7 +140,7 @@ function SkuDetailContent({ sku, manufacturers, vendors }: { sku: import("@/lib/
   const setEditBatch = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setEditBatchForm(p => ({ ...p, [f]: e.target.value }));
   const setEditPack  = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setEditPackForm(p => ({ ...p, [f]: e.target.value }));
   const setEditRm    = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setEditRmForm(p => ({ ...p, [f]: e.target.value }));
-  const setEditPo    = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) => setEditPoForm(p => ({ ...p, [f]: e.target.value }));
+  const setEditPo    = (f: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEditPoForm(p => ({ ...p, [f]: e.target.value }));
 
   const reload = () => router.invalidate();
 

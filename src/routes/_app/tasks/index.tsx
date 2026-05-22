@@ -10,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Edit2 } from "lucide-react";
+import { Plus, Trash2, Edit2, Search } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/tasks/")({
   loader: async () => {
+    if (typeof window === "undefined") return null;
     const [tasks, skus] = await Promise.all([api.tasks.list(), api.skus.list()]);
     return { tasks, skus };
   },
@@ -47,7 +48,12 @@ const EMPTY: Omit<ApiTask, "id" | "createdAt" | "updatedAt"> = {
 };
 
 function TasksPage() {
-  const { tasks, skus } = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <PageSkeleton />;
+  return <TasksContent tasks={loaderData.tasks} skus={loaderData.skus} />;
+}
+
+function TasksContent({ tasks, skus }: { tasks: Awaited<ReturnType<typeof api.tasks.list>>; skus: Awaited<ReturnType<typeof api.skus.list>> }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 
@@ -56,7 +62,8 @@ function TasksPage() {
   const [saving, setSaving]         = useState(false);
   const [form, setForm]             = useState({ ...EMPTY, skuId: "" as string | null, deadlineDate: "" as string | null });
 
-  // Filters & sort
+  // Filters, search & sort
+  const [search, setSearch]         = useState("");
   const [filterSku, setFilterSku]   = useState("__all__");
   const [filterType, setFilterType] = useState("__all__");
   const [sortBy, setSortBy]         = useState("urgency");
@@ -122,6 +129,11 @@ function TasksPage() {
   const filtered = tasks.filter((t) => {
     if (filterSku  !== "__all__" && t.skuId !== filterSku)        return false;
     if (filterType !== "__all__" && t.productType !== filterType) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const sku = t.skuId ? skuMap[t.skuId] : null;
+      if (!t.title.toLowerCase().includes(q) && !(t.comments ?? "").toLowerCase().includes(q) && !(sku?.name ?? "").toLowerCase().includes(q) && !(sku?.code ?? "").toLowerCase().includes(q)) return false;
+    }
     return true;
   });
 
@@ -142,6 +154,15 @@ function TasksPage() {
 
       {/* Filter + sort bar */}
       <div className="flex flex-wrap gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search tasks…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9 w-52"
+          />
+        </div>
         <Select value={filterSku} onValueChange={setFilterSku}>
           <SelectTrigger className="w-52">
             <SelectValue placeholder="Filter by SKU" />
@@ -170,8 +191,8 @@ function TasksPage() {
             <SelectItem value="deadline_desc">Sort: Deadline ↓ latest first</SelectItem>
           </SelectContent>
         </Select>
-        {(filterSku !== "__all__" || filterType !== "__all__") && (
-          <Button variant="ghost" size="sm" onClick={() => { setFilterSku("__all__"); setFilterType("__all__"); }}>
+        {(filterSku !== "__all__" || filterType !== "__all__" || search) && (
+          <Button variant="ghost" size="sm" onClick={() => { setFilterSku("__all__"); setFilterType("__all__"); setSearch(""); }}>
             Clear filters
           </Button>
         )}

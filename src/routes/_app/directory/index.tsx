@@ -1,4 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader } from "@/components/page-header";
 import { api, type ApiDirectoryEntry } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/directory/")({
-  loader: () => api.directory.list(),
+  loader: async () => {
+    if (typeof window === "undefined") return null;
+    return api.directory.list();
+  },
+  pendingComponent: PageSkeleton,
   component: DirectoryPage,
   head: () => ({ meta: [{ title: "Directory — Zoobalo" }] }),
 });
@@ -45,7 +50,12 @@ const EMPTY: Omit<ApiDirectoryEntry, "id" | "createdAt" | "updatedAt"> = {
 };
 
 function DirectoryPage() {
-  const items  = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <PageSkeleton />;
+  return <DirectoryContent items={loaderData} />;
+}
+
+function DirectoryContent({ items }: { items: Awaited<ReturnType<typeof api.directory.list>> }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 

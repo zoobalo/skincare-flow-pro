@@ -1,22 +1,39 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { fmtDate } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { api } from "@/lib/api";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
 import { ProgressRail } from "@/components/progress-rail";
 import { StatusBadge } from "@/components/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, AlertTriangle, Search } from "lucide-react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_app/production/")({
-  loader: () => api.production.list(),
+  loader: async () => {
+    if (typeof window === "undefined") return null;
+    return api.production.list();
+  },
+  pendingComponent: PageSkeleton,
   component: ProductionPage,
   head: () => ({ meta: [{ title: "Production Tracking — Zoobalo" }] }),
 });
 
 function ProductionPage() {
-  const productionBatches = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <PageSkeleton />;
+  return <ProductionContent productionBatches={loaderData} />;
+}
+
+function ProductionContent({ productionBatches: allBatches }: { productionBatches: Awaited<ReturnType<typeof api.production.list>> }) {
+  const [search, setSearch] = useState("");
+  const productionBatches = allBatches.filter((b) => {
+    const q = search.toLowerCase();
+    return !q || (b.sku?.name ?? "").toLowerCase().includes(q) || b.batchNumber.toLowerCase().includes(q) || (b.manufacturer?.name ?? "").toLowerCase().includes(q);
+  });
 
   const buckets: { label: string; stages: readonly string[] }[] = [
     { label: "Procurement",   stages: PRODUCTION_STAGES.slice(0, 4) },
@@ -26,7 +43,17 @@ function ProductionPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Production Tracking" description={`${productionBatches.length} live batches across manufacturers`} actions={<Button><Plus className="mr-1.5 h-4 w-4" />New Batch</Button>} />
+      <PageHeader title="Production Tracking" description={`${allBatches.length} live batches across manufacturers`} actions={<Button><Plus className="mr-1.5 h-4 w-4" />New Batch</Button>} />
+
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search by SKU, batch number or manufacturer…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
 
       <Tabs defaultValue="kanban">
         <TabsList>

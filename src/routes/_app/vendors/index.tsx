@@ -13,7 +13,10 @@ import { toast } from "sonner";
 import type { ApiContact } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/vendors/")({
-  loader: () => api.vendors.list(),
+  loader: async () => {
+    if (typeof window === "undefined") return null;
+    return api.vendors.list();
+  },
   pendingComponent: PageSkeleton,
   component: VendorsPage,
   head: () => ({ meta: [{ title: "Vendors — Zoobalo" }] }),
@@ -142,7 +145,12 @@ function VendorSheet({
 }
 
 function VendorsPage() {
-  const vendors = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <PageSkeleton />;
+  return <VendorsContent vendors={loaderData} />;
+}
+
+function VendorsContent({ vendors }: { vendors: Awaited<ReturnType<typeof api.vendors.list>> }) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ApiVendor | null>(null);

@@ -8,12 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit2, ImageIcon, Upload, X, Calendar, FlaskConical, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Edit2, ImageIcon, Upload, X, Calendar, FlaskConical, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/npd/")({
-  loader: () => api.npd.list(),
+  loader: async () => {
+    if (typeof window === "undefined") return null;
+    return api.npd.list();
+  },
   pendingComponent: PageSkeleton,
   component: NpdPage,
   head: () => ({ meta: [{ title: "NPD — Zoobalo" }] }),
@@ -157,8 +160,18 @@ function normalizeImageGroups(raw: any): ApiNpdImageGroup[] {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 function NpdPage() {
-  const rawItems = Route.useLoaderData();
-  const items = rawItems.map((item) => ({ ...item, images: normalizeImageGroups(item.images) }));
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <PageSkeleton />;
+  return <NpdContent rawItems={loaderData} />;
+}
+
+function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.list>> }) {
+  const [search, setSearch] = useState("");
+  const allItems = rawItems.map((item) => ({ ...item, images: normalizeImageGroups(item.images) }));
+  const items = allItems.filter((item) => {
+    const q = search.toLowerCase();
+    return !q || item.name.toLowerCase().includes(q) || item.rmStatus.toLowerCase().includes(q) || item.pmStatus.toLowerCase().includes(q) || (item.comments ?? "").toLowerCase().includes(q);
+  });
   const router = useRouter();
   const reload = () => router.invalidate();
 
@@ -209,7 +222,7 @@ function NpdPage() {
     <div className="space-y-6">
       <PageHeader
         title="New Product Development"
-        description={`${items.length} product${items.length !== 1 ? "s" : ""} in pipeline`}
+        description={`${allItems.length} product${allItems.length !== 1 ? "s" : ""} in pipeline`}
         actions={
           <Button onClick={openCreate}>
             <Plus className="mr-1.5 h-4 w-4" />Add New NPD
@@ -217,14 +230,33 @@ function NpdPage() {
         }
       />
 
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search NPD entries…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border bg-card p-16 text-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             <FlaskConical className="h-7 w-7" />
           </div>
           <div>
-            <p className="font-semibold">No NPD entries yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">Click "Add New NPD" to start tracking your R&D pipeline.</p>
+            {allItems.length === 0 ? (
+              <>
+                <p className="font-semibold">No NPD entries yet</p>
+                <p className="mt-1 text-sm text-muted-foreground">Click "Add New NPD" to start tracking your R&D pipeline.</p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold">No entries match your search</p>
+                <p className="mt-1 text-sm text-muted-foreground">Try a different search term.</p>
+              </>
+            )}
           </div>
         </div>
       ) : (
