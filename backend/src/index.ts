@@ -46,8 +46,9 @@ app.use("*", logger());
 
 app.get("/health", (c) => c.json({ ok: true, timestamp: new Date().toISOString() }));
 
-// Public auth routes (no token required)
-app.route("/auth", authRoutes);
+// Public routes (no token required)
+app.route("/auth",   authRoutes);
+app.route("/upload", uploadRoutes);
 
 // All other routes require a valid JWT
 app.use("*", requireAuth);
@@ -63,7 +64,6 @@ app.route("/inventory",          inventoryRoutes);
 app.route("/dashboard",          dashboardRoutes);
 app.route("/users",              userRoutes);
 app.route("/procurement",        procurementRoutes);
-app.route("/upload",             uploadRoutes);
 app.route("/tasks",              taskRoutes);
 app.route("/npd",                npdRoutes);
 app.route("/production-remarks", productionRemarkRoutes);
