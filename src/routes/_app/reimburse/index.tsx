@@ -152,7 +152,7 @@ function ReimbursePage() {
               infoCell(`${lbl}:`, W_LBL, { bold: true }),
               infoCell(val, W_VAL, { bold: lbl === "Name" }),
               infoCell("", W_GAP),
-              rlbl ? infoCell(rlbl, W_RLBL, { bold: true, bg: LG, bordered: true }) : infoCell("", W_RLBL),
+              rlbl ? infoCell(rlbl, W_RLBL, { bold: true, bordered: true }) : infoCell("", W_RLBL),
               rlbl ? infoCell(rval, W_RVAL, { bordered: true, align: AlignmentType.CENTER }) : infoCell("", W_RVAL),
             ],
           })
