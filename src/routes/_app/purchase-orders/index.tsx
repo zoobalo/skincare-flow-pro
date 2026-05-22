@@ -206,8 +206,8 @@ function POPage() {
                 <div className="hidden sm:block"><div className="text-muted-foreground">Notes</div><div className="font-medium truncate max-w-[160px]">{po.notes || "—"}</div></div>
               </div>
 
-              {/* Payment tracking — only for Sent POs */}
-              {po.status === "Sent" && (
+              {/* Payment tracking — show when payment data exists */}
+              {(po.status !== "To be sent" && (Number(po.amountPaid) > 0 || po.paymentDue != null || po.paymentDueDate != null)) && (
                 <div className="grid grid-cols-3 gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-xs">
                   <div>
                     <div className="text-muted-foreground mb-0.5">Amount Paid</div>
@@ -288,7 +288,7 @@ function POPage() {
                 <SelectContent>{PO_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            {editForm.status === "Sent" && (() => {
+            {editForm.status !== "To be sent" && (() => {
               const total      = Number(editForm.quantity) * Number(editForm.rate) * (1 + Number(editForm.gstRate) / 100);
               const paid       = Number(editForm.amountPaid) || 0;
               const pending    = Math.max(0, total - paid);
