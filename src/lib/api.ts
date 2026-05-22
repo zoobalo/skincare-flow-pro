@@ -128,13 +128,14 @@ export type ApiPo = {
 };
 
 export type ApiBatch = {
-  id: string; batchNumber: string; skuId: string; manufacturerId: string;
+  id: string; batchNumber: string; skuId: string; manufacturerId: string; vendorId: string | null;
   quantity: number; currentStage: string; startedAt: string;
   expectedCompletion: string; delayed: boolean;
   materialCategory: string | null; materialItemId: string | null; materialItemName: string | null;
   applicableStages: string[] | null; comment: string | null;
   sku?: { id: string; code: string; name: string; image: string };
   manufacturer?: { id: string; name: string; location: string };
+  vendor?: { id: string; name: string; city: string } | null;
   stageHistory?: Array<{ id: number; batchId: string; stage: string; date: string; note: string | null }>;
 };
 

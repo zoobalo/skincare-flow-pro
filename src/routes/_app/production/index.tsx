@@ -82,6 +82,7 @@ function ProductionContent({ productionBatches: allBatches }: { productionBatche
                         </div>
                         <div className="mt-2 text-xs"><StatusBadge status={batch.delayed ? "Delayed" : "In Production"} /></div>
                         <div className="mt-2 text-[10px] text-muted-foreground">Stage: <span className="font-medium text-foreground">{batch.currentStage}</span></div>
+                        {batch.vendor?.name && <div className="text-[10px] text-muted-foreground">Vendor: <span className="font-medium text-foreground">{batch.vendor.name}</span></div>}
                         <div className="text-[10px] text-muted-foreground">ETA: {fmtDate(batch.expectedCompletion)}</div>
                       </li>
                     ))}
@@ -99,7 +100,7 @@ function ProductionContent({ productionBatches: allBatches }: { productionBatche
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold">{batch.sku?.name}</h3>
-                    <p className="text-xs text-muted-foreground">{batch.batchNumber} · {batch.manufacturer?.name} · {(batch.quantity ?? 0).toLocaleString()} units · ETA {fmtDate(batch.expectedCompletion)}</p>
+                    <p className="text-xs text-muted-foreground">{batch.batchNumber} · {batch.manufacturer?.name}{batch.vendor?.name ? ` · ${batch.vendor.name}` : ""} · {(batch.quantity ?? 0).toLocaleString()} units · ETA {fmtDate(batch.expectedCompletion)}</p>
                   </div>
                   <StatusBadge status={batch.delayed ? "Delayed" : "In Production"} />
                 </div>

@@ -116,6 +116,7 @@ function NewPOWizard() {
         batchNumber:        `BATCH-${poNumber}`,
         skuId,
         manufacturerId:     sku?.manufacturerId ?? "",
+        vendorId:           vendorId || null,
         quantity:           computedItems.reduce((s, r) => s + r.quantity, 0),
         currentStage:       "PO Generated",
         startedAt:          poDate,

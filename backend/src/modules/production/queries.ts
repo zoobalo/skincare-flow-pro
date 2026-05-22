@@ -8,6 +8,7 @@ export const getAllBatches = () =>
     with: {
       sku:          { columns: { id: true, code: true, name: true, image: true } },
       manufacturer: { columns: { id: true, name: true, location: true } },
+      vendor:       { columns: { id: true, name: true, city: true } },
       stageHistory: { orderBy: (h, { asc }) => [asc(h.date)] },
     },
   });

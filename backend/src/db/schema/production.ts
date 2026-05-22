@@ -2,6 +2,7 @@ import { pgTable, text, integer, boolean, timestamp, date, serial, jsonb, index 
 import { relations } from "drizzle-orm";
 import { skus } from "./skus.ts";
 import { manufacturers } from "./manufacturers.ts";
+import { vendors } from "./vendors.ts";
 
 export const PRODUCTION_STAGES = [
   "PO Generated",
@@ -24,6 +25,7 @@ export const productionBatches = pgTable("production_batches", {
   batchNumber:        text("batch_number").notNull().unique(),
   skuId:              text("sku_id").notNull().references(() => skus.id),
   manufacturerId:     text("manufacturer_id").notNull().references(() => manufacturers.id),
+  vendorId:           text("vendor_id").references(() => vendors.id),
   quantity:           integer("quantity").notNull(),
   currentStage:       text("current_stage").notNull().$type<ProductionStage>(),
   startedAt:          date("started_at", { mode: "string" }).notNull(),
@@ -57,6 +59,7 @@ export const batchStageHistory = pgTable("batch_stage_history", {
 export const productionBatchesRelations = relations(productionBatches, ({ one, many }) => ({
   sku:          one(skus,          { fields: [productionBatches.skuId],          references: [skus.id] }),
   manufacturer: one(manufacturers, { fields: [productionBatches.manufacturerId], references: [manufacturers.id] }),
+  vendor:       one(vendors,       { fields: [productionBatches.vendorId],        references: [vendors.id] }),
   stageHistory: many(batchStageHistory),
 }));
 
