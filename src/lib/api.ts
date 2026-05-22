@@ -283,9 +283,13 @@ export const api = {
       const s = await get<any>(`/skus/${id}`);
       return {
         ...s,
-        packaging:    (s.packaging    ?? []).map(coercePackaging),
-        rawMaterials: (s.rawMaterials ?? []).map(coerceRawMaterial),
-        purchaseOrders: (s.purchaseOrders ?? []).map(coercePo),
+        packaging:         (s.packaging         ?? []).map(coercePackaging),
+        rawMaterials:      (s.rawMaterials      ?? []).map(coerceRawMaterial),
+        purchaseOrders:    (s.purchaseOrders    ?? []).map(coercePo),
+        productionBatches: (s.productionBatches ?? []),
+        tests:             (s.tests             ?? []),
+        dispatches:        (s.dispatches        ?? []),
+        importantLinks:    s.importantLinks ?? "[]",
       } as ApiSkuDetail;
     },
     create: (data: Partial<ApiSku>) =>

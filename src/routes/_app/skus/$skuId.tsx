@@ -313,8 +313,9 @@ function SkuDetailPage() {
                 <div className={`${sku.mrp != null ? "" : "col-span-2"} rounded-xl border bg-card p-4`}><div className="text-xs text-muted-foreground">USP</div><p className="mt-1.5 text-sm whitespace-pre-line">{sku.usp}</p></div>
               )}
               {(() => {
-                const links: { label: string; url: string }[] = JSON.parse(sku.importantLinks || "[]");
-                if (!links.length) return null;
+                let links: { label: string; url: string }[] = [];
+                try { links = JSON.parse(sku.importantLinks || "[]"); } catch { links = []; }
+                if (!Array.isArray(links) || !links.length) return null;
                 return (
                   <div className="col-span-2 rounded-xl border bg-card p-4">
                     <div className="text-xs text-muted-foreground mb-2">Important Links</div>
@@ -794,7 +795,7 @@ function SkuDetailPage() {
             <div className="space-y-1.5">
               <Label>Important Links</Label>
               <div className="space-y-2">
-                {(JSON.parse(editForm.importantLinks || "[]") as { label: string; url: string }[]).map((lnk, i) => (
+                {((() => { try { const p = JSON.parse(editForm.importantLinks || "[]"); return Array.isArray(p) ? p : []; } catch { return []; } })() as { label: string; url: string }[]).map((lnk, i) => (
                   <div key={i} className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm">
                     <span className="flex-1 truncate">{lnk.label || lnk.url}</span>
                     <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => {
