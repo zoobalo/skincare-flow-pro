@@ -16,11 +16,13 @@ const FINAL_DISPATCH_IDX = PRODUCTION_STAGES.indexOf("Final Dispatch");
 function getDelayDays(batch: { expectedCompletion: string; currentStage: string }): number {
   const stageIdx = PRODUCTION_STAGES.indexOf(batch.currentStage as typeof PRODUCTION_STAGES[number]);
   if (stageIdx >= FINAL_DISPATCH_IDX) return 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const eta = new Date(batch.expectedCompletion);
-  if (today <= eta) return 0;
-  return Math.floor((today.getTime() - eta.getTime()) / 86400000);
+  // Use local date string (YYYY-MM-DD) to avoid UTC-vs-local timezone issues
+  const todayStr = new Date().toLocaleDateString("en-CA");
+  const etaStr   = batch.expectedCompletion.slice(0, 10);
+  if (todayStr <= etaStr) return 0;
+  // Both parsed as UTC midnight for an integer day-difference
+  const msPerDay = 86_400_000;
+  return Math.floor((Date.parse(todayStr) - Date.parse(etaStr)) / msPerDay);
 }
 import { useState } from "react";
 
