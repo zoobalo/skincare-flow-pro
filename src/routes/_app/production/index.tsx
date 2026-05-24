@@ -10,21 +10,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, AlertTriangle, Search } from "lucide-react";
+import { useState } from "react";
 
 const FINAL_DISPATCH_IDX = PRODUCTION_STAGES.indexOf("Final Dispatch");
 
 function getDelayDays(batch: { expectedCompletion: string; currentStage: string }): number {
   const stageIdx = PRODUCTION_STAGES.indexOf(batch.currentStage as typeof PRODUCTION_STAGES[number]);
   if (stageIdx >= FINAL_DISPATCH_IDX) return 0;
-  // Use local date string (YYYY-MM-DD) to avoid UTC-vs-local timezone issues
-  const todayStr = new Date().toLocaleDateString("en-CA");
+  const d = new Date();
+  const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const etaStr   = batch.expectedCompletion.slice(0, 10);
   if (todayStr <= etaStr) return 0;
-  // Both parsed as UTC midnight for an integer day-difference
-  const msPerDay = 86_400_000;
-  return Math.floor((Date.parse(todayStr) - Date.parse(etaStr)) / msPerDay);
+  return Math.floor((Date.parse(todayStr) - Date.parse(etaStr)) / 86_400_000);
 }
-import { useState } from "react";
 
 export const Route = createFileRoute("/_app/production/")({
   loader: async () => {
