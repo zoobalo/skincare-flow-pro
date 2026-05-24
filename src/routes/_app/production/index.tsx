@@ -10,6 +10,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, AlertTriangle, Search } from "lucide-react";
+
+const FINAL_DISPATCH_IDX = PRODUCTION_STAGES.indexOf("Final Dispatch");
+
+function getDelayDays(batch: { expectedCompletion: string; currentStage: string }): number {
+  const stageIdx = PRODUCTION_STAGES.indexOf(batch.currentStage as typeof PRODUCTION_STAGES[number]);
+  if (stageIdx >= FINAL_DISPATCH_IDX) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eta = new Date(batch.expectedCompletion);
+  if (today <= eta) return 0;
+  return Math.floor((today.getTime() - eta.getTime()) / 86400000);
+}
 import { useState } from "react";
 
 export const Route = createFileRoute("/_app/production/")({
@@ -72,21 +84,30 @@ function ProductionContent({ productionBatches: allBatches }: { productionBatche
                     <span className="rounded-full bg-card px-2 py-0.5 text-xs tabular-nums">{items.length}</span>
                   </div>
                   <ul className="space-y-2">
-                    {items.map((batch) => (
+                    {items.map((batch) => {
+                      const daysLate = getDelayDays(batch);
+                      return (
                       <li key={batch.id} className="rounded-lg border bg-card p-3 shadow-sm">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <div className="truncate text-sm font-semibold">{batch.sku?.name}</div>
                             <div className="text-xs text-muted-foreground">{batch.batchNumber} · {(batch.quantity ?? 0).toLocaleString()} units</div>
                           </div>
-                          {batch.delayed && <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />}
+                          {daysLate > 0 && <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />}
                         </div>
-                        <div className="mt-2 text-xs"><StatusBadge status={batch.delayed ? "Delayed" : "In Production"} /></div>
+                        <div className="mt-2 text-xs"><StatusBadge status={daysLate > 0 ? "Delayed" : "In Production"} /></div>
                         <div className="mt-2 text-[10px] text-muted-foreground">Stage: <span className="font-medium text-foreground">{batch.currentStage}</span></div>
                         {batch.vendor?.name && <div className="text-[10px] text-muted-foreground">Vendor: <span className="font-medium text-foreground">{batch.vendor.name}</span></div>}
                         <div className="text-[10px] text-muted-foreground">ETA: {fmtDate(batch.expectedCompletion)}</div>
+                        {daysLate > 0 && (
+                          <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            Delayed by {daysLate} {daysLate === 1 ? "day" : "days"}
+                          </div>
+                        )}
                       </li>
-                    ))}
+                      );
+                    })}
                     {items.length === 0 && <li className="py-6 text-center text-xs text-muted-foreground">No batches</li>}
                   </ul>
                 </div>
@@ -96,18 +117,29 @@ function ProductionContent({ productionBatches: allBatches }: { productionBatche
         </TabsContent>
         <TabsContent value="timeline" className="mt-4">
           <div className="space-y-4">
-            {productionBatches.map((batch) => (
+            {productionBatches.map((batch) => {
+              const daysLate = getDelayDays(batch);
+              return (
               <div key={batch.id} className="rounded-xl border bg-card p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold">{batch.sku?.name}</h3>
                     <p className="text-xs text-muted-foreground">{batch.batchNumber} · {batch.manufacturer?.name}{batch.vendor?.name ? ` · ${batch.vendor.name}` : ""} · {(batch.quantity ?? 0).toLocaleString()} units · ETA {fmtDate(batch.expectedCompletion)}</p>
                   </div>
-                  <StatusBadge status={batch.delayed ? "Delayed" : "In Production"} />
+                  <div className="flex items-center gap-2">
+                    {daysLate > 0 && (
+                      <div className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                        <AlertTriangle className="h-2.5 w-2.5" />
+                        Delayed by {daysLate} {daysLate === 1 ? "day" : "days"}
+                      </div>
+                    )}
+                    <StatusBadge status={daysLate > 0 ? "Delayed" : "In Production"} />
+                  </div>
                 </div>
-                <ProgressRail stages={PRODUCTION_STAGES} current={batch.currentStage as any} delayed={batch.delayed} />
+                <ProgressRail stages={PRODUCTION_STAGES} current={batch.currentStage as any} delayed={daysLate > 0} />
               </div>
-            ))}
+              );
+            })}
           </div>
         </TabsContent>
       </Tabs>
