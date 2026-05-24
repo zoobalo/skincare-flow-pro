@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ChevronRight, Edit, Eye, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronRight, Edit, Eye, Plus, Trash2 } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { ProgressRail } from "@/components/progress-rail";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
@@ -52,6 +52,17 @@ const GOODS_TYPES = ["Final Goods", "Packaging Material"] as const;
 const EMPTY_DISPATCH = { goodsType: "Final Goods", goodsName: "", quantity: 0, dispatchDate: "", from: "", to: "", transporterName: "", vehicleNumber: "", lrNumber: "", freight: 0, status: "Dispatched", notes: "" };
 
 const EMPTY_BATCH = { batchNumber: "", manufacturerId: "", vendorId: "", quantity: 1000, currentStage: "PO Generated", startedAt: "", expectedCompletion: "", delayed: false, materialCategory: "", materialItemId: "", applicableStages: [...PRODUCTION_STAGES] as string[], comment: "" };
+
+const FINAL_DISPATCH_IDX = PRODUCTION_STAGES.indexOf("Final Dispatch");
+function getDelayDays(batch: { expectedCompletion: string; currentStage: string }): number {
+  const stageIdx = PRODUCTION_STAGES.indexOf(batch.currentStage as typeof PRODUCTION_STAGES[number]);
+  if (stageIdx >= FINAL_DISPATCH_IDX) return 0;
+  const d = new Date();
+  const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const etaStr = (batch.expectedCompletion ?? "").slice(0, 10);
+  if (!etaStr || todayStr <= etaStr) return 0;
+  return Math.floor((Date.parse(todayStr) - Date.parse(etaStr)) / 86_400_000);
+}
 
 function SkuDetailPage() {
   const loaderData = Route.useLoaderData();
@@ -457,12 +468,19 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
           <div className="space-y-4">
             {[...sku.productionBatches].sort((a, b) => (a.currentStage === "Completed" ? 1 : 0) - (b.currentStage === "Completed" ? 1 : 0)).map((batch) => {
               const completed = batch.currentStage === "Completed";
+              const daysLate  = completed ? 0 : getDelayDays(batch);
               return (
                 <div key={batch.id} className={`rounded-xl border bg-card p-5 ${completed ? "opacity-70" : ""}`}>
                   <div className="mb-4 flex items-center justify-between gap-2">
                     <div>
                       <div className="font-semibold">{batch.batchNumber}</div>
                       <p className="text-xs text-muted-foreground">{batch.quantity.toLocaleString()} units · ETA {fmtDate(batch.expectedCompletion)}</p>
+                      {daysLate > 0 && (
+                        <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          Delayed by {daysLate} {daysLate === 1 ? "day" : "days"}
+                        </div>
+                      )}
                       {(batch as any).vendor?.name && (
                         <p className="mt-0.5 text-xs text-muted-foreground">Vendor: <span className="font-medium text-foreground">{(batch as any).vendor.name}</span></p>
                       )}
@@ -471,7 +489,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <StatusBadge status={completed ? "Completed" : batch.delayed ? "Delayed" : "In Production"} />
+                      <StatusBadge status={completed ? "Completed" : daysLate > 0 ? "Delayed" : "In Production"} />
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditBatch(batch)}><Edit className="h-3.5 w-3.5" /></Button>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deleteBatch(batch.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
@@ -482,7 +500,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                       All stages complete — batch delivered to warehouse
                     </div>
                   ) : (
-                    <ProgressRail stages={(batch.applicableStages ?? PRODUCTION_STAGES) as any} current={batch.currentStage as any} delayed={batch.delayed} />
+                    <ProgressRail stages={(batch.applicableStages ?? PRODUCTION_STAGES) as any} current={batch.currentStage as any} delayed={daysLate > 0} />
                   )}
                   {batch.comment && (
                     <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">

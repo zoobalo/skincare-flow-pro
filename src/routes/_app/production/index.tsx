@@ -14,17 +14,14 @@ import { useState } from "react";
 
 const FINAL_DISPATCH_IDX = PRODUCTION_STAGES.indexOf("Final Dispatch");
 
-function getDelayDays(batch: { expectedCompletion: string; currentStage: string; batchNumber?: string }): number {
+function getDelayDays(batch: { expectedCompletion: string; currentStage: string }): number {
   const stageIdx = PRODUCTION_STAGES.indexOf(batch.currentStage as typeof PRODUCTION_STAGES[number]);
+  if (stageIdx >= FINAL_DISPATCH_IDX) return 0;
   const d = new Date();
   const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const etaStr   = (batch.expectedCompletion ?? "").slice(0, 10);
-  const days     = todayStr > etaStr && stageIdx < FINAL_DISPATCH_IDX
-    ? Math.floor((Date.parse(todayStr) - Date.parse(etaStr)) / 86_400_000)
-    : 0;
-  // eslint-disable-next-line no-console
-  console.log("[delay]", batch.batchNumber, { stageIdx, FINAL_DISPATCH_IDX, todayStr, etaStr, days });
-  return days;
+  const etaStr = (batch.expectedCompletion ?? "").slice(0, 10);
+  if (!etaStr || todayStr <= etaStr) return 0;
+  return Math.floor((Date.parse(todayStr) - Date.parse(etaStr)) / 86_400_000);
 }
 
 export const Route = createFileRoute("/_app/production/")({
