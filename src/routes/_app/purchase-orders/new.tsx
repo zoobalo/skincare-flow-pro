@@ -45,7 +45,7 @@ type SkuDefaults = {
   material: string; category: "RM" | "PM" | "FG";
   partyType: "vendor" | "manufacturer"; vendorId: string; manufacturerId: string;
   lineItems: Array<{ description: string; qty: number; rate: number; gstRate: number }>;
-  deliveryAddress: string; notes: string;
+  eta: string; deliveryAddress: string; notes: string; terms: string;
 };
 
 function getSkuDefaults(
@@ -55,10 +55,24 @@ function getSkuDefaults(
   vendors: Awaited<ReturnType<typeof api.vendors.list>>,
   manufacturers: Awaited<ReturnType<typeof api.manufacturers.list>>,
 ): SkuDefaults {
-  const sku     = skus.find(s => s.id === skuId);
-  const lastPo  = pos
+  const sku    = skus.find(s => s.id === skuId);
+  const lastPo = pos
     .filter(p => p.skuId === skuId)
     .sort((a, b) => b.dispatchDate.localeCompare(a.dispatchDate))[0];
+
+  // Compute a suggested ETA: re-use the lead-time offset from the last PO,
+  // anchored to today rather than the old dispatch date.
+  let eta = todayStr();
+  if (lastPo?.dispatchDate && lastPo?.expectedDelivery) {
+    const leadDays = Math.round(
+      (Date.parse(lastPo.expectedDelivery) - Date.parse(lastPo.dispatchDate)) / 86_400_000
+    );
+    if (leadDays > 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + leadDays);
+      eta = d.toISOString().slice(0, 10);
+    }
+  }
 
   return {
     material:        lastPo?.materialType ?? "Aluminium Can",
@@ -69,8 +83,10 @@ function getSkuDefaults(
     lineItems:       lastPo?.items?.length
       ? lastPo.items.map(i => ({ description: i.description, qty: i.quantity, rate: i.rate, gstRate: i.gstRate }))
       : [{ description: "Aluminium Can", qty: 10000, rate: 28.5, gstRate: 18 }],
+    eta,
     deliveryAddress: lastPo?.deliveryAddress ?? "",
     notes:           lastPo?.notes ?? "Please ensure batch certificates are sent along with dispatch.",
+    terms:           lastPo?.terms ?? DEFAULT_PO_TERMS,
   };
 }
 
@@ -91,10 +107,10 @@ function NewPOWizard() {
   const [vendorId, setVendorId]   = useState(initD.vendorId);
   const [manufacturerId, setManufacturerId] = useState(initD.manufacturerId);
   const [lineItems, setLineItems] = useState(initD.lineItems);
-  const [eta, setEta]             = useState(todayStr);
+  const [eta, setEta]             = useState(initD.eta);
   const [deliveryAddress, setDeliveryAddress] = useState(initD.deliveryAddress);
   const [notes, setNotes] = useState(initD.notes);
-  const [terms, setTerms] = useState(DEFAULT_PO_TERMS);
+  const [terms, setTerms] = useState(initD.terms);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [remarksOpen, setRemarksOpen] = useState(false);
@@ -117,8 +133,10 @@ function NewPOWizard() {
     setVendorId(d.vendorId);
     setManufacturerId(d.manufacturerId);
     setLineItems(d.lineItems);
+    setEta(d.eta);
     setDeliveryAddress(d.deliveryAddress);
     setNotes(d.notes);
+    setTerms(d.terms);
     if (pos.some(p => p.skuId === newSkuId)) {
       toast.info("Details auto-filled from last PO for this SKU.");
     }
