@@ -17,8 +17,11 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/purchase-orders/new")({
   loader: async () => {
-    const [skus, vendors, manufacturers, remarks] = await Promise.all([api.skus.list(), api.vendors.list(), api.manufacturers.list(), api.productionRemarks.list()]);
-    return { skus, vendors, manufacturers, remarks };
+    const [skus, vendors, manufacturers, remarks, pos] = await Promise.all([
+      api.skus.list(), api.vendors.list(), api.manufacturers.list(),
+      api.productionRemarks.list(), api.purchaseOrders.list(),
+    ]);
+    return { skus, vendors, manufacturers, remarks, pos };
   },
   component: NewPOWizard,
   head: () => ({ meta: [{ title: "Create Purchase Order — Zoobalo" }] }),
@@ -38,25 +41,59 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+type SkuDefaults = {
+  material: string; category: "RM" | "PM" | "FG";
+  partyType: "vendor" | "manufacturer"; vendorId: string; manufacturerId: string;
+  lineItems: Array<{ description: string; qty: number; rate: number; gstRate: number }>;
+  deliveryAddress: string; notes: string;
+};
+
+function getSkuDefaults(
+  skuId: string,
+  skus: Awaited<ReturnType<typeof api.skus.list>>,
+  pos: Awaited<ReturnType<typeof api.purchaseOrders.list>>,
+  vendors: Awaited<ReturnType<typeof api.vendors.list>>,
+  manufacturers: Awaited<ReturnType<typeof api.manufacturers.list>>,
+): SkuDefaults {
+  const sku     = skus.find(s => s.id === skuId);
+  const lastPo  = pos
+    .filter(p => p.skuId === skuId)
+    .sort((a, b) => b.dispatchDate.localeCompare(a.dispatchDate))[0];
+
+  return {
+    material:        lastPo?.materialType ?? "Aluminium Can",
+    category:        ((lastPo?.category ?? "PM") as "RM" | "PM" | "FG"),
+    partyType:       lastPo?.vendorId ? "vendor" : "manufacturer",
+    vendorId:        lastPo?.vendorId ?? vendors[0]?.id ?? "",
+    manufacturerId:  lastPo?.manufacturerId ?? sku?.manufacturerId ?? manufacturers[0]?.id ?? "",
+    lineItems:       lastPo?.items?.length
+      ? lastPo.items.map(i => ({ description: i.description, qty: i.quantity, rate: i.rate, gstRate: i.gstRate }))
+      : [{ description: "Aluminium Can", qty: 10000, rate: 28.5, gstRate: 18 }],
+    deliveryAddress: lastPo?.deliveryAddress ?? "",
+    notes:           lastPo?.notes ?? "Please ensure batch certificates are sent along with dispatch.",
+  };
+}
+
 function NewPOWizard() {
   const navigate = useNavigate();
-  const { skus, vendors, manufacturers, remarks } = Route.useLoaderData();
+  const { skus, vendors, manufacturers, remarks, pos } = Route.useLoaderData();
+
+  const initId = skus[0]?.id ?? "";
+  const initD  = getSkuDefaults(initId, skus, pos, vendors, manufacturers);
 
   const [step, setStep] = useState(0);
   const [poNumber, setPoNumber] = useState(genPoNumber);
   const [poDate, setPoDate] = useState(todayStr);
-  const [skuId, setSkuId]     = useState(skus[0]?.id ?? "");
-  const [material, setMaterial]   = useState("Aluminium Can");
-  const [category, setCategory]   = useState<"RM" | "PM" | "FG">("PM");
-  const [partyType, setPartyType] = useState<"vendor" | "manufacturer">("vendor");
-  const [vendorId, setVendorId] = useState(vendors[0]?.id ?? "");
-  const [manufacturerId, setManufacturerId] = useState(manufacturers[0]?.id ?? "");
-  const [lineItems, setLineItems] = useState<Array<{ description: string; qty: number; rate: number; gstRate: number }>>([
-    { description: "Aluminium Can", qty: 10000, rate: 28.5, gstRate: 18 },
-  ]);
-  const [eta, setEta]           = useState("2026-05-15");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [notes, setNotes] = useState("Please ensure batch certificates are sent along with dispatch.");
+  const [skuId, setSkuId]         = useState(initId);
+  const [material, setMaterial]   = useState(initD.material);
+  const [category, setCategory]   = useState<"RM" | "PM" | "FG">(initD.category);
+  const [partyType, setPartyType] = useState<"vendor" | "manufacturer">(initD.partyType);
+  const [vendorId, setVendorId]   = useState(initD.vendorId);
+  const [manufacturerId, setManufacturerId] = useState(initD.manufacturerId);
+  const [lineItems, setLineItems] = useState(initD.lineItems);
+  const [eta, setEta]             = useState(todayStr);
+  const [deliveryAddress, setDeliveryAddress] = useState(initD.deliveryAddress);
+  const [notes, setNotes] = useState(initD.notes);
   const [terms, setTerms] = useState(DEFAULT_PO_TERMS);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -70,6 +107,22 @@ function NewPOWizard() {
 
   const removeItem = (idx: number) =>
     setLineItems(prev => prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev);
+
+  const handleSkuChange = (newSkuId: string) => {
+    setSkuId(newSkuId);
+    const d = getSkuDefaults(newSkuId, skus, pos, vendors, manufacturers);
+    setMaterial(d.material);
+    setCategory(d.category);
+    setPartyType(d.partyType);
+    setVendorId(d.vendorId);
+    setManufacturerId(d.manufacturerId);
+    setLineItems(d.lineItems);
+    setDeliveryAddress(d.deliveryAddress);
+    setNotes(d.notes);
+    if (pos.some(p => p.skuId === newSkuId)) {
+      toast.info("Details auto-filled from last PO for this SKU.");
+    }
+  };
 
   const computedItems: POLineItem[] = lineItems.map(item => {
     const subtotal  = item.qty * item.rate;
@@ -230,7 +283,7 @@ function NewPOWizard() {
             </div>
             <div className="space-y-1.5">
               <Label>SKU</Label>
-              <Select value={skuId} onValueChange={setSkuId}>
+              <Select value={skuId} onValueChange={handleSkuChange}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {skus.map((s) => <SelectItem key={s.id} value={s.id}>{s.code} — {s.name}</SelectItem>)}
