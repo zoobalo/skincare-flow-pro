@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { fmtDate, DEFAULT_PO_TERMS } from "@/lib/utils";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/purchase-orders/new")({
   loader: async () => {
+    if (typeof window === "undefined") return null;
     const [skus, vendors, manufacturers, remarks, pos] = await Promise.all([
       api.skus.list(), api.vendors.list(), api.manufacturers.list(),
       api.productionRemarks.list(), api.purchaseOrders.list(),
@@ -91,8 +93,15 @@ function getSkuDefaults(
 }
 
 function NewPOWizard() {
+  const loaderData = Route.useLoaderData();
+  if (!loaderData) return <PageSkeleton />;
+  return <NewPOWizardInner {...loaderData} />;
+}
+
+type LoaderData = NonNullable<Awaited<ReturnType<typeof Route.useLoaderData>>>;
+
+function NewPOWizardInner({ skus, vendors, manufacturers, remarks, pos }: LoaderData) {
   const navigate = useNavigate();
-  const { skus, vendors, manufacturers, remarks, pos } = Route.useLoaderData();
 
   const initId = skus[0]?.id ?? "";
   const initD  = getSkuDefaults(initId, skus, pos, vendors, manufacturers);
