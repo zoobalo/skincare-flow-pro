@@ -182,9 +182,6 @@ export function PODocument(props: PODocumentProps) {
               <td style={tdC}>{idx + 1}</td>
               <td style={tdL}>
                 <div style={{ fontWeight: 500 }}>{row.description}</div>
-                {idx === 0 && sku?.name && (
-                  <div style={{ color: "#666", fontSize: 10 }}>{sku.code} — {sku.name}</div>
-                )}
               </td>
               <td style={tdC}>—</td>
               <td style={tdR}>{row.quantity.toLocaleString("en-IN")}</td>
@@ -289,7 +286,7 @@ export function buildPoHtml(props: PODocumentProps): string {
   }).join("");
 
   const dataRows = rows.map((row, idx) => {
-    const skuDesc = idx === 0 && sku?.name ? `<div style="font-weight:500">${row.description}</div><div style="color:#666;font-size:10px">${sku.code} — ${sku.name}</div>` : `<div style="font-weight:500">${row.description}</div>`;
+    const skuDesc = `<div style="font-weight:500">${row.description}</div>`;
     return `<tr>
       <td style="${cellB};text-align:center">${idx + 1}</td>
       <td style="${cellB}">${skuDesc}</td>
