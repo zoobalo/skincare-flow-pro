@@ -39,7 +39,7 @@ export type ApiContact = { department: string; name: string; mobile: string; ema
 
 export type ApiVendor = {
   id: string; name: string; contactPerson: string; mobile: string;
-  email: string; gst: string; address: string; city: string;
+  email: string; gst: string; pan: string | null; address: string; city: string;
   materials: string[]; leadTimeDays: number; paymentTerms: string;
   rating: number; reliability: number; delayPercent: number;
   totalOrders: number; runningOrders: number; totalSpend: number;
@@ -48,7 +48,7 @@ export type ApiVendor = {
 
 export type ApiManufacturer = {
   id: string; name: string; location: string; city: string;
-  email: string; gst: string; contactPerson: string; mobile: string;
+  email: string; gst: string; pan: string | null; contactPerson: string; mobile: string;
   capacityPerMonth: number; activeBatches: number; qcPassRate: number;
   leadTimeDays: number; paymentTerms: string;
   rating: number; reliability: number; delayPercent: number;

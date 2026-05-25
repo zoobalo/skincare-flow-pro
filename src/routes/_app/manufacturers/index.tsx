@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_app/manufacturers/")({
 });
 
 const EMPTY = {
-  name: "", location: "", city: "", email: "", gst: "",
+  name: "", location: "", city: "", email: "", gst: "", pan: "",
   contactPerson: "", mobile: "",
   capacityPerMonth: 50000, qcPassRate: 97,
   leadTimeDays: 30, paymentTerms: "Net 30",
@@ -40,7 +40,7 @@ function ManufacturerSheet({
   onSave: (data: typeof EMPTY) => Promise<void>;
 }) {
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY, ...initial, contacts: (initial?.contacts as ApiContact[]) ?? [] });
+  const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY, ...initial, pan: initial?.pan ?? "", contacts: (initial?.contacts as ApiContact[]) ?? [] });
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
 
@@ -85,6 +85,10 @@ function ManufacturerSheet({
               <Label>GST Number</Label>
               <Input placeholder="27AAAPL1234C1Z5" value={form.gst} onChange={set("gst")} />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>PAN</Label>
+            <Input placeholder="AAAPL1234C" value={form.pan} onChange={set("pan")} className="uppercase" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">

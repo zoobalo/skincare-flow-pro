@@ -10,6 +10,7 @@ export const vendors = pgTable("vendors", {
   mobile:        text("mobile").notNull(),
   email:         text("email").notNull(),
   gst:           text("gst").notNull(),
+  pan:           text("pan"),
   address:       text("address").notNull(),
   city:          text("city").notNull(),
   materials:     text("materials").array().notNull().default([]),

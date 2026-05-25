@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_app/vendors/")({
 });
 
 const EMPTY = {
-  name: "", contactPerson: "", mobile: "", email: "", gst: "",
+  name: "", contactPerson: "", mobile: "", email: "", gst: "", pan: "",
   address: "", city: "", materials: "",
   leadTimeDays: 21, paymentTerms: "Net 30", rating: 4.0,
   reliability: 85, delayPercent: 10, totalOrders: 0, runningOrders: 0, totalSpend: 0,
@@ -42,6 +42,7 @@ function VendorSheet({
   const [form, setForm] = useState<typeof EMPTY>({
     ...EMPTY,
     ...initial,
+    pan: initial?.pan ?? "",
     materials: Array.isArray(initial?.materials) ? initial.materials.join(", ") : (initial?.materials ?? ""),
     contacts: (initial?.contacts as ApiContact[]) ?? [],
   });
@@ -92,6 +93,10 @@ function VendorSheet({
               <Label>GST Number</Label>
               <Input placeholder="27AAAPL1234C1Z5" value={form.gst} onChange={set("gst")} />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>PAN</Label>
+            <Input placeholder="AAAPL1234C" value={form.pan} onChange={set("pan")} className="uppercase" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">

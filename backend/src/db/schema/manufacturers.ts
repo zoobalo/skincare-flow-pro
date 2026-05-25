@@ -11,6 +11,7 @@ export const manufacturers = pgTable("manufacturers", {
   city:             text("city").notNull().default(""),
   email:            text("email").notNull().default(""),
   gst:              text("gst").notNull().default(""),
+  pan:              text("pan"),
   contactPerson:    text("contact_person").notNull(),
   mobile:           text("mobile").notNull(),
   capacityPerMonth: integer("capacity_per_month").notNull(),
