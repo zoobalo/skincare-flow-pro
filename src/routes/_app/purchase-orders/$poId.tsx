@@ -16,6 +16,8 @@ export const Route = createFileRoute("/_app/purchase-orders/$poId")({
 
 function POPrintPage() {
   const { po } = Route.useLoaderData();
+  const mfr = (po as any).manufacturer;
+  const partyForDoc = po.vendor ?? (mfr ? { ...mfr, address: mfr.location } : undefined);
 
   return (
     <>
@@ -51,7 +53,7 @@ function POPrintPage() {
         deliveryAt={po.deliveryAddress}
         notes={po.notes}
         terms={po.terms}
-        vendor={po.vendor as any}
+        vendor={partyForDoc as any}
         sku={po.sku as any}
       />
     </>
