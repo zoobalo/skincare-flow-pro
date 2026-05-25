@@ -91,7 +91,7 @@ function NewPOWizard() {
   const vendor       = partyType === "vendor" ? vendors.find((v) => v.id === vendorId) : undefined;
   const manufacturer = partyType === "manufacturer" ? manufacturers.find((m) => m.id === manufacturerId) : undefined;
   // Unified party object for PODocument display
-  const partyForDoc  = vendor ?? (manufacturer ? { ...manufacturer, city: manufacturer.city ?? manufacturer.location } : undefined);
+  const partyForDoc  = vendor ?? (manufacturer ? { ...manufacturer, address: manufacturer.location, city: manufacturer.city ?? manufacturer.location } : undefined);
 
   const buildPayload = (status: string) => ({
     id:               crypto.randomUUID(),

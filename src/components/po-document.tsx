@@ -71,7 +71,7 @@ export type PODocumentProps = {
   notes?: string | null;
   terms?: string | null;
   vendor?: {
-    name?: string; address?: string; city?: string; gst?: string;
+    name?: string; address?: string; city?: string; gst?: string; pan?: string | null;
     contactPerson?: string; mobile?: string; email?: string;
   } | null;
   sku?: { code?: string; name?: string } | null;
@@ -112,6 +112,7 @@ export function PODocument(props: PODocumentProps) {
     ["Address",        vendor?.address],
     ["City",           vendor?.city],
     ["GST No.",        vendor?.gst],
+    ["PAN",            vendor?.pan ?? undefined],
     ["Contact Person", vendor?.contactPerson],
     ["Phone",          vendor?.mobile],
     ["Email",          vendor?.email],
@@ -268,6 +269,7 @@ export function buildPoHtml(props: PODocumentProps): string {
     ["Address",        vendor?.address],
     ["City",           vendor?.city],
     ["GST No.",        vendor?.gst],
+    ["PAN",            vendor?.pan ?? undefined],
     ["Contact Person", vendor?.contactPerson],
     ["Phone",          vendor?.mobile],
     ["Email",          vendor?.email],
