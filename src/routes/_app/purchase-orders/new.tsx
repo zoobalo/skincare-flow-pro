@@ -284,7 +284,13 @@ function NewPOWizard() {
                       className={cn("rounded-lg border bg-background p-4 text-left transition-all hover:border-primary", vendorId === v.id && "border-primary ring-2 ring-primary/20")}
                     >
                       <div className="font-medium">{v.name}</div>
-                      <div className="text-xs text-muted-foreground">{v.materials.join(", ")} · Lead {v.leadTimeDays}d · Rating {v.rating}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{v.contactPerson}{v.mobile ? ` · ${v.mobile}` : ""}</div>
+                      {(v.address || v.city) && <div className="text-xs text-muted-foreground mt-0.5">{[v.address, v.city].filter(Boolean).join(", ")}</div>}
+                      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                        {v.gst && <span><span className="text-muted-foreground">GST </span><span className="font-mono">{v.gst}</span></span>}
+                        {v.pan && <span><span className="text-muted-foreground">PAN </span><span className="font-mono uppercase">{v.pan}</span></span>}
+                      </div>
+                      <div className="mt-1.5 text-xs text-muted-foreground">{v.materials.join(", ")} · Lead {v.leadTimeDays}d · Rating {v.rating}</div>
                     </button>
                   ))}
                 </div>
@@ -302,7 +308,13 @@ function NewPOWizard() {
                       className={cn("rounded-lg border bg-background p-4 text-left transition-all hover:border-primary", manufacturerId === m.id && "border-primary ring-2 ring-primary/20")}
                     >
                       <div className="font-medium">{m.name}</div>
-                      <div className="text-xs text-muted-foreground">{m.city ?? m.location} · Lead {m.leadTimeDays}d · Rating {m.rating}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{m.contactPerson}{m.mobile ? ` · ${m.mobile}` : ""}</div>
+                      {(m.location || m.city) && <div className="text-xs text-muted-foreground mt-0.5">{[m.location, m.city].filter(Boolean).join(", ")}</div>}
+                      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                        {m.gst && <span><span className="text-muted-foreground">GST </span><span className="font-mono">{m.gst}</span></span>}
+                        {m.pan && <span><span className="text-muted-foreground">PAN </span><span className="font-mono uppercase">{m.pan}</span></span>}
+                      </div>
+                      <div className="mt-1.5 text-xs text-muted-foreground">Lead {m.leadTimeDays}d · Rating {m.rating} · Cap {(m.capacityPerMonth ?? 0).toLocaleString()} units/mo</div>
                     </button>
                   ))}
                 </div>
