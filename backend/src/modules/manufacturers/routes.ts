@@ -23,8 +23,8 @@ export const manufacturerRoutes = new Hono()
   .patch("/:id", async (c) => {
     try {
       const body = await c.req.json();
-      const { name, location, city, email, gst, contactPerson, mobile, capacityPerMonth, qcPassRate, leadTimeDays, paymentTerms, rating, reliability, delayPercent, contacts } = body;
-      const [updated] = await updateManufacturer(c.req.param("id"), { name, location, city, email, gst, contactPerson, mobile, capacityPerMonth, qcPassRate, leadTimeDays, paymentTerms, rating, reliability, delayPercent, contacts });
+      const { name, location, city, email, gst, pan, contactPerson, mobile, capacityPerMonth, qcPassRate, leadTimeDays, paymentTerms, rating, reliability, delayPercent, contacts } = body;
+      const [updated] = await updateManufacturer(c.req.param("id"), { name, location, city, email, gst, pan, contactPerson, mobile, capacityPerMonth, qcPassRate, leadTimeDays, paymentTerms, rating, reliability, delayPercent, contacts });
       if (!updated) return c.json({ error: "Manufacturer not found" }, 404);
       return c.json(updated);
     } catch (err: any) {
