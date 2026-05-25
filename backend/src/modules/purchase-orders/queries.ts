@@ -13,8 +13,9 @@ export const getAllPurchaseOrders = (status?: string, vendorId?: string, skuId?:
     where: conditions.length ? (_, { and }) => and(...conditions as any) : undefined,
     orderBy: (po, { desc }) => [desc(po.createdAt)],
     with: {
-      vendor: { columns: { id: true, name: true, city: true } },
-      sku:    { columns: { id: true, code: true, name: true } },
+      vendor:       { columns: { id: true, name: true, city: true } },
+      manufacturer: { columns: { id: true, name: true, city: true, location: true } },
+      sku:          { columns: { id: true, code: true, name: true } },
     },
   });
 };
@@ -22,7 +23,7 @@ export const getAllPurchaseOrders = (status?: string, vendorId?: string, skuId?:
 export const getPurchaseOrderById = (id: string) =>
   db.query.purchaseOrders.findFirst({
     where: (po, { eq }) => eq(po.id, id),
-    with: { vendor: true, sku: true },
+    with: { vendor: true, manufacturer: true, sku: true },
   });
 
 export const createPurchaseOrder = (data: typeof purchaseOrders.$inferInsert) =>

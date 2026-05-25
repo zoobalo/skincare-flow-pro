@@ -278,7 +278,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
   const openEditPo = (p: typeof sku.purchaseOrders[0]) => {
     setEditPoId(p.id);
     setEditPoForm({
-      vendorId: p.vendorId, materialType: p.materialType, quantity: p.quantity, rate: p.rate,
+      vendorId: p.vendorId ?? "", materialType: p.materialType, quantity: p.quantity, rate: p.rate,
       gstRate: p.gstRate ?? 18, gstAmount: p.gstAmount ?? 0, total: p.total,
       dispatchDate: p.dispatchDate, expectedDelivery: p.expectedDelivery, status: p.status,
       amountPaid: (p as any).amountPaid != null ? String((p as any).amountPaid) : "",

@@ -2,6 +2,7 @@ import { pgTable, text, integer, numeric, timestamp, date, jsonb, index } from "
 import { relations } from "drizzle-orm";
 import { vendors } from "./vendors.ts";
 import { skus } from "./skus.ts";
+import { manufacturers } from "./manufacturers.ts";
 
 export type POLineItem = {
   description: string;
@@ -27,7 +28,8 @@ export type POStatus = typeof PO_STATUSES[number];
 export const purchaseOrders = pgTable("purchase_orders", {
   id:               text("id").primaryKey(),
   poNumber:         text("po_number").notNull().unique(),
-  vendorId:         text("vendor_id").notNull().references(() => vendors.id),
+  vendorId:         text("vendor_id").references(() => vendors.id),
+  manufacturerId:   text("manufacturer_id").references(() => manufacturers.id),
   skuId:            text("sku_id").notNull().references(() => skus.id),
   materialType:     text("material_type").notNull(),
   quantity:         integer("quantity").notNull(),
@@ -50,14 +52,16 @@ export const purchaseOrders = pgTable("purchase_orders", {
   updatedAt:        timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [
   index("po_vendor_idx").on(t.vendorId),
+  index("po_manufacturer_idx").on(t.manufacturerId),
   index("po_sku_idx").on(t.skuId),
   index("po_status_idx").on(t.status),
   index("po_dispatch_date_idx").on(t.dispatchDate),
 ]);
 
 export const purchaseOrdersRelations = relations(purchaseOrders, ({ one }) => ({
-  vendor: one(vendors, { fields: [purchaseOrders.vendorId], references: [vendors.id] }),
-  sku:    one(skus,    { fields: [purchaseOrders.skuId],    references: [skus.id] }),
+  vendor:       one(vendors,       { fields: [purchaseOrders.vendorId],       references: [vendors.id] }),
+  manufacturer: one(manufacturers, { fields: [purchaseOrders.manufacturerId], references: [manufacturers.id] }),
+  sku:          one(skus,          { fields: [purchaseOrders.skuId],          references: [skus.id] }),
 }));
 
 export type PurchaseOrder    = typeof purchaseOrders.$inferSelect;

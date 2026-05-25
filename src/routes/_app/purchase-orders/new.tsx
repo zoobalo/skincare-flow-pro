@@ -17,8 +17,8 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/purchase-orders/new")({
   loader: async () => {
-    const [skus, vendors, remarks] = await Promise.all([api.skus.list(), api.vendors.list(), api.productionRemarks.list()]);
-    return { skus, vendors, remarks };
+    const [skus, vendors, manufacturers, remarks] = await Promise.all([api.skus.list(), api.vendors.list(), api.manufacturers.list(), api.productionRemarks.list()]);
+    return { skus, vendors, manufacturers, remarks };
   },
   component: NewPOWizard,
   head: () => ({ meta: [{ title: "Create Purchase Order — Zoobalo" }] }),
@@ -40,7 +40,7 @@ function todayStr() {
 
 function NewPOWizard() {
   const navigate = useNavigate();
-  const { skus, vendors, remarks } = Route.useLoaderData();
+  const { skus, vendors, manufacturers, remarks } = Route.useLoaderData();
 
   const [step, setStep] = useState(0);
   const [poNumber, setPoNumber] = useState(genPoNumber);
@@ -48,7 +48,9 @@ function NewPOWizard() {
   const [skuId, setSkuId]     = useState(skus[0]?.id ?? "");
   const [material, setMaterial]   = useState("Aluminium Can");
   const [category, setCategory]   = useState<"RM" | "PM" | "FG">("PM");
+  const [partyType, setPartyType] = useState<"vendor" | "manufacturer">("vendor");
   const [vendorId, setVendorId] = useState(vendors[0]?.id ?? "");
+  const [manufacturerId, setManufacturerId] = useState(manufacturers[0]?.id ?? "");
   const [lineItems, setLineItems] = useState<Array<{ description: string; qty: number; rate: number; gstRate: number }>>([
     { description: "Aluminium Can", qty: 10000, rate: 28.5, gstRate: 18 },
   ]);
@@ -85,13 +87,17 @@ function NewPOWizard() {
   };
   const prev = () => setStep((s) => Math.max(s - 1, 0));
 
-  const sku    = skus.find((s) => s.id === skuId);
-  const vendor = vendors.find((v) => v.id === vendorId);
+  const sku          = skus.find((s) => s.id === skuId);
+  const vendor       = partyType === "vendor" ? vendors.find((v) => v.id === vendorId) : undefined;
+  const manufacturer = partyType === "manufacturer" ? manufacturers.find((m) => m.id === manufacturerId) : undefined;
+  // Unified party object for PODocument display
+  const partyForDoc  = vendor ?? (manufacturer ? { ...manufacturer, city: manufacturer.city ?? manufacturer.location } : undefined);
 
   const buildPayload = (status: string) => ({
     id:               crypto.randomUUID(),
     poNumber,
-    vendorId,
+    vendorId:         partyType === "vendor" ? vendorId : null,
+    manufacturerId:   partyType === "manufacturer" ? manufacturerId : null,
     skuId,
     materialType:     material,
     category,
@@ -138,7 +144,7 @@ function NewPOWizard() {
     setSubmitting(true);
     try {
       await api.purchaseOrders.create(buildPayload("Sent") as any);
-      toast.success(`PO ${poNumber} sent to ${vendor?.email ?? "vendor"}.`);
+      toast.success(`PO ${poNumber} sent to ${partyForDoc?.name ?? "party"}.`);
       await createBatchFromPo();
       navigate({ to: "/purchase-orders" });
     } catch {
@@ -169,7 +175,7 @@ function NewPOWizard() {
       rate: lineItems[0]?.rate ?? 0,
       gstRate: lineItems[0]?.gstRate ?? 18,
       gstAmount: totalGst, total: grandTotal,
-      items: computedItems, category, deliveryAt: deliveryAddress, notes, terms, vendor, sku,
+      items: computedItems, category, deliveryAt: deliveryAddress, notes, terms, vendor: partyForDoc as any, sku,
     });
     const win = window.open("", "_blank");
     if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 300); }
@@ -250,20 +256,58 @@ function NewPOWizard() {
         )}
 
         {step === 1 && (
-          <div className="space-y-3">
-            <Label>Select vendor</Label>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {vendors.slice(0, 6).map((v) => (
+          <div className="space-y-4">
+            {/* Party type toggle */}
+            <div className="flex rounded-lg border bg-muted/40 p-1 w-fit gap-1">
+              {(["vendor", "manufacturer"] as const).map((type) => (
                 <button
-                  key={v.id}
-                  onClick={() => setVendorId(v.id)}
-                  className={cn("rounded-lg border bg-background p-4 text-left transition-all hover:border-primary", vendorId === v.id && "border-primary ring-2 ring-primary/20")}
+                  key={type}
+                  onClick={() => setPartyType(type)}
+                  className={cn(
+                    "rounded-md px-4 py-1.5 text-sm font-medium capitalize transition-all",
+                    partyType === type ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
                 >
-                  <div className="font-medium">{v.name}</div>
-                  <div className="text-xs text-muted-foreground">{v.materials.join(", ")} · Lead {v.leadTimeDays}d · Rating {v.rating}</div>
+                  {type === "vendor" ? "Vendor" : "Manufacturer"}
                 </button>
               ))}
             </div>
+
+            {partyType === "vendor" && (
+              <div className="space-y-3">
+                <Label className="text-xs text-muted-foreground">Select vendor</Label>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {vendors.map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => setVendorId(v.id)}
+                      className={cn("rounded-lg border bg-background p-4 text-left transition-all hover:border-primary", vendorId === v.id && "border-primary ring-2 ring-primary/20")}
+                    >
+                      <div className="font-medium">{v.name}</div>
+                      <div className="text-xs text-muted-foreground">{v.materials.join(", ")} · Lead {v.leadTimeDays}d · Rating {v.rating}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {partyType === "manufacturer" && (
+              <div className="space-y-3">
+                <Label className="text-xs text-muted-foreground">Select manufacturer</Label>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {manufacturers.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => setManufacturerId(m.id)}
+                      className={cn("rounded-lg border bg-background p-4 text-left transition-all hover:border-primary", manufacturerId === m.id && "border-primary ring-2 ring-primary/20")}
+                    >
+                      <div className="font-medium">{m.name}</div>
+                      <div className="text-xs text-muted-foreground">{m.city ?? m.location} · Lead {m.leadTimeDays}d · Rating {m.rating}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -375,7 +419,7 @@ function NewPOWizard() {
               deliveryAt={deliveryAddress}
               notes={notes}
               terms={terms}
-              vendor={vendor}
+              vendor={partyForDoc as any}
               sku={sku}
             />
           </div>

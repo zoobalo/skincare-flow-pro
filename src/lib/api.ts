@@ -114,7 +114,7 @@ export type POLineItem = {
 };
 
 export type ApiPo = {
-  id: string; poNumber: string; vendorId: string; skuId: string;
+  id: string; poNumber: string; vendorId: string | null; manufacturerId: string | null; skuId: string;
   materialType: string; quantity: number; rate: number;
   gstRate: number; gstAmount: number; total: number;
   category: string | null;
@@ -123,7 +123,8 @@ export type ApiPo = {
   dispatchDate: string; expectedDelivery: string;
   status: "To be sent" | "Sent" | "Pending" | "Approved" | "In Production" | "Dispatched" | "Delivered" | "Delayed";
   paymentDue: number | null; amountPaid: number | null; paymentDueDate: string | null; notes: string | null; terms: string | null;
-  vendor?: { id: string; name: string; city: string };
+  vendor?: { id: string; name: string; city: string } | null;
+  manufacturer?: { id: string; name: string; city: string; location: string } | null;
   sku?: { id: string; code: string; name: string };
 };
 

@@ -64,7 +64,7 @@ function POContent({ purchaseOrders, vendors, skus }: {
   const openEdit = (po: ApiPo) => {
     setEditForm({
       poNumber: po.poNumber,
-      vendorId: po.vendorId,
+      vendorId: po.vendorId ?? "",
       skuId: po.skuId,
       materialType: po.materialType,
       quantity: po.quantity,
@@ -148,7 +148,8 @@ function POContent({ purchaseOrders, vendors, skus }: {
   const filtered = purchaseOrders.filter((p) => {
     if (!q.trim()) return true;
     const needle = q.toLowerCase();
-    return p.poNumber.toLowerCase().includes(needle) || p.materialType.toLowerCase().includes(needle) || (p.vendor?.name ?? "").toLowerCase().includes(needle) || (p.sku?.code ?? "").toLowerCase().includes(needle);
+    const partyName = p.vendor?.name ?? (p as any).manufacturer?.name ?? "";
+    return p.poNumber.toLowerCase().includes(needle) || p.materialType.toLowerCase().includes(needle) || partyName.toLowerCase().includes(needle) || (p.sku?.code ?? "").toLowerCase().includes(needle);
   });
 
   const API_BASE = `${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}`;
@@ -169,7 +170,7 @@ function POContent({ purchaseOrders, vendors, skus }: {
         po.materialType,
         po.dispatchDate ?? "",
         po.poNumber,
-        po.vendor?.name ?? "",
+        po.vendor?.name ?? (po as any).manufacturer?.name ?? "",
         po.sku?.name ?? po.materialType,
         po.sku?.code ?? "",
         Number(po.quantity ?? 0),
@@ -246,7 +247,7 @@ function POContent({ purchaseOrders, vendors, skus }: {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="font-semibold">{po.poNumber}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{fmtDate(po.dispatchDate)} · {po.vendor?.name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{fmtDate(po.dispatchDate)} · {po.vendor?.name ?? (po as any).manufacturer?.name}</div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <StatusBadge status={po.status} />
