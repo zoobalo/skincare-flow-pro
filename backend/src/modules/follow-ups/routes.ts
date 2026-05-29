@@ -27,8 +27,12 @@ export const followUpRoutes = new Hono()
     return c.json(created, 201);
   })
   .patch("/:id/tasks/:taskId", async (c) => {
-    const body = await c.req.json();
-    const [updated] = await updateTask(c.req.param("taskId"), body);
+    const { doneAt, ...rest } = await c.req.json();
+    const data = {
+      ...rest,
+      ...(doneAt !== undefined ? { doneAt: doneAt ? new Date(doneAt) : null } : {}),
+    };
+    const [updated] = await updateTask(c.req.param("taskId"), data);
     if (!updated) return c.json({ error: "Not found" }, 404);
     return c.json(updated);
   })
