@@ -181,6 +181,14 @@ export type ApiNpd = {
   createdAt: string; updatedAt: string;
 };
 
+export type ApiFollowUpContact = {
+  id: string; name: string; phone: string | null; email: string | null; notes: string | null; createdAt: string;
+};
+
+export type ApiFollowUpTask = {
+  id: string; contactId: string; description: string; done: boolean; doneAt: string | null; createdAt: string;
+};
+
 export type ApiTask = {
   id: string; title: string; comments: string;
   status: "None" | "Initiated" | "Done";
@@ -423,5 +431,21 @@ export const api = {
     mrpAlerts:        () => get<ApiSku[]>("/procurement/mrp-alerts"),
     pendingApprovals: async () => (await get<any[]>("/procurement/pending-approvals")).map(coercePo),
     duePayments:      async () => (await get<any[]>("/procurement/due-payments")).map(coercePo),
+  },
+
+  followUps: {
+    list: () => get<(ApiFollowUpContact & { tasks: ApiFollowUpTask[] })[]>("/follow-ups"),
+    createContact: (data: Partial<ApiFollowUpContact>) =>
+      fetch(`${BASE}/follow-ups`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateContact: (id: string, data: Partial<ApiFollowUpContact>) =>
+      fetch(`${BASE}/follow-ups/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteContact: (id: string) =>
+      fetch(`${BASE}/follow-ups/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    createTask: (contactId: string, data: { description: string }) =>
+      fetch(`${BASE}/follow-ups/${contactId}/tasks`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateTask: (contactId: string, taskId: string, data: Partial<ApiFollowUpTask>) =>
+      fetch(`${BASE}/follow-ups/${contactId}/tasks/${taskId}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteTask: (contactId: string, taskId: string) =>
+      fetch(`${BASE}/follow-ups/${contactId}/tasks/${taskId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 };

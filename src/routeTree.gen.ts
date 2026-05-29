@@ -32,6 +32,7 @@ import { Route as AppNpdIndexRouteImport } from './routes/_app/npd/index'
 import { Route as AppManufacturersIndexRouteImport } from './routes/_app/manufacturers/index'
 import { Route as AppLogisticsIndexRouteImport } from './routes/_app/logistics/index'
 import { Route as AppInventoryIndexRouteImport } from './routes/_app/inventory/index'
+import { Route as AppFollowUpsIndexRouteImport } from './routes/_app/follow-ups/index'
 import { Route as AppDirectoryIndexRouteImport } from './routes/_app/directory/index'
 import { Route as AppAnalyticsIndexRouteImport } from './routes/_app/analytics/index'
 import { Route as AppVendorsVendorIdRouteImport } from './routes/_app/vendors/$vendorId'
@@ -156,6 +157,11 @@ const AppInventoryIndexRoute = AppInventoryIndexRouteImport.update({
   path: '/inventory/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFollowUpsIndexRoute = AppFollowUpsIndexRouteImport.update({
+  id: '/follow-ups/',
+  path: '/follow-ups/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDirectoryIndexRoute = AppDirectoryIndexRouteImport.update({
   id: '/directory/',
   path: '/directory/',
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/analytics/': typeof AppAnalyticsIndexRoute
   '/directory/': typeof AppDirectoryIndexRoute
+  '/follow-ups/': typeof AppFollowUpsIndexRoute
   '/inventory/': typeof AppInventoryIndexRoute
   '/logistics/': typeof AppLogisticsIndexRoute
   '/manufacturers/': typeof AppManufacturersIndexRoute
@@ -245,6 +252,7 @@ export interface FileRoutesByTo {
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/analytics': typeof AppAnalyticsIndexRoute
   '/directory': typeof AppDirectoryIndexRoute
+  '/follow-ups': typeof AppFollowUpsIndexRoute
   '/inventory': typeof AppInventoryIndexRoute
   '/logistics': typeof AppLogisticsIndexRoute
   '/manufacturers': typeof AppManufacturersIndexRoute
@@ -279,6 +287,7 @@ export interface FileRoutesById {
   '/_app/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/_app/analytics/': typeof AppAnalyticsIndexRoute
   '/_app/directory/': typeof AppDirectoryIndexRoute
+  '/_app/follow-ups/': typeof AppFollowUpsIndexRoute
   '/_app/inventory/': typeof AppInventoryIndexRoute
   '/_app/logistics/': typeof AppLogisticsIndexRoute
   '/_app/manufacturers/': typeof AppManufacturersIndexRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/vendors/$vendorId'
     | '/analytics/'
     | '/directory/'
+    | '/follow-ups/'
     | '/inventory/'
     | '/logistics/'
     | '/manufacturers/'
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
     | '/vendors/$vendorId'
     | '/analytics'
     | '/directory'
+    | '/follow-ups'
     | '/inventory'
     | '/logistics'
     | '/manufacturers'
@@ -378,6 +389,7 @@ export interface FileRouteTypes {
     | '/_app/vendors/$vendorId'
     | '/_app/analytics/'
     | '/_app/directory/'
+    | '/_app/follow-ups/'
     | '/_app/inventory/'
     | '/_app/logistics/'
     | '/_app/manufacturers/'
@@ -568,6 +580,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInventoryIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/follow-ups/': {
+      id: '/_app/follow-ups/'
+      path: '/follow-ups'
+      fullPath: '/follow-ups/'
+      preLoaderRoute: typeof AppFollowUpsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/directory/': {
       id: '/_app/directory/'
       path: '/directory'
@@ -637,6 +656,7 @@ interface AppRouteChildren {
   AppVendorsVendorIdRoute: typeof AppVendorsVendorIdRoute
   AppAnalyticsIndexRoute: typeof AppAnalyticsIndexRoute
   AppDirectoryIndexRoute: typeof AppDirectoryIndexRoute
+  AppFollowUpsIndexRoute: typeof AppFollowUpsIndexRoute
   AppInventoryIndexRoute: typeof AppInventoryIndexRoute
   AppLogisticsIndexRoute: typeof AppLogisticsIndexRoute
   AppManufacturersIndexRoute: typeof AppManufacturersIndexRoute
@@ -665,6 +685,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppVendorsVendorIdRoute: AppVendorsVendorIdRoute,
   AppAnalyticsIndexRoute: AppAnalyticsIndexRoute,
   AppDirectoryIndexRoute: AppDirectoryIndexRoute,
+  AppFollowUpsIndexRoute: AppFollowUpsIndexRoute,
   AppInventoryIndexRoute: AppInventoryIndexRoute,
   AppLogisticsIndexRoute: AppLogisticsIndexRoute,
   AppManufacturersIndexRoute: AppManufacturersIndexRoute,
