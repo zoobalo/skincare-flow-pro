@@ -181,6 +181,13 @@ export type ApiNpd = {
   createdAt: string; updatedAt: string;
 };
 
+export type ApiArtworkItem = {
+  id: string; skuName: string; artworkType: string;
+  imageUrl: string | null; statusRemark: string | null;
+  statusUpdatedAt: string | null; comment: string | null;
+  createdAt: string; updatedAt: string;
+};
+
 export type ApiFollowUpContact = {
   id: string; name: string; phone: string | null; email: string | null; notes: string | null; createdAt: string;
 };
@@ -431,6 +438,16 @@ export const api = {
     mrpAlerts:        () => get<ApiSku[]>("/procurement/mrp-alerts"),
     pendingApprovals: async () => (await get<any[]>("/procurement/pending-approvals")).map(coercePo),
     duePayments:      async () => (await get<any[]>("/procurement/due-payments")).map(coercePo),
+  },
+
+  artwork: {
+    list: () => get<ApiArtworkItem[]>("/artwork"),
+    create: (data: Partial<ApiArtworkItem>) =>
+      fetch(`${BASE}/artwork`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiArtworkItem>) =>
+      fetch(`${BASE}/artwork/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/artwork/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   followUps: {

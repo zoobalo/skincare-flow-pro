@@ -21,6 +21,7 @@ import { npdRoutes } from "./modules/npd/routes.ts";
 import { productionRemarkRoutes } from "./modules/production-remarks/routes.ts";
 import { directoryRoutes } from "./modules/directory/routes.ts";
 import { followUpRoutes } from "./modules/follow-ups/routes.ts";
+import { artworkRoutes } from "./modules/artwork/routes.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
 import { requireAuth } from "./modules/auth/middleware.ts";
 
@@ -70,6 +71,7 @@ app.route("/npd",                npdRoutes);
 app.route("/production-remarks", productionRemarkRoutes);
 app.route("/directory",          directoryRoutes);
 app.route("/follow-ups",         followUpRoutes);
+app.route("/artwork",            artworkRoutes);
 
 serve({ fetch: root.fetch, port: env.PORT }, () => {
   console.log(`🚀  Zoobalo API running on http://localhost:${env.PORT}/api`);

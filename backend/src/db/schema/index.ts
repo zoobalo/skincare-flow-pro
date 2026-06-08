@@ -10,3 +10,4 @@ export * from "./npd.ts";
 export * from "./production-remarks.ts";
 export * from "./directory.ts";
 export * from "./follow-ups.ts";
+export * from "./artwork.ts";
