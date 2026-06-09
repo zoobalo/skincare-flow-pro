@@ -181,6 +181,10 @@ export type ApiNpd = {
   createdAt: string; updatedAt: string;
 };
 
+export type ApiMftNote = {
+  id: string; skuId: string | null; date: string; notes: string; createdAt: string;
+};
+
 export type ApiArtworkItem = {
   id: string; skuName: string; artworkType: string;
   imageUrl: string | null; statusRemark: string | null;
@@ -340,6 +344,13 @@ export const api = {
       fetch(`${BASE}/skus/dispatches/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteDispatch: (id: string) =>
       fetch(`${BASE}/skus/dispatches/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    listMft: (skuId: string) => get<ApiMftNote[]>(`/skus/${skuId}/mft`),
+    addMft: (skuId: string, data: { date: string; notes: string }) =>
+      fetch(`${BASE}/skus/${skuId}/mft`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateMft: (id: string, data: { date?: string; notes?: string }) =>
+      fetch(`${BASE}/skus/mft/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteMft: (id: string) =>
+      fetch(`${BASE}/skus/mft/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   purchaseOrders: {
@@ -438,6 +449,16 @@ export const api = {
     mrpAlerts:        () => get<ApiSku[]>("/procurement/mrp-alerts"),
     pendingApprovals: async () => (await get<any[]>("/procurement/pending-approvals")).map(coercePo),
     duePayments:      async () => (await get<any[]>("/procurement/due-payments")).map(coercePo),
+  },
+
+  mft: {
+    list: () => get<ApiMftNote[]>("/mft"),
+    create: (data: { skuId?: string | null; date: string; notes: string }) =>
+      fetch(`${BASE}/mft`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: { skuId?: string | null; date?: string; notes?: string }) =>
+      fetch(`${BASE}/mft/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/mft/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   artwork: {

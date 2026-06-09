@@ -33,7 +33,8 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
       if (typeof window === "undefined") return null;
       throw notFound();
     }
-    return { sku, manufacturers, vendors, allPackaging, allRawMaterials };
+    const mftNotes = await api.skus.listMft(params.skuId);
+    return { sku, manufacturers, vendors, allPackaging, allRawMaterials, mftNotes };
   },
   component: SkuDetailPage,
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.sku?.name ?? "SKU"} — Zoobalo` }] }),
@@ -67,10 +68,10 @@ function getDelayDays(batch: { expectedCompletion: string; currentStage: string 
 function SkuDetailPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <div className="flex items-center justify-center p-20 text-muted-foreground text-sm">Loading…</div>;
-  return <SkuDetailContent sku={loaderData.sku} manufacturers={loaderData.manufacturers} vendors={loaderData.vendors} allPackaging={loaderData.allPackaging} allRawMaterials={loaderData.allRawMaterials} />;
+  return <SkuDetailContent sku={loaderData.sku} manufacturers={loaderData.manufacturers} vendors={loaderData.vendors} allPackaging={loaderData.allPackaging} allRawMaterials={loaderData.allRawMaterials} mftNotes={loaderData.mftNotes} />;
 }
 
-function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMaterials }: { sku: import("@/lib/api").ApiSkuDetail; manufacturers: import("@/lib/api").ApiManufacturer[]; vendors: import("@/lib/api").ApiVendor[]; allPackaging: import("@/lib/api").ApiPackagingItem[]; allRawMaterials: import("@/lib/api").ApiRawMaterial[] }) {
+function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMaterials, mftNotes }: { sku: import("@/lib/api").ApiSkuDetail; manufacturers: import("@/lib/api").ApiManufacturer[]; vendors: import("@/lib/api").ApiVendor[]; allPackaging: import("@/lib/api").ApiPackagingItem[]; allRawMaterials: import("@/lib/api").ApiRawMaterial[]; mftNotes: import("@/lib/api").ApiMftNote[] }) {
   const router = useRouter();
   const navigate = useNavigate();
   const mfg = sku.manufacturer;
@@ -123,6 +124,12 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
   const [testSaving, setTestSaving]   = useState(false);
   const [editTestId, setEditTestId]   = useState<string | null>(null);
   const [testForm, setTestForm]       = useState({ testName: "", result: "" });
+
+  // MFT sheet
+  const [mftOpen, setMftOpen]         = useState(false);
+  const [mftSaving, setMftSaving]     = useState(false);
+  const [editMftId, setEditMftId]     = useState<string | null>(null);
+  const [mftForm, setMftForm]         = useState({ date: "", notes: "" });
 
   // Edit Packaging sheet
   const [editPackOpen, setEditPackOpen] = useState(false);
@@ -341,6 +348,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
           <TabsTrigger value="tests">Tests ({(sku as any).tests?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="pohistory">PO History</TabsTrigger>
           <TabsTrigger value="dispatch">Dispatch ({(sku as any).dispatches?.length ?? 0})</TabsTrigger>
+          <TabsTrigger value="mft">MFT ({mftNotes.length})</TabsTrigger>
         </TabsList>
 
         {/* ── Product Details ── */}
@@ -681,7 +689,80 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
             })}
           </div>
         </TabsContent>
+
+        {/* ── MFT ── */}
+        <TabsContent value="mft" className="mt-4">
+          <div className="mb-3 flex justify-end">
+            <Button size="sm" onClick={() => { setMftForm({ date: new Date().toISOString().slice(0, 10), notes: "" }); setEditMftId(null); setMftOpen(true); }}>
+              <Plus className="mr-1.5 h-4 w-4" />Add Meeting Note
+            </Button>
+          </div>
+          {mftNotes.length === 0 && (
+            <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No MFT notes yet. Click "Add Meeting Note" to record weekly updates.</div>
+          )}
+          <div className="space-y-3">
+            {mftNotes.map((m) => (
+              <div key={m.id} className="rounded-xl border bg-card p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-sm font-semibold text-muted-foreground">{fmtDate(m.date)}</span>
+                  <div className="flex gap-0.5 shrink-0">
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setMftForm({ date: m.date, notes: m.notes }); setEditMftId(m.id); setMftOpen(true); }}>
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={async () => { if (!confirm("Delete this MFT note?")) return; try { await api.skus.deleteMft(m.id); toast.success("Deleted."); reload(); } catch { toast.error("Failed."); } }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="mt-2 text-sm whitespace-pre-wrap leading-relaxed">{m.notes}</p>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* ── MFT Sheet ── */}
+      <Sheet open={mftOpen} onOpenChange={setMftOpen}>
+        <SheetContent>
+          <SheetHeader><SheetTitle>{editMftId ? "Edit Meeting Note" : "Add Meeting Note"}</SheetTitle></SheetHeader>
+          <div className="mt-6 space-y-4">
+            <div className="space-y-1.5">
+              <Label>Meeting Date *</Label>
+              <input type="date" className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm" value={mftForm.date} onChange={(e) => setMftForm(f => ({ ...f, date: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Meeting Notes *</Label>
+              <Textarea rows={8} placeholder="Write the meeting updates here…" value={mftForm.notes} onChange={(e) => setMftForm(f => ({ ...f, notes: e.target.value }))} />
+            </div>
+          </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setMftOpen(false)}>Cancel</Button>
+            <Button
+              disabled={mftSaving || !mftForm.date || !mftForm.notes.trim()}
+              onClick={async () => {
+                setMftSaving(true);
+                try {
+                  if (editMftId) {
+                    await api.skus.updateMft(editMftId, mftForm);
+                    toast.success("Note updated.");
+                  } else {
+                    await api.skus.addMft(sku.id, mftForm);
+                    toast.success("Note added.");
+                  }
+                  setMftOpen(false);
+                  reload();
+                } catch {
+                  toast.error("Save failed.");
+                } finally {
+                  setMftSaving(false);
+                }
+              }}
+            >
+              {mftSaving ? "Saving…" : editMftId ? "Save Changes" : "Add Note"}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* ── Dispatch Sheet ── */}
       <Sheet open={dispatchOpen} onOpenChange={setDispatchOpen}>

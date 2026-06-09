@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { db } from "../../db/client.ts";
 import { packagingItems, skuRawMaterials, skuTests, skuDispatches } from "../../db/schema/skus.ts";
-import { eq } from "drizzle-orm";
+import { mftNotes } from "../../db/schema/mft-notes.ts";
+import { eq, desc } from "drizzle-orm";
 
 export const skuItemRoutes = new Hono()
   // ── Packaging ────────────────────────────────────────────────────────────────
@@ -106,6 +107,38 @@ export const skuItemRoutes = new Hono()
   })
   .delete("/dispatches/:id", async (c) => {
     const [deleted] = await db.delete(skuDispatches).where(eq(skuDispatches.id, c.req.param("id"))).returning();
+    if (!deleted) return c.json({ error: "Not found" }, 404);
+    return c.json({ ok: true });
+  })
+
+  // ── MFT Notes ─────────────────────────────────────────────────────────────────
+  .get("/:skuId/mft", async (c) => {
+    const rows = await db.select().from(mftNotes)
+      .where(eq(mftNotes.skuId, c.req.param("skuId")))
+      .orderBy(desc(mftNotes.date));
+    return c.json(rows);
+  })
+  .post("/:skuId/mft", async (c) => {
+    const body = await c.req.json();
+    const [created] = await db.insert(mftNotes).values({
+      id:    crypto.randomUUID(),
+      skuId: c.req.param("skuId"),
+      date:  body.date,
+      notes: body.notes ?? "",
+    }).returning();
+    return c.json(created, 201);
+  })
+  .patch("/mft/:id", async (c) => {
+    const body = await c.req.json();
+    const patch: Record<string, unknown> = {};
+    if (body.date  !== undefined) patch.date  = body.date;
+    if (body.notes !== undefined) patch.notes = body.notes;
+    const [updated] = await db.update(mftNotes).set(patch).where(eq(mftNotes.id, c.req.param("id"))).returning();
+    if (!updated) return c.json({ error: "Not found" }, 404);
+    return c.json(updated);
+  })
+  .delete("/mft/:id", async (c) => {
+    const [deleted] = await db.delete(mftNotes).where(eq(mftNotes.id, c.req.param("id"))).returning();
     if (!deleted) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true });
   });
