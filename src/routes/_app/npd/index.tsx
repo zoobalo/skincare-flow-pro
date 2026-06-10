@@ -158,6 +158,40 @@ function normalizeImageGroups(raw: any): ApiNpdImageGroup[] {
   return raw as ApiNpdImageGroup[];
 }
 
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+function Lightbox({ lightbox, onClose, onPrev, onNext }: {
+  lightbox: { urls: string[]; idx: number };
+  onClose: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90" onClick={onClose}>
+      <div className="relative flex items-center justify-center w-full h-full" onClick={(e) => e.stopPropagation()}>
+        <img src={lightbox.urls[lightbox.idx]} alt={`image-${lightbox.idx + 1}`} className="max-h-[85vh] max-w-[85vw] object-contain select-none rounded-lg" />
+        <button type="button" onClick={onClose} className="absolute right-6 top-6 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors">
+          <X className="h-5 w-5" />
+        </button>
+        {lightbox.idx > 0 && (
+          <button type="button" onClick={(e) => { e.stopPropagation(); onPrev(); }} className="absolute left-6 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors">
+            <ChevronLeft className="h-7 w-7" />
+          </button>
+        )}
+        {lightbox.idx < lightbox.urls.length - 1 && (
+          <button type="button" onClick={(e) => { e.stopPropagation(); onNext(); }} className="absolute right-6 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors">
+            <ChevronRight className="h-7 w-7" />
+          </button>
+        )}
+        {lightbox.urls.length > 1 && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-4 py-1.5 text-white/90 text-sm tabular-nums">
+            {lightbox.idx + 1} / {lightbox.urls.length}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 function NpdPage() {
   const loaderData = Route.useLoaderData();
@@ -445,7 +479,7 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
       </Dialog>
 
       {/* View all images Dialog */}
-      <Dialog open={!!viewImagesDialog} onOpenChange={(open) => { if (!open) setViewImagesDialog(null); }}>
+      <Dialog open={!!viewImagesDialog} onOpenChange={(open) => { if (!open) { setViewImagesDialog(null); setLightbox(null); } }}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{viewImagesDialog?.npdName} — Reference Images</DialogTitle>
@@ -471,65 +505,13 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
               </div>
             ))}
           </div>
+          {/* Lightbox inside dialog: Radix won't treat clicks as "outside" */}
+          {lightbox && viewImagesDialog && <Lightbox lightbox={lightbox} onClose={() => setLightbox(null)} onPrev={lightboxPrev} onNext={lightboxNext} />}
         </DialogContent>
       </Dialog>
 
-      {/* Image lightbox — plain fixed overlay, no Dialog wrapper */}
-      {lightbox && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90"
-          onClick={() => setLightbox(null)}
-        >
-          <div
-            className="relative flex items-center justify-center w-full h-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={lightbox.urls[lightbox.idx]}
-              alt={`image-${lightbox.idx + 1}`}
-              className="max-h-[85vh] max-w-[85vw] object-contain select-none rounded-lg"
-            />
-
-            {/* Close */}
-            <button
-              type="button"
-              onClick={() => setLightbox(null)}
-              className="absolute right-6 top-6 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            {/* Prev */}
-            {lightbox.idx > 0 && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); lightboxPrev(); }}
-                className="absolute left-6 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors"
-              >
-                <ChevronLeft className="h-7 w-7" />
-              </button>
-            )}
-
-            {/* Next */}
-            {lightbox.idx < lightbox.urls.length - 1 && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); lightboxNext(); }}
-                className="absolute right-6 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors"
-              >
-                <ChevronRight className="h-7 w-7" />
-              </button>
-            )}
-
-            {/* Counter */}
-            {lightbox.urls.length > 1 && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-4 py-1.5 text-white/90 text-sm tabular-nums">
-                {lightbox.idx + 1} / {lightbox.urls.length}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Standalone lightbox for direct image clicks (no dialog open) */}
+      {lightbox && !viewImagesDialog && <Lightbox lightbox={lightbox} onClose={() => setLightbox(null)} onPrev={lightboxPrev} onNext={lightboxNext} />}
 
       {/* Create / Edit Sheet */}
       <Sheet key={editTarget?.id ?? "new"} open={sheetOpen} onOpenChange={setSheetOpen}>
