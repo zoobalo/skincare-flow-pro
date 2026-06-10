@@ -43,8 +43,8 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.sku?.name ?? "SKU"} — Zoobalo` }] }),
 });
 
-const SKU_CATEGORIES = ["Sun Care", "Serums", "Moisturizers", "Cleansers", "Toners", "Exfoliators", "Eye Care", "Lip Care", "Body Care"];
-const SKU_TYPES = ["Aerosol Spray", "Glass Dropper", "Pump Bottle", "Tube", "Jar", "Cream Tube", "Lotion Bottle", "Toner Bottle", "Stick", "Airless Glass Pump", "Airless Bottle"];
+const SKU_CATEGORIES = ["Sun Care", "Serums", "Moisturizers", "Cleansers", "Toners", "Exfoliators", "Eye Care", "Lip Care", "Body Care", "Skin Cure"];
+const SKU_TYPES = ["Aerosol Spray", "Glass Dropper", "Pump Bottle", "Tube", "Jar", "Cream Tube", "Lotion Bottle", "Toner Bottle", "Stick", "Airless Glass Pump", "Airless Bottle", "PET Spray"];
 const RAW_UNITS = ["ml", "g", "kg", "L", "pcs", "mg"];
 const PO_STATUSES = ["To be sent", "Sent", "Pending", "Approved", "In Production", "Dispatched", "Delivered", "Delayed"] as const;
 const GST_RATES = [0, 5, 12, 18, 28] as const;

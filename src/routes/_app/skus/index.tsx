@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api } from "@/lib/api";
 import { Plus, LayoutGrid, List, Search, Trash2 } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
-import { useState } from "react";
+import React, { useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
 import { toast } from "sonner";
 
@@ -25,8 +25,8 @@ export const Route = createFileRoute("/_app/skus/")({
   head: () => ({ meta: [{ title: "SKU Management — Zoobalo" }] }),
 });
 
-const SKU_CATEGORIES = ["Sun Care", "Serums", "Moisturizers", "Cleansers", "Toners", "Exfoliators", "Eye Care", "Lip Care", "Body Care"];
-const SKU_TYPES = ["Aerosol Spray", "Glass Dropper", "Pump Bottle", "Tube", "Jar", "Cream Tube", "Lotion Bottle", "Toner Bottle", "Stick", "Airless Glass Pump", "Airless Bottle"];
+const SKU_CATEGORIES = ["Sun Care", "Serums", "Moisturizers", "Cleansers", "Toners", "Exfoliators", "Eye Care", "Lip Care", "Body Care", "Skin Cure"];
+const SKU_TYPES = ["Aerosol Spray", "Glass Dropper", "Pump Bottle", "Tube", "Jar", "Cream Tube", "Lotion Bottle", "Toner Bottle", "Stick", "Airless Glass Pump", "Airless Bottle", "PET Spray"];
 
 const EMPTY_FORM = {
   code: "", name: "", category: "Serums", type: "Glass Dropper",
@@ -58,6 +58,17 @@ function SkuListContent({ skus, manufacturers }: {
       (cat === "all" || s.category === cat) &&
       (q.trim() === "" || s.name.toLowerCase().includes(q.toLowerCase()) || s.code.toLowerCase().includes(q.toLowerCase()))
   );
+
+  // Group by category, preserving SKU_CATEGORIES order
+  const grouped = SKU_CATEGORIES
+    .filter((c) => filtered.some((s) => s.category === c))
+    .map((c) => ({ category: c, items: filtered.filter((s) => s.category === c) }));
+  // Append any categories not in SKU_CATEGORIES (shouldn't happen but safe)
+  const knownCats = new Set(SKU_CATEGORIES);
+  const extraCats = Array.from(new Set(filtered.filter(s => !knownCats.has(s.category)).map(s => s.category)));
+  extraCats.forEach((c) => grouped.push({ category: c, items: filtered.filter((s) => s.category === c) }));
+
+  const showGrouped = cat === "all" && q.trim() === "";
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -131,35 +142,52 @@ function SkuListContent({ skus, manufacturers }: {
         </div>
       </div>
 
+      {filtered.length === 0 && (
+        <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">No SKUs match your search.</div>
+      )}
+
       {view === "grid" ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((sku) => {
-            const low = sku.currentInventory < sku.minThreshold;
-            return (
-              <div key={sku.id} className="relative group">
-                <Link to="/skus/$skuId" params={{ skuId: sku.id }} className="flex flex-col overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md">
-                  <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                    {sku.image ? <img src={sku.image} alt={sku.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" /> : <div className="h-full w-full bg-muted" />}
-                    <div className="absolute left-2 top-2"><StatusBadge status={low ? "Low Stock" : "Healthy"} /></div>
-                  </div>
-                  <div className="flex flex-1 flex-col p-4">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{sku.code} · {sku.category}</p>
-                    <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">{sku.name}</h3>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                      <div><div className="text-muted-foreground">Stock</div><div className="font-semibold tabular-nums">{sku.currentInventory.toLocaleString()}</div></div>
-                      <div><div className="text-muted-foreground">Lead time</div><div className="font-semibold tabular-nums">{sku.productionTimelineDays}d</div></div>
+        <div className="space-y-8">
+          {(showGrouped ? grouped : [{ category: cat === "all" ? "Results" : cat, items: filtered }]).map(({ category, items }) => (
+            <div key={category}>
+              {showGrouped && (
+                <div className="mb-3 flex items-center gap-3">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{category}</h2>
+                  <div className="flex-1 border-t" />
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{items.length}</span>
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {items.map((sku) => {
+                  const low = sku.currentInventory < sku.minThreshold;
+                  return (
+                    <div key={sku.id} className="relative group">
+                      <Link to="/skus/$skuId" params={{ skuId: sku.id }} className="flex flex-col overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md">
+                        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                          {sku.image ? <img src={sku.image} alt={sku.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" /> : <div className="h-full w-full bg-muted" />}
+                          <div className="absolute left-2 top-2"><StatusBadge status={low ? "Low Stock" : "Healthy"} /></div>
+                        </div>
+                        <div className="flex flex-1 flex-col p-4">
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{sku.code} · {sku.category}</p>
+                          <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">{sku.name}</h3>
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                            <div><div className="text-muted-foreground">Stock</div><div className="font-semibold tabular-nums">{sku.currentInventory.toLocaleString()}</div></div>
+                            <div><div className="text-muted-foreground">Lead time</div><div className="font-semibold tabular-nums">{sku.productionTimelineDays}d</div></div>
+                          </div>
+                        </div>
+                      </Link>
+                      <button
+                        onClick={(e) => handleDelete(sku.id, sku.name, e)}
+                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-background/80 text-destructive opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                  </div>
-                </Link>
-                <button
-                  onClick={(e) => handleDelete(sku.id, sku.name, e)}
-                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-background/80 text-destructive opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border bg-card">
@@ -168,7 +196,7 @@ function SkuListContent({ skus, manufacturers }: {
               <tr>
                 <th className="px-4 py-2.5 font-medium">SKU Code</th>
                 <th className="px-4 py-2.5 font-medium">Name</th>
-                <th className="px-4 py-2.5 font-medium">Category</th>
+                {!showGrouped && <th className="px-4 py-2.5 font-medium">Category</th>}
                 <th className="px-4 py-2.5 font-medium text-right">Stock</th>
                 <th className="px-4 py-2.5 font-medium text-right">Min</th>
                 <th className="px-4 py-2.5 font-medium text-right">Lead time</th>
@@ -177,25 +205,36 @@ function SkuListContent({ skus, manufacturers }: {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((sku) => {
-                const low = sku.currentInventory < sku.minThreshold;
-                return (
-                  <tr key={sku.id} className="border-t hover:bg-muted/30">
-                    <td className="px-4 py-2.5"><Link to="/skus/$skuId" params={{ skuId: sku.id }} className="font-medium text-primary hover:underline">{sku.code}</Link></td>
-                    <td className="px-4 py-2.5">{sku.name}</td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{sku.category}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">{sku.currentInventory.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{sku.minThreshold.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">{sku.productionTimelineDays}d</td>
-                    <td className="px-4 py-2.5"><StatusBadge status={low ? "Low Stock" : "Healthy"} /></td>
-                    <td className="px-4 py-2.5">
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={(e) => handleDelete(sku.id, sku.name, e)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {(showGrouped ? grouped : [{ category: "", items: filtered }]).map(({ category, items }) => (
+                <React.Fragment key={category}>
+                  {showGrouped && (
+                    <tr className="border-t bg-muted/30">
+                      <td colSpan={7} className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {category} <span className="ml-1.5 font-normal">({items.length})</span>
+                      </td>
+                    </tr>
+                  )}
+                  {items.map((sku) => {
+                    const low = sku.currentInventory < sku.minThreshold;
+                    return (
+                      <tr key={sku.id} className="border-t hover:bg-muted/30">
+                        <td className="px-4 py-2.5"><Link to="/skus/$skuId" params={{ skuId: sku.id }} className="font-medium text-primary hover:underline">{sku.code}</Link></td>
+                        <td className="px-4 py-2.5">{sku.name}</td>
+                        {!showGrouped && <td className="px-4 py-2.5 text-muted-foreground">{sku.category}</td>}
+                        <td className="px-4 py-2.5 text-right tabular-nums">{sku.currentInventory.toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{sku.minThreshold.toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">{sku.productionTimelineDays}d</td>
+                        <td className="px-4 py-2.5"><StatusBadge status={low ? "Low Stock" : "Healthy"} /></td>
+                        <td className="px-4 py-2.5">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={(e) => handleDelete(sku.id, sku.name, e)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
             </tbody>
           </table>
         </div>
