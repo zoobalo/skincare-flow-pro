@@ -181,6 +181,10 @@ export type ApiNpd = {
   createdAt: string; updatedAt: string;
 };
 
+export type ApiSkuComment = {
+  id: string; skuId: string; comment: string; createdAt: string; updatedAt: string;
+};
+
 export type ApiMftNote = {
   id: string; skuId: string | null; date: string; notes: string; createdAt: string;
 };
@@ -351,6 +355,13 @@ export const api = {
       fetch(`${BASE}/skus/mft/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteMft: (id: string) =>
       fetch(`${BASE}/skus/mft/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    listComments: (skuId: string) => get<ApiSkuComment[]>(`/skus/${skuId}/comments`),
+    addComment: (skuId: string, comment: string) =>
+      fetch(`${BASE}/skus/${skuId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ comment }) }).then((r) => r.json()),
+    updateComment: (id: string, comment: string) =>
+      fetch(`${BASE}/skus/comments/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ comment }) }).then((r) => r.json()),
+    deleteComment: (id: string) =>
+      fetch(`${BASE}/skus/comments/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   purchaseOrders: {

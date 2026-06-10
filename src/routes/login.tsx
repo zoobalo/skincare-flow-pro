@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { auth } from "@/lib/api";
 import { saveSession, getToken } from "@/lib/auth";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -27,17 +26,19 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
     try {
       const res = await auth.login(email, password);
-      if (res.error) { toast.error(res.error); return; }
+      if (res.error) { setError(res.error); return; }
       saveSession(res.token, res.user);
       navigate({ to: "/dashboard" });
     } catch {
-      toast.error("Unable to connect. Please try again.");
+      setError("Unable to connect. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -61,6 +62,11 @@ function LoginPage() {
           </div>
           <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
         </div>
+        {error && (
+          <div className="rounded-md bg-destructive/10 border border-destructive/30 px-3 py-2.5 text-sm text-destructive">
+            {error}
+          </div>
+        )}
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Signing in…" : "Sign in"}
         </Button>

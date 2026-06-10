@@ -24,11 +24,15 @@ export const skuRoutes = new Hono()
   })
   .post("/", async (c) => {
     const body = await c.req.json();
-    const [created] = await createSku({
-      ...body,
-      id: crypto.randomUUID(),
-    });
-    return c.json(created, 201);
+    try {
+      const [created] = await createSku({ ...body, id: crypto.randomUUID() });
+      return c.json(created, 201);
+    } catch (err: any) {
+      if (err?.code === "23505") {
+        return c.json({ error: `SKU code "${body.code}" already exists. Please use a different code.` }, 409);
+      }
+      throw err;
+    }
   })
   .patch("/:id", async (c) => {
     const body = await c.req.json();

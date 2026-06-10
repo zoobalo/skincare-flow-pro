@@ -33,15 +33,18 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
       if (typeof window === "undefined") return null;
       throw notFound();
     }
-    const mftNotes = await api.skus.listMft(params.skuId);
-    return { sku, manufacturers, vendors, allPackaging, allRawMaterials, mftNotes };
+    const [mftNotes, comments] = await Promise.all([
+      api.skus.listMft(params.skuId),
+      api.skus.listComments(params.skuId),
+    ]);
+    return { sku, manufacturers, vendors, allPackaging, allRawMaterials, mftNotes, comments };
   },
   component: SkuDetailPage,
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.sku?.name ?? "SKU"} — Zoobalo` }] }),
 });
 
 const SKU_CATEGORIES = ["Sun Care", "Serums", "Moisturizers", "Cleansers", "Toners", "Exfoliators", "Eye Care", "Lip Care", "Body Care"];
-const SKU_TYPES = ["Aerosol Spray", "Glass Dropper", "Pump Bottle", "Tube", "Jar", "Cream Tube", "Lotion Bottle", "Toner Bottle", "Stick"];
+const SKU_TYPES = ["Aerosol Spray", "Glass Dropper", "Pump Bottle", "Tube", "Jar", "Cream Tube", "Lotion Bottle", "Toner Bottle", "Stick", "Airless Glass Pump", "Airless Bottle"];
 const RAW_UNITS = ["ml", "g", "kg", "L", "pcs", "mg"];
 const PO_STATUSES = ["To be sent", "Sent", "Pending", "Approved", "In Production", "Dispatched", "Delivered", "Delayed"] as const;
 const GST_RATES = [0, 5, 12, 18, 28] as const;
@@ -68,10 +71,10 @@ function getDelayDays(batch: { expectedCompletion: string; currentStage: string 
 function SkuDetailPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <div className="flex items-center justify-center p-20 text-muted-foreground text-sm">Loading…</div>;
-  return <SkuDetailContent sku={loaderData.sku} manufacturers={loaderData.manufacturers} vendors={loaderData.vendors} allPackaging={loaderData.allPackaging} allRawMaterials={loaderData.allRawMaterials} mftNotes={loaderData.mftNotes} />;
+  return <SkuDetailContent sku={loaderData.sku} manufacturers={loaderData.manufacturers} vendors={loaderData.vendors} allPackaging={loaderData.allPackaging} allRawMaterials={loaderData.allRawMaterials} mftNotes={loaderData.mftNotes} comments={loaderData.comments} />;
 }
 
-function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMaterials, mftNotes }: { sku: import("@/lib/api").ApiSkuDetail; manufacturers: import("@/lib/api").ApiManufacturer[]; vendors: import("@/lib/api").ApiVendor[]; allPackaging: import("@/lib/api").ApiPackagingItem[]; allRawMaterials: import("@/lib/api").ApiRawMaterial[]; mftNotes: import("@/lib/api").ApiMftNote[] }) {
+function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMaterials, mftNotes, comments }: { sku: import("@/lib/api").ApiSkuDetail; manufacturers: import("@/lib/api").ApiManufacturer[]; vendors: import("@/lib/api").ApiVendor[]; allPackaging: import("@/lib/api").ApiPackagingItem[]; allRawMaterials: import("@/lib/api").ApiRawMaterial[]; mftNotes: import("@/lib/api").ApiMftNote[]; comments: import("@/lib/api").ApiSkuComment[] }) {
   const router = useRouter();
   const navigate = useNavigate();
   const mfg = sku.manufacturer;
@@ -130,6 +133,12 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
   const [mftSaving, setMftSaving]     = useState(false);
   const [editMftId, setEditMftId]     = useState<string | null>(null);
   const [mftForm, setMftForm]         = useState({ date: "", notes: "" });
+
+  // Comments
+  const [commentText, setCommentText] = useState("");
+  const [commentSaving, setCommentSaving] = useState(false);
+  const [editCommentId, setEditCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
 
   // Edit Packaging sheet
   const [editPackOpen, setEditPackOpen] = useState(false);
@@ -349,6 +358,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
           <TabsTrigger value="pohistory">PO History</TabsTrigger>
           <TabsTrigger value="dispatch">Dispatch ({(sku as any).dispatches?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="mft">MFT ({mftNotes.length})</TabsTrigger>
+          <TabsTrigger value="comments">Comments ({comments.length})</TabsTrigger>
         </TabsList>
 
         {/* ── Product Details ── */}
@@ -715,6 +725,88 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                   </div>
                 </div>
                 <p className="mt-2 text-sm whitespace-pre-wrap leading-relaxed">{m.notes}</p>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* ── Comments ── */}
+        <TabsContent value="comments" className="mt-4">
+          {/* Inline add / edit box */}
+          <div className="mb-4 rounded-xl border bg-card p-4">
+            <Textarea
+              rows={3}
+              placeholder={editCommentId ? "Edit your comment…" : "Write a comment about this SKU…"}
+              value={editCommentId ? editCommentText : commentText}
+              onChange={(e) => editCommentId ? setEditCommentText(e.target.value) : setCommentText(e.target.value)}
+              className="resize-none"
+            />
+            <div className="mt-2 flex justify-end gap-2">
+              {editCommentId && (
+                <Button variant="outline" size="sm" onClick={() => { setEditCommentId(null); setEditCommentText(""); }}>
+                  Cancel
+                </Button>
+              )}
+              <Button
+                size="sm"
+                disabled={commentSaving || !(editCommentId ? editCommentText.trim() : commentText.trim())}
+                onClick={async () => {
+                  setCommentSaving(true);
+                  try {
+                    if (editCommentId) {
+                      await api.skus.updateComment(editCommentId, editCommentText);
+                      setEditCommentId(null);
+                      setEditCommentText("");
+                      toast.success("Comment updated.");
+                    } else {
+                      await api.skus.addComment(sku.id, commentText);
+                      setCommentText("");
+                      toast.success("Comment added.");
+                    }
+                    reload();
+                  } catch { toast.error("Failed."); }
+                  finally { setCommentSaving(false); }
+                }}
+              >
+                {commentSaving ? "Saving…" : editCommentId ? "Save Edit" : "Add Comment"}
+              </Button>
+            </div>
+          </div>
+
+          {comments.length === 0 && (
+            <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
+              No comments yet. Write one above.
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {comments.map((c) => (
+              <div key={c.id} className="group rounded-xl border bg-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="flex-1 text-sm leading-relaxed whitespace-pre-wrap">{c.comment}</p>
+                  <div className="flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm" variant="ghost" className="h-7 w-7 p-0"
+                      onClick={() => { setEditCommentId(c.id); setEditCommentText(c.comment); }}
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      onClick={async () => {
+                        if (!confirm("Delete this comment?")) return;
+                        try { await api.skus.deleteComment(c.id); toast.success("Deleted."); reload(); }
+                        catch { toast.error("Failed."); }
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {new Date(c.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  {c.updatedAt !== c.createdAt && " · edited"}
+                </p>
               </div>
             ))}
           </div>

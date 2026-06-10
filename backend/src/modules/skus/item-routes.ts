@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { db } from "../../db/client.ts";
 import { packagingItems, skuRawMaterials, skuTests, skuDispatches } from "../../db/schema/skus.ts";
 import { mftNotes } from "../../db/schema/mft-notes.ts";
+import { skuComments } from "../../db/schema/sku-comments.ts";
 import { eq, desc } from "drizzle-orm";
 
 export const skuItemRoutes = new Hono()
@@ -139,6 +140,37 @@ export const skuItemRoutes = new Hono()
   })
   .delete("/mft/:id", async (c) => {
     const [deleted] = await db.delete(mftNotes).where(eq(mftNotes.id, c.req.param("id"))).returning();
+    if (!deleted) return c.json({ error: "Not found" }, 404);
+    return c.json({ ok: true });
+  })
+
+  // ── Comments ──────────────────────────────────────────────────────────────────
+  .get("/:skuId/comments", async (c) => {
+    const rows = await db.select().from(skuComments)
+      .where(eq(skuComments.skuId, c.req.param("skuId")))
+      .orderBy(desc(skuComments.createdAt));
+    return c.json(rows);
+  })
+  .post("/:skuId/comments", async (c) => {
+    const { comment } = await c.req.json();
+    const [created] = await db.insert(skuComments).values({
+      id:      crypto.randomUUID(),
+      skuId:   c.req.param("skuId"),
+      comment: comment ?? "",
+    }).returning();
+    return c.json(created, 201);
+  })
+  .patch("/comments/:id", async (c) => {
+    const { comment } = await c.req.json();
+    const [updated] = await db.update(skuComments)
+      .set({ comment, updatedAt: new Date() })
+      .where(eq(skuComments.id, c.req.param("id")))
+      .returning();
+    if (!updated) return c.json({ error: "Not found" }, 404);
+    return c.json(updated);
+  })
+  .delete("/comments/:id", async (c) => {
+    const [deleted] = await db.delete(skuComments).where(eq(skuComments.id, c.req.param("id"))).returning();
     if (!deleted) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true });
   });
