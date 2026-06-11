@@ -213,6 +213,11 @@ export type ApiTask = {
   createdAt: string; updatedAt: string;
 };
 
+export type ApiCourier = {
+  id: string; name: string; courierPartner: string; dispatchDate: string;
+  docketNumber: string; comment: string | null; createdAt: string; updatedAt: string;
+};
+
 export type DashboardResponse = {
   kpis: {
     totalPOs: number; pendingApprovals: number; activeProduction: number;
@@ -496,5 +501,15 @@ export const api = {
       fetch(`${BASE}/follow-ups/${contactId}/tasks/${taskId}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteTask: (contactId: string, taskId: string) =>
       fetch(`${BASE}/follow-ups/${contactId}/tasks/${taskId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+  },
+
+  couriers: {
+    list: () => get<ApiCourier[]>("/couriers"),
+    create: (data: Omit<ApiCourier, "id" | "createdAt" | "updatedAt">) =>
+      fetch(`${BASE}/couriers`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiCourier>) =>
+      fetch(`${BASE}/couriers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/couriers/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 };
