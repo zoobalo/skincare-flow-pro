@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { isAdmin } from "@/lib/auth";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Factory, Boxes, PackageOpen, FlaskConical,
-  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, Palette, ClipboardList, PackageCheck,
+  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, Palette, ClipboardList, PackageCheck, Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ const nav = [
     { to: "/tasks",       label: "Task Management", icon: ListChecks },
     { to: "/follow-ups",  label: "Follow Up",        icon: PhoneCall  },
     { to: "/artwork",     label: "Artwork",           icon: Palette       },
+    { to: "/imp-links",   label: "IMP Links",         icon: Link2         },
     { to: "/mft",         label: "MFT",               icon: ClipboardList },
     { to: "/reimburse",   label: "Reimburse",        icon: ReceiptText },
     { to: "/courier",     label: "Courier",           icon: PackageCheck },

@@ -24,6 +24,7 @@ import { followUpRoutes } from "./modules/follow-ups/routes.ts";
 import { artworkRoutes } from "./modules/artwork/routes.ts";
 import { mftRoutes } from "./modules/mft/routes.ts";
 import { courierRoutes } from "./modules/couriers/routes.ts";
+import { impLinkRoutes } from "./modules/imp-links/routes.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
 import { requireAuth } from "./modules/auth/middleware.ts";
 
@@ -76,6 +77,7 @@ app.route("/follow-ups",         followUpRoutes);
 app.route("/artwork",            artworkRoutes);
 app.route("/mft",               mftRoutes);
 app.route("/couriers",          courierRoutes);
+app.route("/imp-links",         impLinkRoutes);
 
 serve({ fetch: root.fetch, port: env.PORT }, () => {
   console.log(`🚀  Zoobalo API running on http://localhost:${env.PORT}/api`);

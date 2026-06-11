@@ -213,6 +213,11 @@ export type ApiTask = {
   createdAt: string; updatedAt: string;
 };
 
+export type ApiImpLink = {
+  id: string; name: string; link: string; comment: string | null;
+  createdAt: string; updatedAt: string;
+};
+
 export type ApiCourier = {
   id: string; name: string; courierPartner: string; dispatchDate: string;
   docketNumber: string; comment: string | null; createdAt: string; updatedAt: string;
@@ -501,6 +506,16 @@ export const api = {
       fetch(`${BASE}/follow-ups/${contactId}/tasks/${taskId}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteTask: (contactId: string, taskId: string) =>
       fetch(`${BASE}/follow-ups/${contactId}/tasks/${taskId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+  },
+
+  impLinks: {
+    list: () => get<ApiImpLink[]>("/imp-links"),
+    create: (data: Omit<ApiImpLink, "id" | "createdAt" | "updatedAt">) =>
+      fetch(`${BASE}/imp-links`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiImpLink>) =>
+      fetch(`${BASE}/imp-links/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/imp-links/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   couriers: {
