@@ -1,7 +1,8 @@
 import { db } from "../../db/client.ts";
 
-export const getAllShipments = () =>
+export const getAllShipments = (teamId: string) =>
   db.query.shipments.findMany({
+    where: (s, { eq }) => eq(s.teamId, teamId),
     orderBy: (s, { desc }) => [desc(s.pickupDate)],
     with: {
       purchaseOrder: {

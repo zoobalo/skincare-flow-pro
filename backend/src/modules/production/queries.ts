@@ -2,8 +2,9 @@ import { db } from "../../db/client.ts";
 import { productionBatches } from "../../db/schema/production.ts";
 import { eq } from "drizzle-orm";
 
-export const getAllBatches = () =>
+export const getAllBatches = (teamId: string) =>
   db.query.productionBatches.findMany({
+    where: (b, { eq }) => eq(b.teamId, teamId),
     orderBy: (b, { desc }) => [desc(b.startedAt)],
     with: {
       sku:          { columns: { id: true, code: true, name: true, image: true } },

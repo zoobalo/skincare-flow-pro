@@ -9,6 +9,7 @@ export const productionRemarks = pgTable("production_remarks", {
   materialType: text("material_type").notNull().default("None"),
   remark:       text("remark").notNull(),
   status:       text("status").notNull().default("Active"),
+  teamId:    text("team_id").notNull(),
   createdAt:    timestamp("created_at").defaultNow().notNull(),
   updatedAt:    timestamp("updated_at").defaultNow().notNull(),
 });

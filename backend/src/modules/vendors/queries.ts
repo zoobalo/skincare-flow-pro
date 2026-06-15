@@ -2,8 +2,8 @@ import { db } from "../../db/client.ts";
 import { vendors } from "../../db/schema/vendors.ts";
 import { eq } from "drizzle-orm";
 
-export const getAllVendors = () =>
-  db.select().from(vendors).orderBy(vendors.name);
+export const getAllVendors = (teamId: string) =>
+  db.select().from(vendors).where(eq(vendors.teamId, teamId)).orderBy(vendors.name);
 
 export const getVendorById = (id: string) =>
   db.query.vendors.findFirst({

@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import { getAllBatches, getBatchById, createBatch, updateBatch, updateBatchStage, deleteBatch } from "./queries.ts";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const productionRoutes = new Hono()
   .get("/", async (c) => {
-    const data = await getAllBatches();
+    const user = c.get("user" as never) as JWTPayload;
+    const data = await getAllBatches(user.teamId);
     return c.json(data);
   })
   .get("/:id", async (c) => {
@@ -13,9 +15,10 @@ export const productionRoutes = new Hono()
   })
   .post("/", async (c) => {
     try {
+      const user = c.get("user" as never) as JWTPayload;
       const body = await c.req.json();
       const { batchNumber, skuId, manufacturerId, vendorId, quantity, currentStage, startedAt, expectedCompletion, delayed, materialCategory, materialItemId, materialItemName, applicableStages, comment } = body;
-      const [created] = await createBatch({ id: crypto.randomUUID(), batchNumber, skuId, manufacturerId, vendorId: vendorId ?? null, quantity, currentStage, startedAt, expectedCompletion, delayed: delayed ?? false, materialCategory: materialCategory ?? null, materialItemId: materialItemId ?? null, materialItemName: materialItemName ?? null, applicableStages: applicableStages ?? null, comment: comment ?? null });
+      const [created] = await createBatch({ id: crypto.randomUUID(), batchNumber, skuId, manufacturerId, vendorId: vendorId ?? null, quantity, currentStage, startedAt, expectedCompletion, delayed: delayed ?? false, materialCategory: materialCategory ?? null, materialItemId: materialItemId ?? null, materialItemName: materialItemName ?? null, applicableStages: applicableStages ?? null, comment: comment ?? null, teamId: user.teamId });
       return c.json(created, 201);
     } catch (err: any) {
       console.error("POST /production error:", err);

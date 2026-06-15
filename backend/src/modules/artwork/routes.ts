@@ -1,15 +1,19 @@
 import { Hono } from "hono";
 import { getAllArtwork, createArtwork, updateArtwork, deleteArtwork } from "./queries.ts";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const artworkRoutes = new Hono()
   .get("/", async (c) => {
-    return c.json(await getAllArtwork());
+    const user = c.get("user" as never) as JWTPayload;
+    return c.json(await getAllArtwork(user.teamId));
   })
   .post("/", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
     const { statusUpdatedAt, ...rest } = await c.req.json();
     const data = {
       ...rest,
       id: crypto.randomUUID(),
+      teamId: user.teamId,
       ...(statusUpdatedAt ? { statusUpdatedAt: new Date(statusUpdatedAt) } : {}),
     };
     const [created] = await createArtwork(data);

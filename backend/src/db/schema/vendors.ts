@@ -23,6 +23,7 @@ export const vendors = pgTable("vendors", {
   runningOrders: integer("running_orders").notNull().default(0),
   totalSpend:    numeric("total_spend", { precision: 14, scale: 2 }).notNull().default("0"),
   contacts:      jsonb("contacts").$type<Contact[]>().notNull().default([]),
+  teamId:        text("team_id").notNull(),
   createdAt:     timestamp("created_at").defaultNow().notNull(),
   updatedAt:     timestamp("updated_at").defaultNow().notNull(),
 });

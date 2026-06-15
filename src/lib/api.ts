@@ -27,8 +27,8 @@ const EMPTY_DASHBOARD: DashboardResponse = {
 export const auth = {
   login:  (email: string, password: string) =>
     fetch(`${BASE}/auth/login`,  { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ email, password }) }).then(r => r.json()),
-  signup: (name: string, email: string, password: string) =>
-    fetch(`${BASE}/auth/signup`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ name, email, password }) }).then(r => r.json()),
+  signup: (name: string, email: string, password: string, department: string) =>
+    fetch(`${BASE}/auth/signup`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ name, email, password, department }) }).then(r => r.json()),
   me: () =>
     fetch(`${BASE}/auth/me`, { headers: authHeaders() }).then(r => r.json()),
 };
@@ -527,4 +527,22 @@ export const api = {
     delete: (id: string) =>
       fetch(`${BASE}/couriers/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
+};
+
+export type ApiPendingUser = {
+  id: string; name: string; email: string; role: string; status: string;
+  department: string; teamId: string; createdAt: string;
+};
+
+export const adminApi = {
+  listPending:  () => get<ApiPendingUser[]>("/users/pending"),
+  listAll:      () => get<ApiPendingUser[]>("/users"),
+  approveUser:  (id: string) =>
+    fetch(`${BASE}/users/${id}/approve`, { method: "POST", headers: authHeaders() }).then((r) => r.json()),
+  rejectUser:   (id: string) =>
+    fetch(`${BASE}/users/${id}/reject`,  { method: "POST", headers: authHeaders() }).then((r) => r.json()),
+  updateUser:   (id: string, data: { role?: string; status?: string }) =>
+    fetch(`${BASE}/users/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+  deleteUser:   (id: string) =>
+    fetch(`${BASE}/users/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
 };

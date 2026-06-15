@@ -3,10 +3,12 @@ import { getAllVendors, getVendorById, createVendor, updateVendor, deleteVendor 
 import { db } from "../../db/client.ts";
 import { purchaseOrders } from "../../db/schema/purchase-orders.ts";
 import { eq, count } from "drizzle-orm";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const vendorRoutes = new Hono()
   .get("/", async (c) => {
-    const data = await getAllVendors();
+    const user = c.get("user" as never) as JWTPayload;
+    const data = await getAllVendors(user.teamId);
     return c.json(data);
   })
   .get("/:id", async (c) => {
@@ -15,10 +17,12 @@ export const vendorRoutes = new Hono()
     return c.json(data);
   })
   .post("/", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
     const body = await c.req.json();
     const [created] = await createVendor({
       ...body,
       id: crypto.randomUUID(),
+      teamId: user.teamId,
       materials: Array.isArray(body.materials) ? body.materials : body.materials?.split(",").map((s: string) => s.trim()).filter(Boolean) ?? [],
     });
     return c.json(created, 201);

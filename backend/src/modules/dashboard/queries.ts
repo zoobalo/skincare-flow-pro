@@ -1,12 +1,12 @@
 import { db } from "../../db/client.ts";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import { purchaseOrders } from "../../db/schema/purchase-orders.ts";
 import { productionBatches } from "../../db/schema/production.ts";
 import { shipments } from "../../db/schema/shipments.ts";
 import { skus } from "../../db/schema/skus.ts";
 import { vendors } from "../../db/schema/vendors.ts";
 
-export const getDashboardKpis = async () => {
+export const getDashboardKpis = async (teamId: string) => {
   const [
     poKpis,
     batchKpis,
@@ -24,28 +24,29 @@ export const getDashboardKpis = async () => {
       pendingApprovals: sql<number>`COUNT(*) FILTER (WHERE status = 'Pending')::int`,
       totalSpend:       sql<string>`COALESCE(SUM(total::numeric) FILTER (WHERE status = 'Delivered'), 0)::text`,
       totalDuePayments: sql<string>`COALESCE(SUM(payment_due::numeric) FILTER (WHERE payment_due IS NOT NULL), 0)::text`,
-    }).from(purchaseOrders),
+    }).from(purchaseOrders).where(eq(purchaseOrders.teamId, teamId)),
 
     db.select({
       activeProduction: sql<number>`COUNT(*) FILTER (WHERE current_stage != 'Warehouse Received')::int`,
       delayedBatches:   sql<number>`COUNT(*) FILTER (WHERE delayed = true)::int`,
-    }).from(productionBatches),
+    }).from(productionBatches).where(eq(productionBatches.teamId, teamId)),
 
     db.select({
       inTransit: sql<number>`COUNT(*) FILTER (WHERE status = 'In Transit')::int`,
-    }).from(shipments),
+    }).from(shipments).where(eq(shipments.teamId, teamId)),
 
     db.select({
       totalSkus:    sql<number>`COUNT(*)::int`,
       lowStockSkus: sql<number>`COUNT(*) FILTER (WHERE current_inventory < min_threshold)::int`,
-    }).from(skus),
+    }).from(skus).where(eq(skus.teamId, teamId)),
 
-    db.select({ total: sql<number>`COUNT(*)::int` }).from(vendors),
+    db.select({ total: sql<number>`COUNT(*)::int` }).from(vendors).where(eq(vendors.teamId, teamId)),
 
     db.select({
       month: sql<string>`to_char(dispatch_date::date, 'YYYY-MM')`,
       total: sql<number>`SUM(total::numeric)::float`,
     }).from(purchaseOrders)
+      .where(eq(purchaseOrders.teamId, teamId))
       .groupBy(sql`to_char(dispatch_date::date, 'YYYY-MM')`)
       .orderBy(sql`to_char(dispatch_date::date, 'YYYY-MM') DESC`)
       .limit(6),
@@ -54,26 +55,28 @@ export const getDashboardKpis = async () => {
       month:    sql<string>`to_char(started_at::date, 'YYYY-MM')`,
       quantity: sql<number>`SUM(quantity)::int`,
     }).from(productionBatches)
+      .where(eq(productionBatches.teamId, teamId))
       .groupBy(sql`to_char(started_at::date, 'YYYY-MM')`)
       .orderBy(sql`to_char(started_at::date, 'YYYY-MM')`),
 
     db.select({
       status: purchaseOrders.status,
       count:  sql<number>`COUNT(*)::int`,
-    }).from(purchaseOrders).groupBy(purchaseOrders.status),
+    }).from(purchaseOrders).where(eq(purchaseOrders.teamId, teamId)).groupBy(purchaseOrders.status),
 
     db.select({
       name:         vendors.name,
       reliability:  vendors.reliability,
       delayPercent: vendors.delayPercent,
     }).from(vendors)
+      .where(eq(vendors.teamId, teamId))
       .orderBy(sql`reliability DESC`)
       .limit(6),
 
     db.select({
       status: shipments.status,
       count:  sql<number>`COUNT(*)::int`,
-    }).from(shipments).groupBy(shipments.status),
+    }).from(shipments).where(eq(shipments.teamId, teamId)).groupBy(shipments.status),
   ]);
 
   const po = poKpis[0];

@@ -1,28 +1,14 @@
 import { db } from "../../db/client.ts";
 import { skus } from "../../db/schema/skus.ts";
-import { ilike, or, eq } from "drizzle-orm";
+import { ilike, or, eq, and } from "drizzle-orm";
 
-export const getAllSkus = (search?: string, category?: string) => {
-  if (!search && !category) {
-    return db.query.skus.findMany({
-      orderBy: (s, { asc }) => [asc(s.name)],
-      with: { manufacturer: { columns: { id: true, name: true } } },
-    });
-  }
-
-  const conditions = [];
-  if (search) {
-    conditions.push(
-      or(
-        ilike(skus.name, `%${search}%`),
-        ilike(skus.code, `%${search}%`)
-      )
-    );
-  }
+export const getAllSkus = (teamId: string, search?: string, category?: string) => {
+  const conditions: any[] = [eq(skus.teamId, teamId)];
+  if (search) conditions.push(or(ilike(skus.name, `%${search}%`), ilike(skus.code, `%${search}%`)));
   if (category) conditions.push(eq(skus.category, category));
 
   return db.query.skus.findMany({
-    where: conditions.length === 1 ? conditions[0] : (_, { and }) => and(...conditions as any),
+    where: and(...conditions),
     orderBy: (s, { asc }) => [asc(s.name)],
     with: { manufacturer: { columns: { id: true, name: true } } },
   });

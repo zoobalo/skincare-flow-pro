@@ -4,12 +4,14 @@ import { db } from "../../db/client.ts";
 import { purchaseOrders } from "../../db/schema/purchase-orders.ts";
 import { productionBatches } from "../../db/schema/production.ts";
 import { eq, count } from "drizzle-orm";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const skuRoutes = new Hono()
   .get("/", async (c) => {
+    const user     = c.get("user" as never) as JWTPayload;
     const search   = c.req.query("search")   ?? undefined;
     const category = c.req.query("category") ?? undefined;
-    const data = await getAllSkus(search, category);
+    const data = await getAllSkus(user.teamId, search, category);
     return c.json(data);
   })
   .get("/:id", async (c) => {
@@ -23,9 +25,10 @@ export const skuRoutes = new Hono()
     }
   })
   .post("/", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
     const body = await c.req.json();
     try {
-      const [created] = await createSku({ ...body, id: crypto.randomUUID() });
+      const [created] = await createSku({ ...body, id: crypto.randomUUID(), teamId: user.teamId });
       return c.json(created, 201);
     } catch (err: any) {
       if (err?.code === "23505") {

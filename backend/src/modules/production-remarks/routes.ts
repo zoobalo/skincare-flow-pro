@@ -1,10 +1,15 @@
 import { Hono } from "hono";
 import { getAllRemarks, createRemark, updateRemark, deleteRemark } from "./queries.ts";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const productionRemarkRoutes = new Hono()
-  .get("/", async (c) => c.json(await getAllRemarks()))
+  .get("/", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    return c.json(await getAllRemarks(user.teamId));
+  })
   .post("/", async (c) => {
     try {
+      const user = c.get("user" as never) as JWTPayload;
       const { skuId, materialType, remark, status } = await c.req.json();
       const [created] = await createRemark({
         id: crypto.randomUUID(),
@@ -12,6 +17,7 @@ export const productionRemarkRoutes = new Hono()
         materialType: materialType ?? "None",
         remark: remark ?? "",
         status: status ?? "Active",
+        teamId: user.teamId,
       });
       return c.json(created, 201);
     } catch (err: any) {

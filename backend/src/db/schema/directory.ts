@@ -24,6 +24,7 @@ export const directory = pgTable("directory", {
   email1:        text("email1").notNull().default(""),
   email2:        text("email2").notNull().default(""),
   comment:       text("comment").notNull().default(""),
+  teamId:        text("team_id").notNull(),
   createdAt:     timestamp("created_at").defaultNow().notNull(),
   updatedAt:     timestamp("updated_at").defaultNow().notNull(),
 });

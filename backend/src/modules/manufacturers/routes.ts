@@ -4,10 +4,12 @@ import { db } from "../../db/client.ts";
 import { skus } from "../../db/schema/skus.ts";
 import { productionBatches } from "../../db/schema/production.ts";
 import { eq, count } from "drizzle-orm";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const manufacturerRoutes = new Hono()
   .get("/", async (c) => {
-    const data = await getAllManufacturers();
+    const user = c.get("user" as never) as JWTPayload;
+    const data = await getAllManufacturers(user.teamId);
     return c.json(data);
   })
   .get("/:id", async (c) => {
@@ -16,8 +18,9 @@ export const manufacturerRoutes = new Hono()
     return c.json(data);
   })
   .post("/", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
     const body = await c.req.json();
-    const [created] = await createManufacturer({ ...body, id: crypto.randomUUID() });
+    const [created] = await createManufacturer({ ...body, id: crypto.randomUUID(), teamId: user.teamId });
     return c.json(created, 201);
   })
   .patch("/:id", async (c) => {

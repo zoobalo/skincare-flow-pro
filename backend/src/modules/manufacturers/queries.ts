@@ -2,8 +2,9 @@ import { db } from "../../db/client.ts";
 import { manufacturers } from "../../db/schema/manufacturers.ts";
 import { eq } from "drizzle-orm";
 
-export const getAllManufacturers = () =>
+export const getAllManufacturers = (teamId: string) =>
   db.query.manufacturers.findMany({
+    where: (m, { eq }) => eq(m.teamId, teamId),
     orderBy: (m, { asc }) => [asc(m.name)],
     with: {
       productionBatches: {

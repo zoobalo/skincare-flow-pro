@@ -10,6 +10,7 @@ export const npd = pgTable("npd", {
   pmStatus:    text("pm_status").notNull().default(""),
   images:      jsonb("images").$type<NpdImageGroup[]>().default([]),
   comments:    text("comments").notNull().default(""),
+  teamId:      text("team_id").notNull(),
   createdAt:   timestamp("created_at").defaultNow().notNull(),
   updatedAt:   timestamp("updated_at").defaultNow().notNull(),
 });

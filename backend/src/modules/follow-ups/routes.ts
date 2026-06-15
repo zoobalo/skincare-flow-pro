@@ -1,13 +1,16 @@
 import { Hono } from "hono";
 import { getAllContacts, createContact, updateContact, deleteContact, createTask, updateTask, deleteTask } from "./queries.ts";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const followUpRoutes = new Hono()
   .get("/", async (c) => {
-    return c.json(await getAllContacts());
+    const user = c.get("user" as never) as JWTPayload;
+    return c.json(await getAllContacts(user.teamId));
   })
   .post("/", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
     const body = await c.req.json();
-    const [created] = await createContact({ ...body, id: crypto.randomUUID() });
+    const [created] = await createContact({ ...body, id: crypto.randomUUID(), teamId: user.teamId });
     return c.json(created, 201);
   })
   .patch("/:id", async (c) => {

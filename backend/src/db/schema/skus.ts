@@ -19,6 +19,7 @@ export const skus = pgTable("skus", {
   mrp:                   numeric("mrp", { precision: 10, scale: 2 }),
   usp:                   text("usp").notNull().default(""),
   importantLinks:        text("important_links").notNull().default("[]"),
+  teamId:                text("team_id").notNull(),
   createdAt:             timestamp("created_at").defaultNow().notNull(),
   updatedAt:             timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [
@@ -38,6 +39,7 @@ export const packagingItems = pgTable("packaging_items", {
   transitDeliveryDate:  date("transit_delivery_date", { mode: "string" }),
   costPerUnit:          numeric("cost_per_unit", { precision: 10, scale: 2 }).notNull(),
   lastPurchaseDate:     date("last_purchase_date", { mode: "string" }),
+  teamId:               text("team_id").notNull(),
 }, (t) => [
   index("packaging_sku_idx").on(t.skuId),
 ]);

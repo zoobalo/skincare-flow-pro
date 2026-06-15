@@ -1,12 +1,17 @@
 import { Hono } from "hono";
 import { getAllNpd, createNpd, updateNpd, deleteNpd } from "./queries.ts";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const npdRoutes = new Hono()
-  .get("/", async (c) => c.json(await getAllNpd()))
+  .get("/", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    return c.json(await getAllNpd(user.teamId));
+  })
   .post("/", async (c) => {
     try {
+      const user = c.get("user" as never) as JWTPayload;
       const { name, launchMonth, rmStatus, pmStatus, images, comments } = await c.req.json();
-      const [created] = await createNpd({ id: crypto.randomUUID(), name, launchMonth: launchMonth ?? null, rmStatus: rmStatus ?? "", pmStatus: pmStatus ?? "", images: images ?? [], comments: comments ?? "" });
+      const [created] = await createNpd({ id: crypto.randomUUID(), name, launchMonth: launchMonth ?? null, rmStatus: rmStatus ?? "", pmStatus: pmStatus ?? "", images: images ?? [], comments: comments ?? "", teamId: user.teamId });
       return c.json(created, 201);
     } catch (err: any) {
       return c.json({ error: err?.message ?? "Failed to create NPD" }, 500);

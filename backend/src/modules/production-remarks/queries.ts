@@ -3,7 +3,7 @@ import { productionRemarks } from "../../db/schema/production-remarks.ts";
 import { skus } from "../../db/schema/skus.ts";
 import { eq, leftJoin } from "drizzle-orm";
 
-export const getAllRemarks = () =>
+export const getAllRemarks = (teamId: string) =>
   db
     .select({
       id:           productionRemarks.id,
@@ -18,6 +18,7 @@ export const getAllRemarks = () =>
     })
     .from(productionRemarks)
     .leftJoin(skus, eq(productionRemarks.skuId, skus.id))
+    .where(eq(productionRemarks.teamId, teamId))
     .orderBy(productionRemarks.createdAt);
 
 export const createRemark = (data: typeof productionRemarks.$inferInsert) =>

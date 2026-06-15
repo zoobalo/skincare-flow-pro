@@ -2,8 +2,9 @@ import { db } from "../../db/client.ts";
 import { followUpContacts, followUpTasks } from "../../db/schema/follow-ups.ts";
 import { eq } from "drizzle-orm";
 
-export const getAllContacts = () =>
+export const getAllContacts = (teamId: string) =>
   db.query.followUpContacts.findMany({
+    where: (c, { eq }) => eq(c.teamId, teamId),
     orderBy: (c, { asc }) => [asc(c.name)],
     with: {
       tasks: { orderBy: (t, { asc }) => [asc(t.createdAt)] },

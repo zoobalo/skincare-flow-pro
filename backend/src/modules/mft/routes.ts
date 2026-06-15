@@ -2,19 +2,23 @@ import { Hono } from "hono";
 import { db } from "../../db/client.ts";
 import { mftNotes } from "../../db/schema/mft-notes.ts";
 import { eq, desc } from "drizzle-orm";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const mftRoutes = new Hono()
   .get("/", async (c) => {
-    const rows = await db.select().from(mftNotes).orderBy(desc(mftNotes.date), mftNotes.createdAt);
+    const user = c.get("user" as never) as JWTPayload;
+    const rows = await db.select().from(mftNotes).where(eq(mftNotes.teamId, user.teamId)).orderBy(desc(mftNotes.date), mftNotes.createdAt);
     return c.json(rows);
   })
   .post("/", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
     const { skuId, date, notes } = await c.req.json();
     const [created] = await db.insert(mftNotes).values({
-      id:    crypto.randomUUID(),
-      skuId: skuId ?? null,
+      id:     crypto.randomUUID(),
+      skuId:  skuId ?? null,
       date,
       notes,
+      teamId: user.teamId,
     }).returning();
     return c.json(created, 201);
   })

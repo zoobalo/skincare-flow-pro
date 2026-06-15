@@ -3,7 +3,7 @@ const USER_KEY  = "zoobalo_user";
 
 const isBrowser = typeof window !== "undefined";
 
-export type AuthUser = { id: string; name: string; email: string; role: "Admin" | "Manager" };
+export type AuthUser = { id: string; name: string; email: string; role: "Admin" | "Manager"; department?: string };
 
 export function getToken(): string | null {
   if (!isBrowser) return null;

@@ -2,8 +2,8 @@ import { db } from "../../db/client.ts";
 import { artworkItems } from "../../db/schema/artwork.ts";
 import { eq } from "drizzle-orm";
 
-export const getAllArtwork = () =>
-  db.select().from(artworkItems).orderBy(artworkItems.skuName, artworkItems.artworkType);
+export const getAllArtwork = (teamId: string) =>
+  db.select().from(artworkItems).where(eq(artworkItems.teamId, teamId)).orderBy(artworkItems.skuName, artworkItems.artworkType);
 
 export const createArtwork = (data: typeof artworkItems.$inferInsert) =>
   db.insert(artworkItems).values(data).returning();

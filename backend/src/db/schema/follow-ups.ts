@@ -7,6 +7,7 @@ export const followUpContacts = pgTable("follow_up_contacts", {
   phone:     text("phone"),
   email:     text("email"),
   notes:     text("notes"),
+  teamId:    text("team_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

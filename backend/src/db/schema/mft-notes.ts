@@ -5,6 +5,7 @@ export const mftNotes = pgTable("mft_notes", {
   skuId:     text("sku_id"),
   date:      text("date").notNull(),       // stored as YYYY-MM-DD string
   notes:     text("notes").notNull(),
+  teamId:    text("team_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => [
   index("mft_notes_sku_idx").on(t.skuId),

@@ -3,14 +3,14 @@ import { purchaseOrders } from "../../db/schema/purchase-orders.ts";
 import { eq, and } from "drizzle-orm";
 import type { POStatus } from "../../db/schema/purchase-orders.ts";
 
-export const getAllPurchaseOrders = (status?: string, vendorId?: string, skuId?: string) => {
-  const conditions = [];
+export const getAllPurchaseOrders = (teamId: string, status?: string, vendorId?: string, skuId?: string) => {
+  const conditions: any[] = [eq(purchaseOrders.teamId, teamId)];
   if (status)   conditions.push(eq(purchaseOrders.status, status as POStatus));
   if (vendorId) conditions.push(eq(purchaseOrders.vendorId, vendorId));
   if (skuId)    conditions.push(eq(purchaseOrders.skuId, skuId));
 
   return db.query.purchaseOrders.findMany({
-    where: conditions.length ? (_, { and }) => and(...conditions as any) : undefined,
+    where: and(...conditions),
     orderBy: (po, { desc }) => [desc(po.createdAt)],
     with: {
       vendor:       { columns: { id: true, name: true, city: true } },

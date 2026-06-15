@@ -8,13 +8,15 @@ import {
   deletePurchaseOrder,
 } from "./queries.ts";
 import { PO_STATUSES } from "../../db/schema/purchase-orders.ts";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const purchaseOrderRoutes = new Hono()
   .get("/", async (c) => {
+    const user     = c.get("user" as never) as JWTPayload;
     const status   = c.req.query("status")   ?? undefined;
     const vendorId = c.req.query("vendorId") ?? undefined;
     const skuId    = c.req.query("skuId")    ?? undefined;
-    const data = await getAllPurchaseOrders(status, vendorId, skuId);
+    const data = await getAllPurchaseOrders(user.teamId, status, vendorId, skuId);
     return c.json(data);
   })
   .get("/:id", async (c) => {
@@ -23,8 +25,9 @@ export const purchaseOrderRoutes = new Hono()
     return c.json(data);
   })
   .post("/", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
     const body = await c.req.json();
-    const [created] = await createPurchaseOrder(body);
+    const [created] = await createPurchaseOrder({ ...body, teamId: user.teamId });
     return c.json(created, 201);
   })
   .patch("/:id/status", async (c) => {

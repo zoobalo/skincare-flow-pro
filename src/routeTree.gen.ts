@@ -29,11 +29,15 @@ import { Route as AppProductionIndexRouteImport } from './routes/_app/production
 import { Route as AppProductionRemarksIndexRouteImport } from './routes/_app/production-remarks/index'
 import { Route as AppProcurementIndexRouteImport } from './routes/_app/procurement/index'
 import { Route as AppNpdIndexRouteImport } from './routes/_app/npd/index'
+import { Route as AppMftIndexRouteImport } from './routes/_app/mft/index'
 import { Route as AppManufacturersIndexRouteImport } from './routes/_app/manufacturers/index'
 import { Route as AppLogisticsIndexRouteImport } from './routes/_app/logistics/index'
 import { Route as AppInventoryIndexRouteImport } from './routes/_app/inventory/index'
+import { Route as AppImpLinksIndexRouteImport } from './routes/_app/imp-links/index'
 import { Route as AppFollowUpsIndexRouteImport } from './routes/_app/follow-ups/index'
 import { Route as AppDirectoryIndexRouteImport } from './routes/_app/directory/index'
+import { Route as AppCourierIndexRouteImport } from './routes/_app/courier/index'
+import { Route as AppArtworkIndexRouteImport } from './routes/_app/artwork/index'
 import { Route as AppAnalyticsIndexRouteImport } from './routes/_app/analytics/index'
 import { Route as AppVendorsVendorIdRouteImport } from './routes/_app/vendors/$vendorId'
 import { Route as AppSkusSkuIdRouteImport } from './routes/_app/skus/$skuId'
@@ -142,6 +146,11 @@ const AppNpdIndexRoute = AppNpdIndexRouteImport.update({
   path: '/npd/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMftIndexRoute = AppMftIndexRouteImport.update({
+  id: '/mft/',
+  path: '/mft/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppManufacturersIndexRoute = AppManufacturersIndexRouteImport.update({
   id: '/manufacturers/',
   path: '/manufacturers/',
@@ -157,6 +166,11 @@ const AppInventoryIndexRoute = AppInventoryIndexRouteImport.update({
   path: '/inventory/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppImpLinksIndexRoute = AppImpLinksIndexRouteImport.update({
+  id: '/imp-links/',
+  path: '/imp-links/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFollowUpsIndexRoute = AppFollowUpsIndexRouteImport.update({
   id: '/follow-ups/',
   path: '/follow-ups/',
@@ -165,6 +179,16 @@ const AppFollowUpsIndexRoute = AppFollowUpsIndexRouteImport.update({
 const AppDirectoryIndexRoute = AppDirectoryIndexRouteImport.update({
   id: '/directory/',
   path: '/directory/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCourierIndexRoute = AppCourierIndexRouteImport.update({
+  id: '/courier/',
+  path: '/courier/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppArtworkIndexRoute = AppArtworkIndexRouteImport.update({
+  id: '/artwork/',
+  path: '/artwork/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAnalyticsIndexRoute = AppAnalyticsIndexRouteImport.update({
@@ -218,11 +242,15 @@ export interface FileRoutesByFullPath {
   '/skus/$skuId': typeof AppSkusSkuIdRoute
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/analytics/': typeof AppAnalyticsIndexRoute
+  '/artwork/': typeof AppArtworkIndexRoute
+  '/courier/': typeof AppCourierIndexRoute
   '/directory/': typeof AppDirectoryIndexRoute
   '/follow-ups/': typeof AppFollowUpsIndexRoute
+  '/imp-links/': typeof AppImpLinksIndexRoute
   '/inventory/': typeof AppInventoryIndexRoute
   '/logistics/': typeof AppLogisticsIndexRoute
   '/manufacturers/': typeof AppManufacturersIndexRoute
+  '/mft/': typeof AppMftIndexRoute
   '/npd/': typeof AppNpdIndexRoute
   '/procurement/': typeof AppProcurementIndexRoute
   '/production-remarks/': typeof AppProductionRemarksIndexRoute
@@ -251,11 +279,15 @@ export interface FileRoutesByTo {
   '/skus/$skuId': typeof AppSkusSkuIdRoute
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/analytics': typeof AppAnalyticsIndexRoute
+  '/artwork': typeof AppArtworkIndexRoute
+  '/courier': typeof AppCourierIndexRoute
   '/directory': typeof AppDirectoryIndexRoute
   '/follow-ups': typeof AppFollowUpsIndexRoute
+  '/imp-links': typeof AppImpLinksIndexRoute
   '/inventory': typeof AppInventoryIndexRoute
   '/logistics': typeof AppLogisticsIndexRoute
   '/manufacturers': typeof AppManufacturersIndexRoute
+  '/mft': typeof AppMftIndexRoute
   '/npd': typeof AppNpdIndexRoute
   '/procurement': typeof AppProcurementIndexRoute
   '/production-remarks': typeof AppProductionRemarksIndexRoute
@@ -286,11 +318,15 @@ export interface FileRoutesById {
   '/_app/skus/$skuId': typeof AppSkusSkuIdRoute
   '/_app/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/_app/analytics/': typeof AppAnalyticsIndexRoute
+  '/_app/artwork/': typeof AppArtworkIndexRoute
+  '/_app/courier/': typeof AppCourierIndexRoute
   '/_app/directory/': typeof AppDirectoryIndexRoute
   '/_app/follow-ups/': typeof AppFollowUpsIndexRoute
+  '/_app/imp-links/': typeof AppImpLinksIndexRoute
   '/_app/inventory/': typeof AppInventoryIndexRoute
   '/_app/logistics/': typeof AppLogisticsIndexRoute
   '/_app/manufacturers/': typeof AppManufacturersIndexRoute
+  '/_app/mft/': typeof AppMftIndexRoute
   '/_app/npd/': typeof AppNpdIndexRoute
   '/_app/procurement/': typeof AppProcurementIndexRoute
   '/_app/production-remarks/': typeof AppProductionRemarksIndexRoute
@@ -321,11 +357,15 @@ export interface FileRouteTypes {
     | '/skus/$skuId'
     | '/vendors/$vendorId'
     | '/analytics/'
+    | '/artwork/'
+    | '/courier/'
     | '/directory/'
     | '/follow-ups/'
+    | '/imp-links/'
     | '/inventory/'
     | '/logistics/'
     | '/manufacturers/'
+    | '/mft/'
     | '/npd/'
     | '/procurement/'
     | '/production-remarks/'
@@ -354,11 +394,15 @@ export interface FileRouteTypes {
     | '/skus/$skuId'
     | '/vendors/$vendorId'
     | '/analytics'
+    | '/artwork'
+    | '/courier'
     | '/directory'
     | '/follow-ups'
+    | '/imp-links'
     | '/inventory'
     | '/logistics'
     | '/manufacturers'
+    | '/mft'
     | '/npd'
     | '/procurement'
     | '/production-remarks'
@@ -388,11 +432,15 @@ export interface FileRouteTypes {
     | '/_app/skus/$skuId'
     | '/_app/vendors/$vendorId'
     | '/_app/analytics/'
+    | '/_app/artwork/'
+    | '/_app/courier/'
     | '/_app/directory/'
     | '/_app/follow-ups/'
+    | '/_app/imp-links/'
     | '/_app/inventory/'
     | '/_app/logistics/'
     | '/_app/manufacturers/'
+    | '/_app/mft/'
     | '/_app/npd/'
     | '/_app/procurement/'
     | '/_app/production-remarks/'
@@ -559,6 +607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNpdIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/mft/': {
+      id: '/_app/mft/'
+      path: '/mft'
+      fullPath: '/mft/'
+      preLoaderRoute: typeof AppMftIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/manufacturers/': {
       id: '/_app/manufacturers/'
       path: '/manufacturers'
@@ -580,6 +635,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInventoryIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/imp-links/': {
+      id: '/_app/imp-links/'
+      path: '/imp-links'
+      fullPath: '/imp-links/'
+      preLoaderRoute: typeof AppImpLinksIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/follow-ups/': {
       id: '/_app/follow-ups/'
       path: '/follow-ups'
@@ -592,6 +654,20 @@ declare module '@tanstack/react-router' {
       path: '/directory'
       fullPath: '/directory/'
       preLoaderRoute: typeof AppDirectoryIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/courier/': {
+      id: '/_app/courier/'
+      path: '/courier'
+      fullPath: '/courier/'
+      preLoaderRoute: typeof AppCourierIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/artwork/': {
+      id: '/_app/artwork/'
+      path: '/artwork'
+      fullPath: '/artwork/'
+      preLoaderRoute: typeof AppArtworkIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/analytics/': {
@@ -655,11 +731,15 @@ interface AppRouteChildren {
   AppSkusSkuIdRoute: typeof AppSkusSkuIdRoute
   AppVendorsVendorIdRoute: typeof AppVendorsVendorIdRoute
   AppAnalyticsIndexRoute: typeof AppAnalyticsIndexRoute
+  AppArtworkIndexRoute: typeof AppArtworkIndexRoute
+  AppCourierIndexRoute: typeof AppCourierIndexRoute
   AppDirectoryIndexRoute: typeof AppDirectoryIndexRoute
   AppFollowUpsIndexRoute: typeof AppFollowUpsIndexRoute
+  AppImpLinksIndexRoute: typeof AppImpLinksIndexRoute
   AppInventoryIndexRoute: typeof AppInventoryIndexRoute
   AppLogisticsIndexRoute: typeof AppLogisticsIndexRoute
   AppManufacturersIndexRoute: typeof AppManufacturersIndexRoute
+  AppMftIndexRoute: typeof AppMftIndexRoute
   AppNpdIndexRoute: typeof AppNpdIndexRoute
   AppProcurementIndexRoute: typeof AppProcurementIndexRoute
   AppProductionRemarksIndexRoute: typeof AppProductionRemarksIndexRoute
@@ -684,11 +764,15 @@ const AppRouteChildren: AppRouteChildren = {
   AppSkusSkuIdRoute: AppSkusSkuIdRoute,
   AppVendorsVendorIdRoute: AppVendorsVendorIdRoute,
   AppAnalyticsIndexRoute: AppAnalyticsIndexRoute,
+  AppArtworkIndexRoute: AppArtworkIndexRoute,
+  AppCourierIndexRoute: AppCourierIndexRoute,
   AppDirectoryIndexRoute: AppDirectoryIndexRoute,
   AppFollowUpsIndexRoute: AppFollowUpsIndexRoute,
+  AppImpLinksIndexRoute: AppImpLinksIndexRoute,
   AppInventoryIndexRoute: AppInventoryIndexRoute,
   AppLogisticsIndexRoute: AppLogisticsIndexRoute,
   AppManufacturersIndexRoute: AppManufacturersIndexRoute,
+  AppMftIndexRoute: AppMftIndexRoute,
   AppNpdIndexRoute: AppNpdIndexRoute,
   AppProcurementIndexRoute: AppProcurementIndexRoute,
   AppProductionRemarksIndexRoute: AppProductionRemarksIndexRoute,

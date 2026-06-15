@@ -2,8 +2,8 @@ import { db } from "../../db/client.ts";
 import { couriers } from "../../db/schema/couriers.ts";
 import { eq, desc } from "drizzle-orm";
 
-export const getAllCouriers = () =>
-  db.select().from(couriers).orderBy(desc(couriers.dispatchDate), desc(couriers.createdAt));
+export const getAllCouriers = (teamId: string) =>
+  db.select().from(couriers).where(eq(couriers.teamId, teamId)).orderBy(desc(couriers.dispatchDate), desc(couriers.createdAt));
 
 export const createCourier = (data: typeof couriers.$inferInsert) =>
   db.insert(couriers).values(data).returning();

@@ -4,15 +4,18 @@ import { packagingItems, skuRawMaterials, skuTests, skuDispatches } from "../../
 import { mftNotes } from "../../db/schema/mft-notes.ts";
 import { skuComments } from "../../db/schema/sku-comments.ts";
 import { eq, desc } from "drizzle-orm";
+import type { JWTPayload } from "../auth/jwt.ts";
 
 export const skuItemRoutes = new Hono()
   // ── Packaging ────────────────────────────────────────────────────────────────
   .post("/:skuId/packaging", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
     const body = await c.req.json();
     const [created] = await db.insert(packagingItems).values({
       ...body,
       id: crypto.randomUUID(),
       skuId: c.req.param("skuId"),
+      teamId: user.teamId,
     }).returning();
     return c.json(created, 201);
   })
@@ -120,12 +123,14 @@ export const skuItemRoutes = new Hono()
     return c.json(rows);
   })
   .post("/:skuId/mft", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
     const body = await c.req.json();
     const [created] = await db.insert(mftNotes).values({
-      id:    crypto.randomUUID(),
-      skuId: c.req.param("skuId"),
-      date:  body.date,
-      notes: body.notes ?? "",
+      id:     crypto.randomUUID(),
+      skuId:  c.req.param("skuId"),
+      date:   body.date,
+      notes:  body.notes ?? "",
+      teamId: user.teamId,
     }).returning();
     return c.json(created, 201);
   })

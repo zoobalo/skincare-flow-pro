@@ -4,7 +4,7 @@ const secret = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "zoobalo-dev-secret-change-in-production"
 );
 
-export type JWTPayload = { sub: string; email: string; role: string; name: string };
+export type JWTPayload = { sub: string; email: string; role: string; name: string; teamId: string; department: string };
 
 export async function signToken(payload: JWTPayload): Promise<string> {
   return new SignJWT({ ...payload })

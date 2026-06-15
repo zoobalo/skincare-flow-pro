@@ -23,6 +23,7 @@ export const manufacturers = pgTable("manufacturers", {
   reliability:      integer("reliability").notNull().default(90),
   delayPercent:     integer("delay_percent").notNull().default(5),
   contacts:         jsonb("contacts").$type<Contact[]>().notNull().default([]),
+  teamId:           text("team_id").notNull(),
   createdAt:        timestamp("created_at").defaultNow().notNull(),
 });
 

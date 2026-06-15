@@ -19,6 +19,7 @@ export const shipments = pgTable("shipments", {
   freightCost:      numeric("freight_cost", { precision: 10, scale: 2 }).notNull(),
   status:           text("status").notNull().$type<ShipmentStatus>(),
   linkedPoNumber:   text("linked_po_number").references(() => purchaseOrders.poNumber),
+  teamId:        text("team_id").notNull(),
   createdAt:        timestamp("created_at").defaultNow().notNull(),
   updatedAt:        timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [
