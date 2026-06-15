@@ -5,6 +5,7 @@ export const impLinks = pgTable("imp_links", {
   name:      text("name").notNull(),
   link:      text("link").notNull(),
   comment:   text("comment"),
+  teamId:    text("team_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

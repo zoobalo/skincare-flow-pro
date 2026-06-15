@@ -11,19 +11,25 @@ export type Team = typeof teams.$inferSelect;
 
 export const DEPARTMENTS = [
   "skincare",
-  "creative",
-  "hr",
   "sales",
   "marketing",
+  "crm",
+  "creative",
+  "hr",
+  "finance",
   "logistics",
+  "d2c",
 ] as const;
 export type Department = typeof DEPARTMENTS[number];
 
 export const DEPARTMENT_LABELS: Record<string, string> = {
-  skincare:  "Skincare",
-  creative:  "Creative",
-  hr:        "HR",
+  skincare:  "Procurement and Operations",
   sales:     "Sales",
   marketing: "Marketing",
-  logistics: "Logistics",
+  crm:       "CRM",
+  creative:  "Creative Department",
+  hr:        "HR",
+  finance:   "Finance",
+  logistics: "Logistics and Inventory",
+  d2c:       "D2C",
 };

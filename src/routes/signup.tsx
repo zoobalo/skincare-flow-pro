@@ -15,12 +15,15 @@ export const Route = createFileRoute("/signup")({
 });
 
 const DEPARTMENTS = [
-  { value: "skincare",  label: "Skincare" },
-  { value: "creative",  label: "Creative" },
-  { value: "hr",        label: "HR" },
+  { value: "skincare",  label: "Procurement and Operations" },
   { value: "sales",     label: "Sales" },
   { value: "marketing", label: "Marketing" },
-  { value: "logistics", label: "Logistics" },
+  { value: "crm",       label: "CRM" },
+  { value: "creative",  label: "Creative Department" },
+  { value: "hr",        label: "HR" },
+  { value: "finance",   label: "Finance" },
+  { value: "logistics", label: "Logistics and Inventory" },
+  { value: "d2c",       label: "D2C" },
 ] as const;
 
 function SignupPage() {

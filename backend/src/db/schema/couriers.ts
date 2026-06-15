@@ -7,6 +7,7 @@ export const couriers = pgTable("couriers", {
   dispatchDate:   text("dispatch_date").notNull(),
   docketNumber:   text("docket_number").notNull(),
   comment:        text("comment"),
+  teamId:         text("team_id").notNull(),
   createdAt:      timestamp("created_at").defaultNow().notNull(),
   updatedAt:      timestamp("updated_at").defaultNow().notNull(),
 });
