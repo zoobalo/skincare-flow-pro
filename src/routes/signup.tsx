@@ -93,7 +93,7 @@ function SignupPage() {
             <SelectTrigger>
               <SelectValue placeholder="Select your department" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper" className="max-h-72 overflow-y-auto">
               {DEPARTMENTS.map((d) => (
                 <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
               ))}

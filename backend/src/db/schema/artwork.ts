@@ -8,6 +8,7 @@ export const artworkItems = pgTable("artwork_items", {
   statusRemark:    text("status_remark"),
   statusUpdatedAt: timestamp("status_updated_at"),
   comment:         text("comment"),
+  fileLink:        text("file_link"),
   teamId:          text("team_id").notNull(),
   createdAt:       timestamp("created_at").defaultNow().notNull(),
   updatedAt:       timestamp("updated_at").defaultNow().notNull(),

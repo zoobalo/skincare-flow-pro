@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Edit2, PhoneCall } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,10 @@ function FollowUpsPage() {
 function FollowUpsContent({ contacts: initial }: { contacts: Contact[] }) {
   const router = useRouter();
   const reload = () => router.invalidate();
+
+  const [contacts, setContacts] = useState(initial);
+  // Sync local state when the loader refreshes (after add/delete operations)
+  useEffect(() => { setContacts(initial); }, [initial]);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
@@ -99,13 +103,38 @@ function FollowUpsContent({ contacts: initial }: { contacts: Contact[] }) {
   };
 
   const toggleTask = async (contactId: string, task: ApiFollowUpTask) => {
+    const newDone = !task.done;
+    const nowIso = new Date().toISOString();
+
+    // Optimistic update — instant UI feedback
+    setContacts((prev) =>
+      prev.map((c) =>
+        c.id !== contactId ? c : {
+          ...c,
+          tasks: c.tasks.map((t) =>
+            t.id !== task.id ? t : { ...t, done: newDone, doneAt: newDone ? nowIso : null }
+          ),
+        }
+      )
+    );
+
     try {
       await api.followUps.updateTask(contactId, task.id, {
-        done: !task.done,
-        doneAt: !task.done ? new Date().toISOString() : null,
+        done: newDone,
+        doneAt: newDone ? nowIso : null,
       });
-      await reload();
     } catch {
+      // Roll back on failure
+      setContacts((prev) =>
+        prev.map((c) =>
+          c.id !== contactId ? c : {
+            ...c,
+            tasks: c.tasks.map((t) =>
+              t.id !== task.id ? t : { ...t, done: task.done, doneAt: task.doneAt }
+            ),
+          }
+        )
+      );
       toast.error("Update failed");
     }
   };
@@ -131,7 +160,7 @@ function FollowUpsContent({ contacts: initial }: { contacts: Contact[] }) {
         }
       />
 
-      {initial.length === 0 && (
+      {contacts.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center text-muted-foreground">
           <PhoneCall className="mb-3 h-10 w-10 opacity-30" />
           <p className="text-sm">No contacts yet. Add one to start tracking follow-ups.</p>
@@ -139,7 +168,7 @@ function FollowUpsContent({ contacts: initial }: { contacts: Contact[] }) {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {initial.map((contact) => {
+        {contacts.map((contact) => {
           const pendingCount = contact.tasks.filter((t) => !t.done).length;
           const doneCount = contact.tasks.filter((t) => t.done).length;
           return (

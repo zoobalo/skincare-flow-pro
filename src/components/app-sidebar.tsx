@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { isAdmin, getUser } from "@/lib/auth";
+import { isAdmin, getUser, getToken, saveSession } from "@/lib/auth";
+import { auth } from "@/lib/api";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Factory, Boxes, PackageOpen, FlaskConical,
   GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, Palette, ClipboardList, PackageCheck, Link2,
@@ -85,10 +86,22 @@ export function AppSidebar({ collapsed, mobileOpen, onMobileClose }: AppSidebarP
 
   useEffect(() => {
     setAdmin(isAdmin());
-    setDept(getUser()?.department);
+    const stored = getUser();
+    if (stored?.department) {
+      setDept(stored.department);
+    } else if (getToken()) {
+      // Old session without department stored — refresh from API once
+      auth.me().then((me) => {
+        if (me?.department && !me.error) {
+          setDept(me.department);
+          saveSession(getToken()!, { id: me.id, name: me.name, email: me.email, role: me.role, department: me.department });
+        }
+      }).catch(() => {});
+    }
   }, []);
 
-  const isProcurement = dept === PROCUREMENT_DEPT || !dept;
+  // Only Procurement and Operations (skincare) sees all tabs; everyone else gets 5 common tabs
+  const isProcurement = dept === PROCUREMENT_DEPT;
 
   const isVisible = (item: { to: string; adminOnly?: boolean }) => {
     if ("adminOnly" in item && item.adminOnly && !admin) return false;

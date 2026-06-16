@@ -193,7 +193,13 @@ export type ApiArtworkItem = {
   id: string; skuName: string; artworkType: string;
   imageUrl: string | null; statusRemark: string | null;
   statusUpdatedAt: string | null; comment: string | null;
+  fileLink: string | null;
   createdAt: string; updatedAt: string;
+};
+
+export type ApiArtworkComment = {
+  id: string; artworkId: string; text: string;
+  authorName: string; teamId: string; createdAt: string;
 };
 
 export type ApiFollowUpContact = {
@@ -490,6 +496,11 @@ export const api = {
       fetch(`${BASE}/artwork/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
       fetch(`${BASE}/artwork/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    listComments: (id: string) => get<ApiArtworkComment[]>(`/artwork/${id}/comments`),
+    addComment: (id: string, text: string) =>
+      fetch(`${BASE}/artwork/${id}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ text }) }).then((r) => r.json()),
+    deleteComment: (artworkId: string, commentId: string) =>
+      fetch(`${BASE}/artwork/${artworkId}/comments/${commentId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   followUps: {

@@ -33,3 +33,9 @@ export function clearSession() {
 export function isAdmin(): boolean {
   return getUser()?.role === "Admin";
 }
+
+export function getHomeRoute(user?: AuthUser | null): string {
+  const u = user ?? getUser();
+  if (!u || u.role === "Admin" || u.department === "skincare") return "/dashboard";
+  return "/tasks";
+}

@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Edit2, Search } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/tasks/")({
@@ -56,6 +56,22 @@ function TasksPage() {
 function TasksContent({ tasks, skus }: { tasks: Awaited<ReturnType<typeof api.tasks.list>>; skus: Awaited<ReturnType<typeof api.skus.list>> }) {
   const router = useRouter();
   const reload = () => router.invalidate();
+
+  const [localTasks, setLocalTasks] = useState(tasks);
+  // Sync when loader refreshes (after create/delete)
+  useEffect(() => { setLocalTasks(tasks); }, [tasks]);
+
+  const updateStatusOptimistic = async (taskId: string, newStatus: ApiTask["status"]) => {
+    const prev = localTasks.find((t) => t.id === taskId);
+    setLocalTasks((ts) => ts.map((t) => t.id === taskId ? { ...t, status: newStatus } : t));
+    try {
+      await api.tasks.update(taskId, { status: newStatus });
+    } catch {
+      // Roll back
+      if (prev) setLocalTasks((ts) => ts.map((t) => t.id === taskId ? prev : t));
+      toast.error("Failed to update status.");
+    }
+  };
 
   const [sheetOpen, setSheetOpen]   = useState(false);
   const [editTarget, setEditTarget] = useState<ApiTask | null>(null);
@@ -126,7 +142,7 @@ function TasksContent({ tasks, skus }: { tasks: Awaited<ReturnType<typeof api.ta
     return URGENCY_ORDER[a.urgency] - URGENCY_ORDER[b.urgency];
   };
 
-  const filtered = tasks.filter((t) => {
+  const filtered = localTasks.filter((t) => {
     if (filterSku  !== "__all__" && t.skuId !== filterSku)        return false;
     if (filterType !== "__all__" && t.productType !== filterType) return false;
     if (search) {
@@ -144,7 +160,7 @@ function TasksContent({ tasks, skus }: { tasks: Awaited<ReturnType<typeof api.ta
     <div className="space-y-6">
       <PageHeader
         title="Task Management"
-        description={`${tasks.length} task${tasks.length !== 1 ? "s" : ""}`}
+        description={`${localTasks.length} task${localTasks.length !== 1 ? "s" : ""}`}
         actions={
           <Button onClick={openCreate}>
             <Plus className="mr-1.5 h-4 w-4" />New Task
@@ -231,10 +247,7 @@ function TasksContent({ tasks, skus }: { tasks: Awaited<ReturnType<typeof api.ta
                         <div>
                           <Select
                             value={t.status}
-                            onValueChange={async (v) => {
-                              try { await api.tasks.update(t.id, { status: v as ApiTask["status"] }); reload(); }
-                              catch { toast.error("Failed to update status."); }
-                            }}
+                            onValueChange={(v) => updateStatusOptimistic(t.id, v as ApiTask["status"])}
                           >
                             <SelectTrigger className={`h-6 w-auto gap-1 rounded-full border-0 px-2.5 py-0 text-xs font-medium shadow-none focus:ring-0 ${STATUS_STYLE[t.status]}`}>
                               <SelectValue />

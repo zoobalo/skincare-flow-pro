@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { auth } from "@/lib/api";
-import { saveSession, getToken } from "@/lib/auth";
+import { saveSession, getToken, getHomeRoute } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/login")({
   beforeLoad: ({ search }) => {
     // Client-only: if already logged in, go back to where they came from
     if (typeof window !== "undefined" && getToken()) {
-      throw redirect({ to: search.redirect ?? "/dashboard" });
+      throw redirect({ to: search.redirect ?? getHomeRoute() });
     }
   },
   component: LoginPage,
@@ -36,7 +36,7 @@ function LoginPage() {
       const res = await auth.login(email, password);
       if (res.error) { setError(res.error); return; }
       saveSession(res.token, res.user);
-      navigate({ to: "/dashboard" });
+      navigate({ to: getHomeRoute(res.user) });
     } catch {
       setError("Unable to connect. Please try again.");
     } finally {
