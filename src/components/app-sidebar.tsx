@@ -4,7 +4,7 @@ import { isAdmin, getUser, getToken, saveSession } from "@/lib/auth";
 import { auth } from "@/lib/api";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Factory, Boxes, PackageOpen, FlaskConical,
-  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, Palette, ClipboardList, PackageCheck, Link2,
+  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, Palette, ClipboardList, PackageCheck, Link2, Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,13 +34,14 @@ const nav = [
     { to: "/skus", label: "SKU Management", icon: Package },
   ]},
   { group: "Work", items: [
-    { to: "/tasks",      label: "Task Management", icon: ListChecks },
-    { to: "/follow-ups", label: "Follow Up",        icon: PhoneCall  },
-    { to: "/artwork",    label: "Artwork",           icon: Palette       },
-    { to: "/imp-links",  label: "IMP Links",         icon: Link2         },
-    { to: "/mft",        label: "MFT",               icon: ClipboardList },
-    { to: "/reimburse",  label: "Reimburse",          icon: ReceiptText   },
-    { to: "/courier",    label: "Courier",            icon: PackageCheck  },
+    { to: "/tasks",        label: "Task Management", icon: ListChecks   },
+    { to: "/follow-ups",   label: "Follow Up",       icon: PhoneCall    },
+    { to: "/artwork",      label: "Artwork",          icon: Palette      },
+    { to: "/imp-links",    label: "IMP Links",        icon: Link2        },
+    { to: "/mft",          label: "MFT",              icon: ClipboardList},
+    { to: "/reimburse",    label: "Reimburse",        icon: ReceiptText  },
+    { to: "/courier",      label: "Courier",          icon: PackageCheck },
+    { to: "/sku-activity", label: "SKU Activity",     icon: Activity     },
   ]},
   { group: "NPD", items: [
     { to: "/npd", label: "New Product Development", icon: Beaker },

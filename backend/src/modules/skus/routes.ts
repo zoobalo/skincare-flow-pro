@@ -1,12 +1,31 @@
 import { Hono } from "hono";
 import { getAllSkus, getSkuById, createSku, updateSku, deleteSku } from "./queries.ts";
 import { db } from "../../db/client.ts";
+import { skus } from "../../db/schema/skus.ts";
+import { skuComments } from "../../db/schema/sku-comments.ts";
 import { purchaseOrders } from "../../db/schema/purchase-orders.ts";
 import { productionBatches } from "../../db/schema/production.ts";
-import { eq, count } from "drizzle-orm";
+import { eq, count, asc, inArray } from "drizzle-orm";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const skuRoutes = new Hono()
+  // Must be before /:id to avoid being matched as skuId
+  .get("/all-comments", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const teamSkus = await db.select({ id: skus.id, code: skus.code, name: skus.name })
+      .from(skus).where(eq(skus.teamId, user.teamId));
+    if (!teamSkus.length) return c.json([]);
+    const skuMap = Object.fromEntries(teamSkus.map((s) => [s.id, s]));
+    const skuIds = teamSkus.map((s) => s.id);
+    const comments = await db.select().from(skuComments)
+      .where(inArray(skuComments.skuId, skuIds))
+      .orderBy(asc(skuComments.createdAt));
+    return c.json(comments.map((c) => ({
+      ...c,
+      skuCode: skuMap[c.skuId]?.code ?? "",
+      skuName: skuMap[c.skuId]?.name ?? "",
+    })));
+  })
   .get("/", async (c) => {
     const user     = c.get("user" as never) as JWTPayload;
     const search   = c.req.query("search")   ?? undefined;
