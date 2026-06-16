@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader } from "@/components/page-header";
-import { api, type ApiSkuCommentWithSku, type ApiSkuDispatch, type ApiSku } from "@/lib/api";
+import { api, type ApiSkuCommentWithSku, type ApiSkuDispatch, type ApiSkuDispatchWithSku, type ApiSku } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,11 +18,12 @@ import { fmtDate } from "@/lib/utils";
 export const Route = createFileRoute("/_app/sku-activity/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const [comments, skus] = await Promise.all([
+    const [comments, dispatches, skus] = await Promise.all([
       api.skus.listAllComments(),
+      api.skus.listAllDispatches(),
       api.skus.list(),
     ]);
-    return { comments, skus };
+    return { comments, dispatches, skus };
   },
   pendingComponent: PageSkeleton,
   component: SkuActivityPage,
@@ -49,7 +50,7 @@ function fmtDateTime(iso: string) {
 function SkuActivityPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <SkuActivityContent comments={data.comments} skus={data.skus} />;
+  return <SkuActivityContent comments={data.comments} dispatches={data.dispatches} skus={data.skus} />;
 }
 
 const EMPTY_DISPATCH = {
@@ -61,9 +62,11 @@ const EMPTY_DISPATCH = {
 
 function SkuActivityContent({
   comments: initialComments,
+  dispatches: initialDispatches,
   skus,
 }: {
   comments: ApiSkuCommentWithSku[];
+  dispatches: ApiSkuDispatchWithSku[];
   skus: ApiSku[];
 }) {
   const router = useRouter();
@@ -77,6 +80,11 @@ function SkuActivityContent({
   const [editingComment, setEditingComment] = useState<{ id: string; text: string } | null>(null);
 
   // ── Dispatch state ──────────────────────────────────────────────────────────
+  const dispatchesBySkuId = initialDispatches.reduce<Record<string, ApiSkuDispatchWithSku[]>>((acc, d) => {
+    (acc[d.skuId] ??= []).push(d);
+    return acc;
+  }, {});
+
   const [dispatchSheet, setDispatchSheet] = useState(false);
   const [dispatchSkuId, setDispatchSkuId] = useState<string | null>(null);
   const [editingDispatch, setEditingDispatch] = useState<ApiSkuDispatch | null>(null);
@@ -133,7 +141,6 @@ function SkuActivityContent({
   };
 
   // ── Dispatch helpers ────────────────────────────────────────────────────────
-  const skusWithDispatches = skus.filter((s) => (s as any).dispatches?.length);
 
   const openAddDispatch = (skuId: string) => {
     setDispatchSkuId(skuId);
@@ -327,7 +334,7 @@ function SkuActivityContent({
             </div>
           ) : (
             skus.map((sku) => {
-              const dispatches: ApiSkuDispatch[] = (sku as any).dispatches ?? [];
+              const dispatches: ApiSkuDispatchWithSku[] = dispatchesBySkuId[sku.id] ?? [];
               const expanded = expandedDispatchSkus[sku.id] ?? dispatches.length > 0;
               return (
                 <div key={sku.id} className="rounded-xl border bg-card overflow-hidden">

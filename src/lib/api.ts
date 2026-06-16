@@ -186,6 +186,7 @@ export type ApiSkuComment = {
 };
 
 export type ApiSkuCommentWithSku = ApiSkuComment & { skuCode: string; skuName: string };
+export type ApiSkuDispatchWithSku = ApiSkuDispatch & { skuCode: string; skuName: string };
 
 export type ApiMftNote = {
   id: string; skuId: string | null; date: string; notes: string; createdAt: string;
@@ -374,6 +375,7 @@ export const api = {
     deleteMft: (id: string) =>
       fetch(`${BASE}/skus/mft/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
     listAllComments: () => get<ApiSkuCommentWithSku[]>("/skus/all-comments"),
+    listAllDispatches: () => get<ApiSkuDispatchWithSku[]>("/skus/all-dispatches"),
     listComments: (skuId: string) => get<ApiSkuComment[]>(`/skus/${skuId}/comments`),
     addComment: (skuId: string, comment: string) =>
       fetch(`${BASE}/skus/${skuId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ comment }) }).then((r) => r.json()),

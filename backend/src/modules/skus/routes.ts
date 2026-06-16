@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { getAllSkus, getSkuById, createSku, updateSku, deleteSku } from "./queries.ts";
 import { db } from "../../db/client.ts";
-import { skus } from "../../db/schema/skus.ts";
+import { skus, skuDispatches } from "../../db/schema/skus.ts";
 import { skuComments } from "../../db/schema/sku-comments.ts";
 import { purchaseOrders } from "../../db/schema/purchase-orders.ts";
 import { productionBatches } from "../../db/schema/production.ts";
-import { eq, count, asc, inArray } from "drizzle-orm";
+import { eq, count, asc, desc, inArray } from "drizzle-orm";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const skuRoutes = new Hono()
@@ -24,6 +24,22 @@ export const skuRoutes = new Hono()
       ...c,
       skuCode: skuMap[c.skuId]?.code ?? "",
       skuName: skuMap[c.skuId]?.name ?? "",
+    })));
+  })
+  .get("/all-dispatches", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const teamSkus = await db.select({ id: skus.id, code: skus.code, name: skus.name })
+      .from(skus).where(eq(skus.teamId, user.teamId));
+    if (!teamSkus.length) return c.json([]);
+    const skuMap = Object.fromEntries(teamSkus.map((s) => [s.id, s]));
+    const skuIds = teamSkus.map((s) => s.id);
+    const dispatches = await db.select().from(skuDispatches)
+      .where(inArray(skuDispatches.skuId, skuIds))
+      .orderBy(desc(skuDispatches.dispatchDate));
+    return c.json(dispatches.map((d) => ({
+      ...d,
+      skuCode: skuMap[d.skuId]?.code ?? "",
+      skuName: skuMap[d.skuId]?.name ?? "",
     })));
   })
   .get("/", async (c) => {
