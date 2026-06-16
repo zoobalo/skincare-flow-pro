@@ -21,6 +21,7 @@ import { Route as AppVendorsIndexRouteImport } from './routes/_app/vendors/index
 import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
 import { Route as AppTasksIndexRouteImport } from './routes/_app/tasks/index'
 import { Route as AppSkusIndexRouteImport } from './routes/_app/skus/index'
+import { Route as AppSkuActivityIndexRouteImport } from './routes/_app/sku-activity/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppReportsIndexRouteImport } from './routes/_app/reports/index'
 import { Route as AppReimburseIndexRouteImport } from './routes/_app/reimburse/index'
@@ -103,6 +104,11 @@ const AppTasksIndexRoute = AppTasksIndexRouteImport.update({
 const AppSkusIndexRoute = AppSkusIndexRouteImport.update({
   id: '/skus/',
   path: '/skus/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSkuActivityIndexRoute = AppSkuActivityIndexRouteImport.update({
+  id: '/sku-activity/',
+  path: '/sku-activity/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
@@ -259,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/reimburse/': typeof AppReimburseIndexRoute
   '/reports/': typeof AppReportsIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
+  '/sku-activity/': typeof AppSkuActivityIndexRoute
   '/skus/': typeof AppSkusIndexRoute
   '/tasks/': typeof AppTasksIndexRoute
   '/users/': typeof AppUsersIndexRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/reimburse': typeof AppReimburseIndexRoute
   '/reports': typeof AppReportsIndexRoute
   '/settings': typeof AppSettingsIndexRoute
+  '/sku-activity': typeof AppSkuActivityIndexRoute
   '/skus': typeof AppSkusIndexRoute
   '/tasks': typeof AppTasksIndexRoute
   '/users': typeof AppUsersIndexRoute
@@ -335,6 +343,7 @@ export interface FileRoutesById {
   '/_app/reimburse/': typeof AppReimburseIndexRoute
   '/_app/reports/': typeof AppReportsIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
+  '/_app/sku-activity/': typeof AppSkuActivityIndexRoute
   '/_app/skus/': typeof AppSkusIndexRoute
   '/_app/tasks/': typeof AppTasksIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
@@ -374,6 +383,7 @@ export interface FileRouteTypes {
     | '/reimburse/'
     | '/reports/'
     | '/settings/'
+    | '/sku-activity/'
     | '/skus/'
     | '/tasks/'
     | '/users/'
@@ -411,6 +421,7 @@ export interface FileRouteTypes {
     | '/reimburse'
     | '/reports'
     | '/settings'
+    | '/sku-activity'
     | '/skus'
     | '/tasks'
     | '/users'
@@ -449,6 +460,7 @@ export interface FileRouteTypes {
     | '/_app/reimburse/'
     | '/_app/reports/'
     | '/_app/settings/'
+    | '/_app/sku-activity/'
     | '/_app/skus/'
     | '/_app/tasks/'
     | '/_app/users/'
@@ -549,6 +561,13 @@ declare module '@tanstack/react-router' {
       path: '/skus'
       fullPath: '/skus/'
       preLoaderRoute: typeof AppSkusIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sku-activity/': {
+      id: '/_app/sku-activity/'
+      path: '/sku-activity'
+      fullPath: '/sku-activity/'
+      preLoaderRoute: typeof AppSkuActivityIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings/': {
@@ -748,6 +767,7 @@ interface AppRouteChildren {
   AppReimburseIndexRoute: typeof AppReimburseIndexRoute
   AppReportsIndexRoute: typeof AppReportsIndexRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+  AppSkuActivityIndexRoute: typeof AppSkuActivityIndexRoute
   AppSkusIndexRoute: typeof AppSkusIndexRoute
   AppTasksIndexRoute: typeof AppTasksIndexRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
@@ -781,6 +801,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppReimburseIndexRoute: AppReimburseIndexRoute,
   AppReportsIndexRoute: AppReportsIndexRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
+  AppSkuActivityIndexRoute: AppSkuActivityIndexRoute,
   AppSkusIndexRoute: AppSkusIndexRoute,
   AppTasksIndexRoute: AppTasksIndexRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,
