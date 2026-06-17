@@ -38,7 +38,7 @@ function LoginPage() {
       if (res.error) { setError(res.error); return; }
       saveSession(res.token, res.user);
       // Fetch and store cross-team grants for this user
-      sharesApi.listMyGrants().then(saveGrants).catch(() => {});
+      sharesApi.listMyGrants().then((g) => saveGrants(Array.isArray(g) ? g : [])).catch(() => {});
       navigate({ to: getHomeRoute(res.user) });
     } catch {
       setError("Unable to connect. Please try again.");

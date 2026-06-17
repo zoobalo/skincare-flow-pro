@@ -77,6 +77,57 @@ const nav = [
   ]},
 ] as const;
 
+interface SharedSectionProps {
+  grants: Grant[];
+  collapsed: boolean;
+  mobileOpen: boolean;
+  pathname: string;
+  onMobileClose: () => void;
+}
+
+function SharedSection({ grants, collapsed, mobileOpen, pathname, onMobileClose }: SharedSectionProps) {
+  const moduleMap = Object.fromEntries(SHAREABLE_MODULES.map((m) => [m.key, m]));
+  const currentSharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId");
+  return (
+    <div className="mb-3">
+      {(!collapsed || mobileOpen) && (
+        <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Shared with me</p>
+      )}
+      <ul className="space-y-0.5">
+        {grants.map((grant) => {
+          const mod = moduleMap[grant.module];
+          if (!mod) return null;
+          const to = `${mod.to}?sharedTeamId=${encodeURIComponent(grant.ownerTeamId)}`;
+          const active = pathname.startsWith(mod.to) && currentSharedTeamId === grant.ownerTeamId;
+          return (
+            <li key={grant.id}>
+              <a
+                href={to}
+                onClick={(e) => { e.preventDefault(); window.location.href = to; onMobileClose(); }}
+                className={cn(
+                  "group flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
+                  active
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                )}
+                title={(collapsed && !mobileOpen) ? `${mod.label} (${grant.ownerTeamName})` : undefined}
+              >
+                <Share2 className="h-4 w-4 shrink-0 opacity-70" />
+                {(!collapsed || mobileOpen) && (
+                  <span className="truncate flex-1">{mod.label}</span>
+                )}
+                {(!collapsed || mobileOpen) && (
+                  <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary uppercase tracking-wide">shared</span>
+                )}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 interface AppSidebarProps {
   collapsed: boolean;
   mobileOpen: boolean;
@@ -180,47 +231,15 @@ export function AppSidebar({ collapsed, mobileOpen, onMobileClose }: AppSidebarP
         })}
 
         {/* ── Shared access from other teams ── */}
-        {grants.length > 0 && (() => {
-          const moduleMap = Object.fromEntries(SHAREABLE_MODULES.map((m) => [m.key, m]));
-          return (
-            <div className="mb-3">
-              {(!collapsed || mobileOpen) && (
-                <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Shared with me</p>
-              )}
-              <ul className="space-y-0.5">
-                {grants.map((grant) => {
-                  const mod = moduleMap[grant.module];
-                  if (!mod) return null;
-                  const to = `${mod.to}?sharedTeamId=${encodeURIComponent(grant.ownerTeamId)}` as any;
-                  const active = pathname.startsWith(mod.to) && new URLSearchParams(window.location.search).get("sharedTeamId") === grant.ownerTeamId;
-                  return (
-                    <li key={grant.id}>
-                      <a
-                        href={to}
-                        onClick={(e) => { e.preventDefault(); window.location.href = to; onMobileClose(); }}
-                        className={cn(
-                          "group flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
-                          active
-                            ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                        title={(collapsed && !mobileOpen) ? `${mod.label} (${grant.ownerTeamName})` : undefined}
-                      >
-                        <Share2 className="h-4 w-4 shrink-0 opacity-70" />
-                        {(!collapsed || mobileOpen) && (
-                          <span className="truncate flex-1">{mod.label}</span>
-                        )}
-                        {(!collapsed || mobileOpen) && (
-                          <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary uppercase tracking-wide">shared</span>
-                        )}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          );
-        })()}
+        {Array.isArray(grants) && grants.length > 0 && (
+          <SharedSection
+            grants={grants}
+            collapsed={collapsed}
+            mobileOpen={mobileOpen}
+            pathname={pathname}
+            onMobileClose={onMobileClose}
+          />
+        )}
       </nav>
 
       {(!collapsed || mobileOpen) && (
