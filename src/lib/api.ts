@@ -21,6 +21,14 @@ async function get<T>(path: string): Promise<T> {
     window.location.href = `/login?redirect=${dest}`;
     throw new Error("Unauthorized");
   }
+  // If a shared request is forbidden, retry without sharedTeamId so own data loads
+  if (r.status === 403 && path.includes("sharedTeamId=")) {
+    const [basePath, qs] = path.split("?");
+    const params = new URLSearchParams(qs ?? "");
+    params.delete("sharedTeamId");
+    const newQs = params.toString();
+    return get<T>(newQs ? `${basePath}?${newQs}` : basePath);
+  }
   if (!r.ok) throw new Error(`API ${path} → ${r.status}`);
   return r.json() as Promise<T>;
 }

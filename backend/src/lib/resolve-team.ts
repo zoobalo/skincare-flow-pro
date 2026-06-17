@@ -18,6 +18,8 @@ export async function resolveTeamId(
 ): Promise<string | null> {
   const sharedTeamId = c.req.query("sharedTeamId");
   if (!sharedTeamId) return user.teamId;
+  // Accessing own team via sharedTeamId — no grant needed
+  if (sharedTeamId === user.teamId) return user.teamId;
 
   const [grant] = await db
     .select()
