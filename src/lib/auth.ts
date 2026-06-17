@@ -28,6 +28,7 @@ export function clearSession() {
   if (!isBrowser) return;
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem("zoobalo_grants");
 }
 
 export function isAdmin(): boolean {

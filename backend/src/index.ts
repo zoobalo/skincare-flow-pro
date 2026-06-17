@@ -26,6 +26,7 @@ import { mftRoutes } from "./modules/mft/routes.ts";
 import { courierRoutes } from "./modules/couriers/routes.ts";
 import { impLinkRoutes } from "./modules/imp-links/routes.ts";
 import { sampleRoutes } from "./modules/samples/routes.ts";
+import { sharesRoutes } from "./modules/shares/routes.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
 import { requireAuth } from "./modules/auth/middleware.ts";
 
@@ -80,6 +81,7 @@ app.route("/mft",               mftRoutes);
 app.route("/couriers",          courierRoutes);
 app.route("/imp-links",         impLinkRoutes);
 app.route("/samples",           sampleRoutes);
+app.route("/shares",            sharesRoutes);
 
 serve({ fetch: root.fetch, port: env.PORT }, () => {
   console.log(`🚀  Zoobalo API running on http://localhost:${env.PORT}/api`);

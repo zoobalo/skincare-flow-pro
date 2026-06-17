@@ -15,7 +15,8 @@ import type { ApiContact } from "@/lib/api";
 export const Route = createFileRoute("/_app/vendors/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    return api.vendors.list();
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    return { vendors: await api.vendors.list(sharedTeamId), sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: VendorsPage,
@@ -152,10 +153,10 @@ function VendorSheet({
 function VendorsPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <PageSkeleton />;
-  return <VendorsContent vendors={loaderData} />;
+  return <VendorsContent vendors={loaderData.vendors} sharedTeamId={loaderData.sharedTeamId} />;
 }
 
-function VendorsContent({ vendors }: { vendors: Awaited<ReturnType<typeof api.vendors.list>> }) {
+function VendorsContent({ vendors, sharedTeamId }: { vendors: Awaited<ReturnType<typeof api.vendors.list>>; sharedTeamId?: string }) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ApiVendor | null>(null);
@@ -184,7 +185,7 @@ function VendorsContent({ vendors }: { vendors: Awaited<ReturnType<typeof api.ve
       runningOrders: Number(form.runningOrders),
       totalSpend: Number(form.totalSpend) as any,
       contacts: form.contacts,
-    });
+    }, sharedTeamId);
     toast.success(`Vendor "${form.name}" added.`);
     await router.invalidate();
   };

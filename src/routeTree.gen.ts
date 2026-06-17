@@ -22,7 +22,9 @@ import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
 import { Route as AppTasksIndexRouteImport } from './routes/_app/tasks/index'
 import { Route as AppSkusIndexRouteImport } from './routes/_app/skus/index'
 import { Route as AppSkuActivityIndexRouteImport } from './routes/_app/sku-activity/index'
+import { Route as AppSharingIndexRouteImport } from './routes/_app/sharing/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
+import { Route as AppSampleIndexRouteImport } from './routes/_app/sample/index'
 import { Route as AppReportsIndexRouteImport } from './routes/_app/reports/index'
 import { Route as AppReimburseIndexRouteImport } from './routes/_app/reimburse/index'
 import { Route as AppPurchaseOrdersIndexRouteImport } from './routes/_app/purchase-orders/index'
@@ -111,9 +113,19 @@ const AppSkuActivityIndexRoute = AppSkuActivityIndexRouteImport.update({
   path: '/sku-activity/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSharingIndexRoute = AppSharingIndexRouteImport.update({
+  id: '/sharing/',
+  path: '/sharing/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSampleIndexRoute = AppSampleIndexRouteImport.update({
+  id: '/sample/',
+  path: '/sample/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppReportsIndexRoute = AppReportsIndexRouteImport.update({
@@ -264,7 +276,9 @@ export interface FileRoutesByFullPath {
   '/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
   '/reimburse/': typeof AppReimburseIndexRoute
   '/reports/': typeof AppReportsIndexRoute
+  '/sample/': typeof AppSampleIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
+  '/sharing/': typeof AppSharingIndexRoute
   '/sku-activity/': typeof AppSkuActivityIndexRoute
   '/skus/': typeof AppSkusIndexRoute
   '/tasks/': typeof AppTasksIndexRoute
@@ -302,7 +316,9 @@ export interface FileRoutesByTo {
   '/purchase-orders': typeof AppPurchaseOrdersIndexRoute
   '/reimburse': typeof AppReimburseIndexRoute
   '/reports': typeof AppReportsIndexRoute
+  '/sample': typeof AppSampleIndexRoute
   '/settings': typeof AppSettingsIndexRoute
+  '/sharing': typeof AppSharingIndexRoute
   '/sku-activity': typeof AppSkuActivityIndexRoute
   '/skus': typeof AppSkusIndexRoute
   '/tasks': typeof AppTasksIndexRoute
@@ -342,7 +358,9 @@ export interface FileRoutesById {
   '/_app/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
   '/_app/reimburse/': typeof AppReimburseIndexRoute
   '/_app/reports/': typeof AppReportsIndexRoute
+  '/_app/sample/': typeof AppSampleIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
+  '/_app/sharing/': typeof AppSharingIndexRoute
   '/_app/sku-activity/': typeof AppSkuActivityIndexRoute
   '/_app/skus/': typeof AppSkusIndexRoute
   '/_app/tasks/': typeof AppTasksIndexRoute
@@ -382,7 +400,9 @@ export interface FileRouteTypes {
     | '/purchase-orders/'
     | '/reimburse/'
     | '/reports/'
+    | '/sample/'
     | '/settings/'
+    | '/sharing/'
     | '/sku-activity/'
     | '/skus/'
     | '/tasks/'
@@ -420,7 +440,9 @@ export interface FileRouteTypes {
     | '/purchase-orders'
     | '/reimburse'
     | '/reports'
+    | '/sample'
     | '/settings'
+    | '/sharing'
     | '/sku-activity'
     | '/skus'
     | '/tasks'
@@ -459,7 +481,9 @@ export interface FileRouteTypes {
     | '/_app/purchase-orders/'
     | '/_app/reimburse/'
     | '/_app/reports/'
+    | '/_app/sample/'
     | '/_app/settings/'
+    | '/_app/sharing/'
     | '/_app/sku-activity/'
     | '/_app/skus/'
     | '/_app/tasks/'
@@ -570,11 +594,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSkuActivityIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/sharing/': {
+      id: '/_app/sharing/'
+      path: '/sharing'
+      fullPath: '/sharing/'
+      preLoaderRoute: typeof AppSharingIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings/': {
       id: '/_app/settings/'
       path: '/settings'
       fullPath: '/settings/'
       preLoaderRoute: typeof AppSettingsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sample/': {
+      id: '/_app/sample/'
+      path: '/sample'
+      fullPath: '/sample/'
+      preLoaderRoute: typeof AppSampleIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/reports/': {
@@ -766,7 +804,9 @@ interface AppRouteChildren {
   AppPurchaseOrdersIndexRoute: typeof AppPurchaseOrdersIndexRoute
   AppReimburseIndexRoute: typeof AppReimburseIndexRoute
   AppReportsIndexRoute: typeof AppReportsIndexRoute
+  AppSampleIndexRoute: typeof AppSampleIndexRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+  AppSharingIndexRoute: typeof AppSharingIndexRoute
   AppSkuActivityIndexRoute: typeof AppSkuActivityIndexRoute
   AppSkusIndexRoute: typeof AppSkusIndexRoute
   AppTasksIndexRoute: typeof AppTasksIndexRoute
@@ -800,7 +840,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppPurchaseOrdersIndexRoute: AppPurchaseOrdersIndexRoute,
   AppReimburseIndexRoute: AppReimburseIndexRoute,
   AppReportsIndexRoute: AppReportsIndexRoute,
+  AppSampleIndexRoute: AppSampleIndexRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
+  AppSharingIndexRoute: AppSharingIndexRoute,
   AppSkuActivityIndexRoute: AppSkuActivityIndexRoute,
   AppSkusIndexRoute: AppSkusIndexRoute,
   AppTasksIndexRoute: AppTasksIndexRoute,

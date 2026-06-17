@@ -1,15 +1,20 @@
 import { Hono } from "hono";
 import { getAllDirectory, createEntry, updateEntry, deleteEntry } from "./queries.ts";
+import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const directoryRoutes = new Hono()
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    return c.json(await getAllDirectory(user.teamId));
+    const teamId = await resolveTeamId(c, user, "directory");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    return c.json(await getAllDirectory(teamId));
   })
   .post("/", async (c) => {
     try {
       const user = c.get("user" as never) as JWTPayload;
+      const teamId = await resolveTeamId(c, user, "directory");
+      if (!teamId) return c.json({ error: "Forbidden" }, 403);
       const body = await c.req.json();
       const [created] = await createEntry({
         id:            crypto.randomUUID(),
@@ -25,7 +30,7 @@ export const directoryRoutes = new Hono()
         email1:        body.email1 ?? "",
         email2:        body.email2 ?? "",
         comment:       body.comment ?? "",
-        teamId:        user.teamId,
+        teamId,
       });
       return c.json(created, 201);
     } catch (err: any) {

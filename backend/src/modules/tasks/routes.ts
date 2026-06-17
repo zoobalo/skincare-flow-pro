@@ -1,17 +1,22 @@
 import { Hono } from "hono";
 import { getAllTasks, createTask, updateTask, deleteTask } from "./queries.ts";
+import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const taskRoutes = new Hono()
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    return c.json(await getAllTasks(user.teamId));
+    const teamId = await resolveTeamId(c, user, "tasks");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    return c.json(await getAllTasks(teamId));
   })
   .post("/", async (c) => {
     try {
       const user = c.get("user" as never) as JWTPayload;
+      const teamId = await resolveTeamId(c, user, "tasks");
+      if (!teamId) return c.json({ error: "Forbidden" }, 403);
       const { title, comments, status, urgency, skuId, productType, deadlineDate } = await c.req.json();
-      const [created] = await createTask({ id: crypto.randomUUID(), title, comments: comments ?? "", status: status ?? "None", urgency: urgency ?? "Medium", skuId: skuId ?? null, productType: productType ?? "None", deadlineDate: deadlineDate ?? null, teamId: user.teamId });
+      const [created] = await createTask({ id: crypto.randomUUID(), title, comments: comments ?? "", status: status ?? "None", urgency: urgency ?? "Medium", skuId: skuId ?? null, productType: productType ?? "None", deadlineDate: deadlineDate ?? null, teamId });
       return c.json(created, 201);
     } catch (err: any) {
       return c.json({ error: err?.message ?? "Failed to create task" }, 500);

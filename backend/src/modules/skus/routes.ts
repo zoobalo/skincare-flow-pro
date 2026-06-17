@@ -6,14 +6,17 @@ import { skuComments } from "../../db/schema/sku-comments.ts";
 import { purchaseOrders } from "../../db/schema/purchase-orders.ts";
 import { productionBatches } from "../../db/schema/production.ts";
 import { eq, count, asc, desc, inArray } from "drizzle-orm";
+import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const skuRoutes = new Hono()
   // Must be before /:id to avoid being matched as skuId
   .get("/all-comments", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "skus");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const teamSkus = await db.select({ id: skus.id, code: skus.code, name: skus.name })
-      .from(skus).where(eq(skus.teamId, user.teamId));
+      .from(skus).where(eq(skus.teamId, teamId));
     if (!teamSkus.length) return c.json([]);
     const skuMap = Object.fromEntries(teamSkus.map((s) => [s.id, s]));
     const skuIds = teamSkus.map((s) => s.id);
@@ -28,8 +31,10 @@ export const skuRoutes = new Hono()
   })
   .get("/all-dispatches", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "skus");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const teamSkus = await db.select({ id: skus.id, code: skus.code, name: skus.name })
-      .from(skus).where(eq(skus.teamId, user.teamId));
+      .from(skus).where(eq(skus.teamId, teamId));
     if (!teamSkus.length) return c.json([]);
     const skuMap = Object.fromEntries(teamSkus.map((s) => [s.id, s]));
     const skuIds = teamSkus.map((s) => s.id);
@@ -44,9 +49,11 @@ export const skuRoutes = new Hono()
   })
   .get("/", async (c) => {
     const user     = c.get("user" as never) as JWTPayload;
+    const teamId   = await resolveTeamId(c, user, "skus");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const search   = c.req.query("search")   ?? undefined;
     const category = c.req.query("category") ?? undefined;
-    const data = await getAllSkus(user.teamId, search, category);
+    const data = await getAllSkus(teamId, search, category);
     return c.json(data);
   })
   .get("/:id", async (c) => {
@@ -61,9 +68,11 @@ export const skuRoutes = new Hono()
   })
   .post("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "skus");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const body = await c.req.json();
     try {
-      const [created] = await createSku({ ...body, id: crypto.randomUUID(), teamId: user.teamId });
+      const [created] = await createSku({ ...body, id: crypto.randomUUID(), teamId });
       return c.json(created, 201);
     } catch (err: any) {
       if (err?.code === "23505") {

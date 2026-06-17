@@ -31,7 +31,8 @@ const ARTWORK_TYPE_OPTIONS = [
 export const Route = createFileRoute("/_app/artwork/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    return { items: await api.artwork.list() };
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    return { items: await api.artwork.list(sharedTeamId), sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: ArtworkPage,
@@ -46,7 +47,7 @@ const EMPTY: Omit<ApiArtworkItem, "id" | "createdAt" | "updatedAt"> = {
 function ArtworkPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <ArtworkContent items={data.items} />;
+  return <ArtworkContent items={data.items} sharedTeamId={data.sharedTeamId} />;
 }
 
 function fmtDate(iso: string | null) {
@@ -66,7 +67,7 @@ function typeToDropdown(artworkType: string): string {
   return ARTWORK_TYPE_OPTIONS.includes(artworkType) ? artworkType : "Other";
 }
 
-function ArtworkContent({ items }: { items: ApiArtworkItem[] }) {
+function ArtworkContent({ items, sharedTeamId }: { items: ApiArtworkItem[]; sharedTeamId?: string }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 
@@ -213,7 +214,7 @@ function ArtworkContent({ items }: { items: ApiArtworkItem[] }) {
         await api.artwork.update(editing.id, payload);
         toast.success("Artwork updated");
       } else {
-        await api.artwork.create(payload);
+        await api.artwork.create(payload, sharedTeamId);
         toast.success("Artwork added");
       }
       setSheetOpen(false);

@@ -1,16 +1,21 @@
 import { Hono } from "hono";
 import { getAllImpLinks, createImpLink, updateImpLink, deleteImpLink } from "./queries.ts";
+import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const impLinkRoutes = new Hono()
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    return c.json(await getAllImpLinks(user.teamId));
+    const teamId = await resolveTeamId(c, user, "imp-links");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    return c.json(await getAllImpLinks(teamId));
   })
   .post("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "imp-links");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const body = await c.req.json();
-    const [created] = await createImpLink({ ...body, id: crypto.randomUUID(), teamId: user.teamId });
+    const [created] = await createImpLink({ ...body, id: crypto.randomUUID(), teamId });
     return c.json(created, 201);
   })
   .patch("/:id", async (c) => {

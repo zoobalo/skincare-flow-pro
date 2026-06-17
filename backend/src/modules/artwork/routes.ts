@@ -3,20 +3,25 @@ import { getAllArtwork, createArtwork, updateArtwork, deleteArtwork } from "./qu
 import { db } from "../../db/client.ts";
 import { artworkComments } from "../../db/schema/artwork-comments.ts";
 import { eq, asc } from "drizzle-orm";
+import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const artworkRoutes = new Hono()
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    return c.json(await getAllArtwork(user.teamId));
+    const teamId = await resolveTeamId(c, user, "artwork");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    return c.json(await getAllArtwork(teamId));
   })
   .post("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "artwork");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const { statusUpdatedAt, ...rest } = await c.req.json();
     const data = {
       ...rest,
       id: crypto.randomUUID(),
-      teamId: user.teamId,
+      teamId,
       ...(statusUpdatedAt ? { statusUpdatedAt: new Date(statusUpdatedAt) } : {}),
     };
     const [created] = await createArtwork(data);

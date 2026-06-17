@@ -1,16 +1,21 @@
 import { Hono } from "hono";
 import { getAllContacts, createContact, updateContact, deleteContact, createTask, updateTask, deleteTask } from "./queries.ts";
+import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const followUpRoutes = new Hono()
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    return c.json(await getAllContacts(user.teamId));
+    const teamId = await resolveTeamId(c, user, "follow-ups");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    return c.json(await getAllContacts(teamId));
   })
   .post("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "follow-ups");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const body = await c.req.json();
-    const [created] = await createContact({ ...body, id: crypto.randomUUID(), teamId: user.teamId });
+    const [created] = await createContact({ ...body, id: crypto.randomUUID(), teamId });
     return c.json(created, 201);
   })
   .patch("/:id", async (c) => {

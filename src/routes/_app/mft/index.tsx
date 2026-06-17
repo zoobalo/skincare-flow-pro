@@ -16,8 +16,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_app/mft/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const [notes, skus] = await Promise.all([api.mft.list(), api.skus.list()]);
-    return { notes, skus };
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    const [notes, skus] = await Promise.all([api.mft.list(sharedTeamId), api.skus.list(undefined, undefined, sharedTeamId)]);
+    return { notes, skus, sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: MftPage,
@@ -29,7 +30,7 @@ const GENERAL = "__general__";
 function MftPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <MftContent notes={data.notes} skus={data.skus} />;
+  return <MftContent notes={data.notes} skus={data.skus} sharedTeamId={data.sharedTeamId} />;
 }
 
 function fmtDateLabel(iso: string) {
@@ -44,7 +45,7 @@ function fmtDateShort(iso: string) {
 
 const EMPTY_FORM = { skuId: GENERAL, date: "", notes: "" };
 
-function MftContent({ notes, skus }: { notes: ApiMftNote[]; skus: ApiSku[] }) {
+function MftContent({ notes, skus, sharedTeamId }: { notes: ApiMftNote[]; skus: ApiSku[]; sharedTeamId?: string }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 
@@ -99,7 +100,7 @@ function MftContent({ notes, skus }: { notes: ApiMftNote[]; skus: ApiSku[] }) {
         await api.mft.update(editing.id, payload);
         toast.success("Note updated");
       } else {
-        await api.mft.create(payload);
+        await api.mft.create(payload, sharedTeamId);
         toast.success("Note added");
       }
       setSheetOpen(false);

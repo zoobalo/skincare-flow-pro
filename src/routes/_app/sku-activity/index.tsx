@@ -18,12 +18,13 @@ import { fmtDate } from "@/lib/utils";
 export const Route = createFileRoute("/_app/sku-activity/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
     const [comments, dispatches, skus] = await Promise.all([
-      api.skus.listAllComments(),
-      api.skus.listAllDispatches(),
-      api.skus.list(),
+      api.skus.listAllComments(sharedTeamId),
+      api.skus.listAllDispatches(sharedTeamId),
+      api.skus.list(undefined, undefined, sharedTeamId),
     ]);
-    return { comments, dispatches, skus };
+    return { comments, dispatches, skus, sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: SkuActivityPage,

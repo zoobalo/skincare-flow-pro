@@ -6,6 +6,13 @@ function authHeaders(): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function sharedQs(sharedTeamId?: string | null, extra?: URLSearchParams): string {
+  const q = extra ? new URLSearchParams(extra) : new URLSearchParams();
+  if (sharedTeamId) q.set("sharedTeamId", sharedTeamId);
+  const s = q.toString();
+  return s ? "?" + s : "";
+}
+
 async function get<T>(path: string): Promise<T> {
   if (typeof window === "undefined") return [] as unknown as T;
   const r = await fetch(BASE + path, { headers: authHeaders() });
@@ -243,6 +250,22 @@ export type ApiSample = {
   products: ApiSampleProduct[];
 };
 
+export type ApiShare = {
+  id: string; module: string; ownerTeamId: string;
+  granteeUserId: string; createdBy: string; createdAt: string;
+  granteeName?: string; granteeEmail?: string;
+};
+
+export type ApiGrant = {
+  id: string; module: string; ownerTeamId: string;
+  granteeUserId: string; createdBy: string; createdAt: string;
+  ownerTeamName: string; ownerDept: string;
+};
+
+export type ApiShareableUser = {
+  id: string; name: string; email: string; department: string; teamId: string; teamName: string;
+};
+
 export type DashboardResponse = {
   kpis: {
     totalPOs: number; pendingApprovals: number; activeProduction: number;
@@ -303,13 +326,13 @@ export const api = {
   },
 
   vendors: {
-    list: async () => (await get<any[]>("/vendors")).map(coerceVendor),
+    list: async (sharedTeamId?: string) => (await get<any[]>(`/vendors${sharedQs(sharedTeamId)}`)).map(coerceVendor),
     get: async (id: string) => {
       const v = await get<any>(`/vendors/${id}`);
       return { ...coerceVendor(v), purchaseOrders: (v.purchaseOrders ?? []).map(coercePo) } as ApiVendor & { purchaseOrders: ApiPo[] };
     },
-    create: (data: Partial<ApiVendor>) =>
-      fetch(`${BASE}/vendors`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    create: (data: Partial<ApiVendor>, sharedTeamId?: string) =>
+      fetch(`${BASE}/vendors${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiVendor>) =>
       fetch(`${BASE}/vendors/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
@@ -317,9 +340,9 @@ export const api = {
   },
 
   manufacturers: {
-    list: async () => (await get<any[]>("/manufacturers")).map(coerceManufacturer),
-    create: (data: Partial<ApiManufacturer>) =>
-      fetch(`${BASE}/manufacturers`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    list: async (sharedTeamId?: string) => (await get<any[]>(`/manufacturers${sharedQs(sharedTeamId)}`)).map(coerceManufacturer),
+    create: (data: Partial<ApiManufacturer>, sharedTeamId?: string) =>
+      fetch(`${BASE}/manufacturers${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiManufacturer>) =>
       fetch(`${BASE}/manufacturers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
@@ -327,12 +350,11 @@ export const api = {
   },
 
   skus: {
-    list: async (search?: string, category?: string) => {
+    list: async (search?: string, category?: string, sharedTeamId?: string) => {
       const q = new URLSearchParams();
       if (search)   q.set("search",   search);
       if (category) q.set("category", category);
-      const qs = q.toString();
-      return get<ApiSku[]>(`/skus${qs ? "?" + qs : ""}`);
+      return get<ApiSku[]>(`/skus${sharedQs(sharedTeamId, q)}`);
     },
     get: async (id: string) => {
       const s = await get<any>(`/skus/${id}`);
@@ -348,8 +370,8 @@ export const api = {
         importantLinks:    s.importantLinks ?? "[]",
       } as ApiSkuDetail;
     },
-    create: (data: Partial<ApiSku>) =>
-      fetch(`${BASE}/skus`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    create: (data: Partial<ApiSku>, sharedTeamId?: string) =>
+      fetch(`${BASE}/skus${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiSku>) =>
       fetch(`${BASE}/skus/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
@@ -385,8 +407,8 @@ export const api = {
       fetch(`${BASE}/skus/mft/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteMft: (id: string) =>
       fetch(`${BASE}/skus/mft/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
-    listAllComments: () => get<ApiSkuCommentWithSku[]>("/skus/all-comments"),
-    listAllDispatches: () => get<ApiSkuDispatchWithSku[]>("/skus/all-dispatches"),
+    listAllComments: (sharedTeamId?: string) => get<ApiSkuCommentWithSku[]>(`/skus/all-comments${sharedQs(sharedTeamId)}`),
+    listAllDispatches: (sharedTeamId?: string) => get<ApiSkuDispatchWithSku[]>(`/skus/all-dispatches${sharedQs(sharedTeamId)}`),
     listComments: (skuId: string) => get<ApiSkuComment[]>(`/skus/${skuId}/comments`),
     addComment: (skuId: string, comment: string) =>
       fetch(`${BASE}/skus/${skuId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ comment }) }).then((r) => r.json()),
@@ -459,9 +481,9 @@ export const api = {
   },
 
   directory: {
-    list: () => get<ApiDirectoryEntry[]>("/directory"),
-    create: (data: Partial<ApiDirectoryEntry>) =>
-      fetch(`${BASE}/directory`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    list: (sharedTeamId?: string) => get<ApiDirectoryEntry[]>(`/directory${sharedQs(sharedTeamId)}`),
+    create: (data: Partial<ApiDirectoryEntry>, sharedTeamId?: string) =>
+      fetch(`${BASE}/directory${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiDirectoryEntry>) =>
       fetch(`${BASE}/directory/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
@@ -479,9 +501,9 @@ export const api = {
   },
 
   tasks: {
-    list: () => get<ApiTask[]>("/tasks"),
-    create: (data: Partial<ApiTask>) =>
-      fetch(`${BASE}/tasks`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    list: (sharedTeamId?: string) => get<ApiTask[]>(`/tasks${sharedQs(sharedTeamId)}`),
+    create: (data: Partial<ApiTask>, sharedTeamId?: string) =>
+      fetch(`${BASE}/tasks${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiTask>) =>
       fetch(`${BASE}/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
@@ -495,9 +517,9 @@ export const api = {
   },
 
   mft: {
-    list: () => get<ApiMftNote[]>("/mft"),
-    create: (data: { skuId?: string | null; date: string; notes: string }) =>
-      fetch(`${BASE}/mft`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    list: (sharedTeamId?: string) => get<ApiMftNote[]>(`/mft${sharedQs(sharedTeamId)}`),
+    create: (data: { skuId?: string | null; date: string; notes: string }, sharedTeamId?: string) =>
+      fetch(`${BASE}/mft${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: { skuId?: string | null; date?: string; notes?: string }) =>
       fetch(`${BASE}/mft/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
@@ -505,9 +527,9 @@ export const api = {
   },
 
   artwork: {
-    list: () => get<ApiArtworkItem[]>("/artwork"),
-    create: (data: Partial<ApiArtworkItem>) =>
-      fetch(`${BASE}/artwork`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    list: (sharedTeamId?: string) => get<ApiArtworkItem[]>(`/artwork${sharedQs(sharedTeamId)}`),
+    create: (data: Partial<ApiArtworkItem>, sharedTeamId?: string) =>
+      fetch(`${BASE}/artwork${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiArtworkItem>) =>
       fetch(`${BASE}/artwork/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
@@ -520,9 +542,9 @@ export const api = {
   },
 
   followUps: {
-    list: () => get<(ApiFollowUpContact & { tasks: ApiFollowUpTask[] })[]>("/follow-ups"),
-    createContact: (data: Partial<ApiFollowUpContact>) =>
-      fetch(`${BASE}/follow-ups`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    list: (sharedTeamId?: string) => get<(ApiFollowUpContact & { tasks: ApiFollowUpTask[] })[]>(`/follow-ups${sharedQs(sharedTeamId)}`),
+    createContact: (data: Partial<ApiFollowUpContact>, sharedTeamId?: string) =>
+      fetch(`${BASE}/follow-ups${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     updateContact: (id: string, data: Partial<ApiFollowUpContact>) =>
       fetch(`${BASE}/follow-ups/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteContact: (id: string) =>
@@ -536,9 +558,9 @@ export const api = {
   },
 
   impLinks: {
-    list: () => get<ApiImpLink[]>("/imp-links"),
-    create: (data: Omit<ApiImpLink, "id" | "createdAt" | "updatedAt">) =>
-      fetch(`${BASE}/imp-links`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    list: (sharedTeamId?: string) => get<ApiImpLink[]>(`/imp-links${sharedQs(sharedTeamId)}`),
+    create: (data: Omit<ApiImpLink, "id" | "createdAt" | "updatedAt">, sharedTeamId?: string) =>
+      fetch(`${BASE}/imp-links${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiImpLink>) =>
       fetch(`${BASE}/imp-links/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
@@ -546,9 +568,9 @@ export const api = {
   },
 
   couriers: {
-    list: () => get<ApiCourier[]>("/couriers"),
-    create: (data: Omit<ApiCourier, "id" | "createdAt" | "updatedAt">) =>
-      fetch(`${BASE}/couriers`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    list: (sharedTeamId?: string) => get<ApiCourier[]>(`/couriers${sharedQs(sharedTeamId)}`),
+    create: (data: Omit<ApiCourier, "id" | "createdAt" | "updatedAt">, sharedTeamId?: string) =>
+      fetch(`${BASE}/couriers${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiCourier>) =>
       fetch(`${BASE}/couriers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
@@ -556,9 +578,9 @@ export const api = {
   },
 
   samples: {
-    list: () => get<ApiSample[]>("/samples"),
-    create: (data: { personName: string; purpose?: string; comment?: string; products: { productName: string; quantity: number }[] }) =>
-      fetch(`${BASE}/samples`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    list: (sharedTeamId?: string) => get<ApiSample[]>(`/samples${sharedQs(sharedTeamId)}`),
+    create: (data: { personName: string; purpose?: string; comment?: string; products: { productName: string; quantity: number }[] }, sharedTeamId?: string) =>
+      fetch(`${BASE}/samples${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
       fetch(`${BASE}/samples/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
     toggleReturn: (sampleId: string, productId: string) =>
@@ -566,6 +588,16 @@ export const api = {
     deleteProduct: (sampleId: string, productId: string) =>
       fetch(`${BASE}/samples/${sampleId}/products/${productId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
+};
+
+export const sharesApi = {
+  listMine:         () => get<ApiShare[]>("/shares"),
+  listMyGrants:     () => get<ApiGrant[]>("/shares/my-grants"),
+  availableUsers:   () => get<ApiShareableUser[]>("/shares/available-users"),
+  create:           (module: string, granteeUserId: string) =>
+    fetch(`${BASE}/shares`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ module, granteeUserId }) }).then((r) => r.json()),
+  delete:           (id: string) =>
+    fetch(`${BASE}/shares/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
 };
 
 export type ApiPendingUser = {

@@ -14,7 +14,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/courier/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    return api.couriers.list();
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    return { items: await api.couriers.list(sharedTeamId), sharedTeamId };
   },
   component: CourierPage,
   head: () => ({ meta: [{ title: "Courier — Zoobalo" }] }),
@@ -23,12 +24,12 @@ export const Route = createFileRoute("/_app/courier/")({
 function CourierPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <CourierContent items={data} />;
+  return <CourierContent items={data.items} sharedTeamId={data.sharedTeamId} />;
 }
 
 const EMPTY_FORM = { name: "", courierPartner: "", dispatchDate: "", docketNumber: "", comment: "" };
 
-function CourierContent({ items }: { items: ApiCourier[] }) {
+function CourierContent({ items, sharedTeamId }: { items: ApiCourier[]; sharedTeamId?: string }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 
@@ -83,7 +84,7 @@ function CourierContent({ items }: { items: ApiCourier[] }) {
         await api.couriers.update(editTarget.id, payload);
         toast.success("Courier updated.");
       } else {
-        await api.couriers.create(payload);
+        await api.couriers.create(payload, sharedTeamId);
         toast.success("Courier added.");
       }
       setSheetOpen(false);

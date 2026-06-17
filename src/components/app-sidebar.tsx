@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { isAdmin, getUser, getToken, saveSession } from "@/lib/auth";
 import { auth } from "@/lib/api";
+import { getGrants, type Grant, SHAREABLE_MODULES } from "@/lib/grants";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Factory, Boxes, PackageOpen, FlaskConical,
-  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, Palette, ClipboardList, PackageCheck, Link2, Activity, TestTube2,
+  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, Palette, ClipboardList, PackageCheck, Link2, Activity, TestTube2, Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -70,8 +71,9 @@ const nav = [
     { to: "/reports",   label: "Reports",   icon: FileBarChart },
   ]},
   { group: "Admin", items: [
-    { to: "/users",    label: "User Management", icon: UserCog, adminOnly: true },
-    { to: "/settings", label: "Settings",         icon: Settings                 },
+    { to: "/users",   label: "User Management", icon: UserCog, adminOnly: true },
+    { to: "/sharing", label: "Sharing",          icon: Share2,  adminOnly: true },
+    { to: "/settings", label: "Settings",        icon: Settings                 },
   ]},
 ] as const;
 
@@ -85,9 +87,11 @@ export function AppSidebar({ collapsed, mobileOpen, onMobileClose }: AppSidebarP
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [admin, setAdmin] = useState(false);
   const [dept,  setDept]  = useState<string | undefined>(undefined);
+  const [grants, setGrants] = useState<Grant[]>([]);
 
   useEffect(() => {
     setAdmin(isAdmin());
+    setGrants(getGrants());
     const stored = getUser();
     if (stored?.department) {
       setDept(stored.department);
@@ -174,6 +178,49 @@ export function AppSidebar({ collapsed, mobileOpen, onMobileClose }: AppSidebarP
             </div>
           );
         })}
+
+        {/* ── Shared access from other teams ── */}
+        {grants.length > 0 && (() => {
+          const moduleMap = Object.fromEntries(SHAREABLE_MODULES.map((m) => [m.key, m]));
+          return (
+            <div className="mb-3">
+              {(!collapsed || mobileOpen) && (
+                <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Shared with me</p>
+              )}
+              <ul className="space-y-0.5">
+                {grants.map((grant) => {
+                  const mod = moduleMap[grant.module];
+                  if (!mod) return null;
+                  const to = `${mod.to}?sharedTeamId=${encodeURIComponent(grant.ownerTeamId)}` as any;
+                  const active = pathname.startsWith(mod.to) && new URLSearchParams(window.location.search).get("sharedTeamId") === grant.ownerTeamId;
+                  return (
+                    <li key={grant.id}>
+                      <a
+                        href={to}
+                        onClick={(e) => { e.preventDefault(); window.location.href = to; onMobileClose(); }}
+                        className={cn(
+                          "group flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
+                          active
+                            ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        )}
+                        title={(collapsed && !mobileOpen) ? `${mod.label} (${grant.ownerTeamName})` : undefined}
+                      >
+                        <Share2 className="h-4 w-4 shrink-0 opacity-70" />
+                        {(!collapsed || mobileOpen) && (
+                          <span className="truncate flex-1">{mod.label}</span>
+                        )}
+                        {(!collapsed || mobileOpen) && (
+                          <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary uppercase tracking-wide">shared</span>
+                        )}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })()}
       </nav>
 
       {(!collapsed || mobileOpen) && (

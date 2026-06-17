@@ -16,7 +16,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/directory/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    return api.directory.list();
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    return { entries: await api.directory.list(sharedTeamId), sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: DirectoryPage,
@@ -52,10 +53,10 @@ const EMPTY: Omit<ApiDirectoryEntry, "id" | "createdAt" | "updatedAt"> = {
 function DirectoryPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <PageSkeleton />;
-  return <DirectoryContent items={loaderData} />;
+  return <DirectoryContent items={loaderData.entries} sharedTeamId={loaderData.sharedTeamId} />;
 }
 
-function DirectoryContent({ items }: { items: Awaited<ReturnType<typeof api.directory.list>> }) {
+function DirectoryContent({ items, sharedTeamId }: { items: Awaited<ReturnType<typeof api.directory.list>>; sharedTeamId?: string }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 
@@ -84,7 +85,7 @@ function DirectoryContent({ items }: { items: Awaited<ReturnType<typeof api.dire
     setSaving(true);
     try {
       if (editTarget) { await api.directory.update(editTarget.id, form); toast.success("Entry updated."); }
-      else            { await api.directory.create(form); toast.success("Entry added."); }
+      else            { await api.directory.create(form, sharedTeamId); toast.success("Entry added."); }
       setSheetOpen(false);
       await reload();
     } catch { toast.error("Failed to save."); } finally { setSaving(false); }

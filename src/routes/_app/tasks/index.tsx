@@ -17,8 +17,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/tasks/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const [tasks, skus] = await Promise.all([api.tasks.list(), api.skus.list()]);
-    return { tasks, skus };
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    const [tasks, skus] = await Promise.all([api.tasks.list(sharedTeamId), api.skus.list(undefined, undefined, sharedTeamId)]);
+    return { tasks, skus, sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: TasksPage,
@@ -50,10 +51,10 @@ const EMPTY: Omit<ApiTask, "id" | "createdAt" | "updatedAt"> = {
 function TasksPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <PageSkeleton />;
-  return <TasksContent tasks={loaderData.tasks} skus={loaderData.skus} />;
+  return <TasksContent tasks={loaderData.tasks} skus={loaderData.skus} sharedTeamId={loaderData.sharedTeamId} />;
 }
 
-function TasksContent({ tasks, skus }: { tasks: Awaited<ReturnType<typeof api.tasks.list>>; skus: Awaited<ReturnType<typeof api.skus.list>> }) {
+function TasksContent({ tasks, skus, sharedTeamId }: { tasks: Awaited<ReturnType<typeof api.tasks.list>>; skus: Awaited<ReturnType<typeof api.skus.list>>; sharedTeamId?: string }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 
@@ -108,7 +109,7 @@ function TasksContent({ tasks, skus }: { tasks: Awaited<ReturnType<typeof api.ta
         await api.tasks.update(editTarget.id, payload);
         toast.success("Task updated.");
       } else {
-        await api.tasks.create(payload);
+        await api.tasks.create(payload, sharedTeamId);
         toast.success("Task added.");
       }
       setSheetOpen(false);

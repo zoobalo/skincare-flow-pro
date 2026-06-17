@@ -3,12 +3,15 @@ import { getAllVendors, getVendorById, createVendor, updateVendor, deleteVendor 
 import { db } from "../../db/client.ts";
 import { purchaseOrders } from "../../db/schema/purchase-orders.ts";
 import { eq, count } from "drizzle-orm";
+import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const vendorRoutes = new Hono()
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    const data = await getAllVendors(user.teamId);
+    const teamId = await resolveTeamId(c, user, "vendors");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    const data = await getAllVendors(teamId);
     return c.json(data);
   })
   .get("/:id", async (c) => {
@@ -18,11 +21,13 @@ export const vendorRoutes = new Hono()
   })
   .post("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "vendors");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const body = await c.req.json();
     const [created] = await createVendor({
       ...body,
       id: crypto.randomUUID(),
-      teamId: user.teamId,
+      teamId,
       materials: Array.isArray(body.materials) ? body.materials : body.materials?.split(",").map((s: string) => s.trim()).filter(Boolean) ?? [],
     });
     return c.json(created, 201);

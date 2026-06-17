@@ -14,7 +14,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/imp-links/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    return api.impLinks.list();
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    return { items: await api.impLinks.list(sharedTeamId), sharedTeamId };
   },
   component: ImpLinksPage,
   head: () => ({ meta: [{ title: "IMP Links — Zoobalo" }] }),
@@ -23,12 +24,12 @@ export const Route = createFileRoute("/_app/imp-links/")({
 function ImpLinksPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <ImpLinksContent items={data} />;
+  return <ImpLinksContent items={data.items} sharedTeamId={data.sharedTeamId} />;
 }
 
 const EMPTY_FORM = { name: "", link: "", comment: "" };
 
-function ImpLinksContent({ items }: { items: ApiImpLink[] }) {
+function ImpLinksContent({ items, sharedTeamId }: { items: ApiImpLink[]; sharedTeamId?: string }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 
@@ -73,7 +74,7 @@ function ImpLinksContent({ items }: { items: ApiImpLink[] }) {
         await api.impLinks.update(editTarget.id, payload);
         toast.success("Link updated.");
       } else {
-        await api.impLinks.create(payload);
+        await api.impLinks.create(payload, sharedTeamId);
         toast.success("Link saved.");
       }
       setSheetOpen(false);

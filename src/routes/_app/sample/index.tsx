@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_app/sample/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    return { samples: await api.samples.list() };
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    return { samples: await api.samples.list(sharedTeamId), sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: SamplePage,
@@ -30,14 +31,14 @@ function fmtDate(iso: string) {
 function SamplePage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <SampleContent initialSamples={data.samples} />;
+  return <SampleContent initialSamples={data.samples} sharedTeamId={data.sharedTeamId} />;
 }
 
 type ProductRow = { productName: string; quantity: number };
 
 const EMPTY_PRODUCT: ProductRow = { productName: "", quantity: 1 };
 
-function SampleContent({ initialSamples }: { initialSamples: ApiSample[] }) {
+function SampleContent({ initialSamples, sharedTeamId }: { initialSamples: ApiSample[]; sharedTeamId?: string }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 
@@ -79,7 +80,7 @@ function SampleContent({ initialSamples }: { initialSamples: ApiSample[] }) {
         purpose: purpose.trim() || undefined,
         comment: comment.trim() || undefined,
         products: validProducts.map((r) => ({ productName: r.productName.trim(), quantity: Number(r.quantity) || 1 })),
-      });
+      }, sharedTeamId);
       if (created.error) { toast.error(created.error); return; }
       setSheetOpen(false);
       toast.success("Sample record added");

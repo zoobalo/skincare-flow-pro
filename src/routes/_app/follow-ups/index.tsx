@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_app/follow-ups/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    return { contacts: await api.followUps.list() };
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    return { contacts: await api.followUps.list(sharedTeamId), sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: FollowUpsPage,
@@ -30,10 +31,10 @@ const EMPTY_CONTACT = { name: "", phone: "", email: "", notes: "" };
 function FollowUpsPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <FollowUpsContent contacts={data.contacts} />;
+  return <FollowUpsContent contacts={data.contacts} sharedTeamId={data.sharedTeamId} />;
 }
 
-function FollowUpsContent({ contacts: initial }: { contacts: Contact[] }) {
+function FollowUpsContent({ contacts: initial, sharedTeamId }: { contacts: Contact[]; sharedTeamId?: string }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 
@@ -67,7 +68,7 @@ function FollowUpsContent({ contacts: initial }: { contacts: Contact[] }) {
         await api.followUps.updateContact(editing.id, form);
         toast.success("Contact updated");
       } else {
-        await api.followUps.createContact(form);
+        await api.followUps.createContact(form, sharedTeamId);
         toast.success("Contact added");
       }
       setSheetOpen(false);

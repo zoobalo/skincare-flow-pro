@@ -4,12 +4,15 @@ import { db } from "../../db/client.ts";
 import { skus } from "../../db/schema/skus.ts";
 import { productionBatches } from "../../db/schema/production.ts";
 import { eq, count } from "drizzle-orm";
+import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const manufacturerRoutes = new Hono()
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    const data = await getAllManufacturers(user.teamId);
+    const teamId = await resolveTeamId(c, user, "manufacturers");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    const data = await getAllManufacturers(teamId);
     return c.json(data);
   })
   .get("/:id", async (c) => {
@@ -19,8 +22,10 @@ export const manufacturerRoutes = new Hono()
   })
   .post("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "manufacturers");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const body = await c.req.json();
-    const [created] = await createManufacturer({ ...body, id: crypto.randomUUID(), teamId: user.teamId });
+    const [created] = await createManufacturer({ ...body, id: crypto.randomUUID(), teamId });
     return c.json(created, 201);
   })
   .patch("/:id", async (c) => {

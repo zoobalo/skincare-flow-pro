@@ -15,7 +15,8 @@ import type { ApiManufacturer, ApiContact } from "@/lib/api";
 export const Route = createFileRoute("/_app/manufacturers/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    return api.manufacturers.list();
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    return { manufacturers: await api.manufacturers.list(sharedTeamId), sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: ManufacturersPage,
@@ -150,10 +151,10 @@ function ManufacturerSheet({
 function ManufacturersPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <PageSkeleton />;
-  return <ManufacturersContent manufacturers={loaderData} />;
+  return <ManufacturersContent manufacturers={loaderData.manufacturers} sharedTeamId={loaderData.sharedTeamId} />;
 }
 
-function ManufacturersContent({ manufacturers: allManufacturers }: { manufacturers: Awaited<ReturnType<typeof api.manufacturers.list>> }) {
+function ManufacturersContent({ manufacturers: allManufacturers, sharedTeamId }: { manufacturers: Awaited<ReturnType<typeof api.manufacturers.list>>; sharedTeamId?: string }) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ApiManufacturer | null>(null);
@@ -173,7 +174,7 @@ function ManufacturersContent({ manufacturers: allManufacturers }: { manufacture
       reliability: Number(form.reliability),
       delayPercent: Number(form.delayPercent),
       activeBatches: 0,
-    });
+    }, sharedTeamId);
     toast.success(`Manufacturer "${form.name}" added.`);
     await router.invalidate();
   };

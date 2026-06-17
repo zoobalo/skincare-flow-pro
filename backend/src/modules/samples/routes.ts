@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { db } from "../../db/client.ts";
 import { samples, sampleProducts } from "../../db/schema/samples.ts";
 import { eq, desc, inArray } from "drizzle-orm";
+import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const sampleRoutes = new Hono()
@@ -9,8 +10,10 @@ export const sampleRoutes = new Hono()
   // ── List all samples with products ──────────────────────────────────────────
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "sample");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const allSamples = await db.select().from(samples)
-      .where(eq(samples.teamId, user.teamId))
+      .where(eq(samples.teamId, teamId))
       .orderBy(desc(samples.createdAt));
     if (!allSamples.length) return c.json([]);
     const sampleIds = allSamples.map((s) => s.id);
@@ -27,6 +30,8 @@ export const sampleRoutes = new Hono()
   // ── Create sample with products ─────────────────────────────────────────────
   .post("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "sample");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const { personName, purpose, comment, products: productList } = await c.req.json();
     if (!personName?.trim()) return c.json({ error: "Person name is required" }, 400);
     if (!Array.isArray(productList) || !productList.length)
@@ -35,7 +40,7 @@ export const sampleRoutes = new Hono()
     const [sample] = await db.insert(samples).values({
       id: crypto.randomUUID(), personName: personName.trim(),
       purpose: purpose?.trim() || null, comment: comment?.trim() || null,
-      teamId: user.teamId,
+      teamId,
     }).returning();
 
     const insertedProducts = await db.insert(sampleProducts).values(
@@ -45,7 +50,7 @@ export const sampleRoutes = new Hono()
         productName: p.productName?.trim() ?? "",
         quantity:    Number(p.quantity) || 1,
         returned:    false,
-        teamId:      user.teamId,
+        teamId,
       }))
     ).returning();
 

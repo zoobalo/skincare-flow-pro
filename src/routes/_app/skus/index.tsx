@@ -17,8 +17,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/skus/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const [skus, manufacturers] = await Promise.all([api.skus.list(), api.manufacturers.list()]);
-    return { skus, manufacturers };
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    const [skus, manufacturers] = await Promise.all([api.skus.list(undefined, undefined, sharedTeamId), api.manufacturers.list(sharedTeamId)]);
+    return { skus, manufacturers, sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: SkuListPage,
@@ -37,12 +38,13 @@ const EMPTY_FORM = {
 function SkuListPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <PageSkeleton />;
-  return <SkuListContent skus={loaderData.skus} manufacturers={loaderData.manufacturers} />;
+  return <SkuListContent skus={loaderData.skus} manufacturers={loaderData.manufacturers} sharedTeamId={loaderData.sharedTeamId} />;
 }
 
-function SkuListContent({ skus, manufacturers }: {
+function SkuListContent({ skus, manufacturers, sharedTeamId }: {
   skus: Awaited<ReturnType<typeof api.skus.list>>;
   manufacturers: Awaited<ReturnType<typeof api.manufacturers.list>>;
+  sharedTeamId?: string;
 }) {
   const router = useRouter();
   const [view, setView] = useState<"grid" | "table">("grid");
@@ -98,7 +100,7 @@ function SkuListContent({ skus, manufacturers }: {
         currentInventory: Number(form.currentInventory),
         minThreshold: Number(form.minThreshold),
         productionTimelineDays: Number(form.productionTimelineDays),
-      });
+      }, sharedTeamId);
       toast.success(`SKU "${form.name}" created.`);
       setOpen(false);
       setForm({ ...EMPTY_FORM, manufacturerId: manufacturers[0]?.id ?? "" });

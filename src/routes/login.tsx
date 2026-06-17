@@ -4,8 +4,9 @@ import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { auth } from "@/lib/api";
+import { auth, sharesApi } from "@/lib/api";
 import { saveSession, getToken, getHomeRoute } from "@/lib/auth";
+import { saveGrants } from "@/lib/grants";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -36,6 +37,8 @@ function LoginPage() {
       const res = await auth.login(email, password);
       if (res.error) { setError(res.error); return; }
       saveSession(res.token, res.user);
+      // Fetch and store cross-team grants for this user
+      sharesApi.listMyGrants().then(saveGrants).catch(() => {});
       navigate({ to: getHomeRoute(res.user) });
     } catch {
       setError("Unable to connect. Please try again.");
