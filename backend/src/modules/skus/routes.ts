@@ -13,7 +13,7 @@ export const skuRoutes = new Hono()
   // Must be before /:id to avoid being matched as skuId
   .get("/all-comments", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    const teamId = await resolveTeamId(c, user, "skus");
+    const teamId = await resolveTeamId(c, user, ["skus", "sku-activity"]);
     if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const teamSkus = await db.select({ id: skus.id, code: skus.code, name: skus.name })
       .from(skus).where(eq(skus.teamId, teamId));
@@ -31,7 +31,7 @@ export const skuRoutes = new Hono()
   })
   .get("/all-dispatches", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    const teamId = await resolveTeamId(c, user, "skus");
+    const teamId = await resolveTeamId(c, user, ["skus", "sku-activity"]);
     if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const teamSkus = await db.select({ id: skus.id, code: skus.code, name: skus.name })
       .from(skus).where(eq(skus.teamId, teamId));
