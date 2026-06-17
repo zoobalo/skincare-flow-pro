@@ -37,8 +37,11 @@ function LoginPage() {
       const res = await auth.login(email, password);
       if (res.error) { setError(res.error); return; }
       saveSession(res.token, res.user);
-      // Fetch and store cross-team grants for this user
-      sharesApi.listMyGrants().then((g) => saveGrants(Array.isArray(g) ? g : [])).catch(() => {});
+      // Fetch grants before navigating so sidebar has them on first render
+      try {
+        const g = await sharesApi.listMyGrants();
+        saveGrants(Array.isArray(g) ? g : []);
+      } catch {}
       navigate({ to: getHomeRoute(res.user) });
     } catch {
       setError("Unable to connect. Please try again.");
