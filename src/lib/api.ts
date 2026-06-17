@@ -232,6 +232,17 @@ export type ApiCourier = {
   docketNumber: string; comment: string | null; createdAt: string; updatedAt: string;
 };
 
+export type ApiSampleProduct = {
+  id: string; sampleId: string; productName: string; quantity: number;
+  returned: boolean; returnedAt: string | null; teamId: string; createdAt: string;
+};
+
+export type ApiSample = {
+  id: string; personName: string; purpose: string | null; comment: string | null;
+  teamId: string; createdAt: string;
+  products: ApiSampleProduct[];
+};
+
 export type DashboardResponse = {
   kpis: {
     totalPOs: number; pendingApprovals: number; activeProduction: number;
@@ -542,6 +553,18 @@ export const api = {
       fetch(`${BASE}/couriers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
       fetch(`${BASE}/couriers/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+  },
+
+  samples: {
+    list: () => get<ApiSample[]>("/samples"),
+    create: (data: { personName: string; purpose?: string; comment?: string; products: { productName: string; quantity: number }[] }) =>
+      fetch(`${BASE}/samples`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/samples/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    toggleReturn: (sampleId: string, productId: string) =>
+      fetch(`${BASE}/samples/${sampleId}/products/${productId}/return`, { method: "PATCH", headers: authHeaders() }).then((r) => r.json()),
+    deleteProduct: (sampleId: string, productId: string) =>
+      fetch(`${BASE}/samples/${sampleId}/products/${productId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 };
 

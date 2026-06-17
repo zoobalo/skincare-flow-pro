@@ -4,7 +4,7 @@ import { isAdmin, getUser, getToken, saveSession } from "@/lib/auth";
 import { auth } from "@/lib/api";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Factory, Boxes, PackageOpen, FlaskConical,
-  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, Palette, ClipboardList, PackageCheck, Link2, Activity,
+  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, Palette, ClipboardList, PackageCheck, Link2, Activity, TestTube2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +42,7 @@ const nav = [
     { to: "/reimburse",    label: "Reimburse",        icon: ReceiptText  },
     { to: "/courier",      label: "Courier",          icon: PackageCheck },
     { to: "/sku-activity", label: "SKU Activity",     icon: Activity     },
+    { to: "/sample",       label: "Sample",            icon: TestTube2    },
   ]},
   { group: "NPD", items: [
     { to: "/npd", label: "New Product Development", icon: Beaker },
