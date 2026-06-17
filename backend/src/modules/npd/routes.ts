@@ -1,17 +1,22 @@
 import { Hono } from "hono";
 import { getAllNpd, createNpd, updateNpd, deleteNpd } from "./queries.ts";
+import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const npdRoutes = new Hono()
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    return c.json(await getAllNpd(user.teamId));
+    const teamId = await resolveTeamId(c, user, "npd");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    return c.json(await getAllNpd(teamId));
   })
   .post("/", async (c) => {
     try {
       const user = c.get("user" as never) as JWTPayload;
+      const teamId = await resolveTeamId(c, user, "npd");
+      if (!teamId) return c.json({ error: "Forbidden" }, 403);
       const { name, launchMonth, rmStatus, pmStatus, images, comments } = await c.req.json();
-      const [created] = await createNpd({ id: crypto.randomUUID(), name, launchMonth: launchMonth ?? null, rmStatus: rmStatus ?? "", pmStatus: pmStatus ?? "", images: images ?? [], comments: comments ?? "", teamId: user.teamId });
+      const [created] = await createNpd({ id: crypto.randomUUID(), name, launchMonth: launchMonth ?? null, rmStatus: rmStatus ?? "", pmStatus: pmStatus ?? "", images: images ?? [], comments: comments ?? "", teamId });
       return c.json(created, 201);
     } catch (err: any) {
       return c.json({ error: err?.message ?? "Failed to create NPD" }, 500);

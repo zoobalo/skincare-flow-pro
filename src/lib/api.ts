@@ -471,9 +471,9 @@ export const api = {
   },
 
   npd: {
-    list: () => get<ApiNpd[]>("/npd"),
-    create: (data: Partial<ApiNpd>) =>
-      fetch(`${BASE}/npd`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    list: (sharedTeamId?: string) => get<ApiNpd[]>(`/npd${sharedQs(sharedTeamId)}`),
+    create: (data: Partial<ApiNpd>, sharedTeamId?: string) =>
+      fetch(`${BASE}/npd${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     update: (id: string, data: Partial<ApiNpd>) =>
       fetch(`${BASE}/npd/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>

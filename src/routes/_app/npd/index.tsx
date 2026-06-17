@@ -15,7 +15,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/npd/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    return api.npd.list();
+    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
+    return { items: await api.npd.list(sharedTeamId), sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: NpdPage,
@@ -196,10 +197,10 @@ function Lightbox({ lightbox, onClose, onPrev, onNext }: {
 function NpdPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <PageSkeleton />;
-  return <NpdContent rawItems={loaderData} />;
+  return <NpdContent rawItems={loaderData.items} sharedTeamId={loaderData.sharedTeamId} />;
 }
 
-function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.list>> }) {
+function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeamId?: string }) {
   const [search, setSearch] = useState("");
   const allItems = rawItems.map((item) => ({ ...item, images: normalizeImageGroups(item.images) }));
   const items = allItems.filter((item) => {
@@ -238,7 +239,7 @@ function NpdContent({ rawItems }: { rawItems: Awaited<ReturnType<typeof api.npd.
         await api.npd.update(editTarget.id, payload);
         toast.success("NPD updated.");
       } else {
-        await api.npd.create(payload);
+        await api.npd.create(payload, sharedTeamId);
         toast.success("NPD added.");
       }
       setSheetOpen(false);

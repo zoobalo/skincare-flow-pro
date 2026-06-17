@@ -18,6 +18,7 @@ export const SHAREABLE_MODULES = [
   { key: "mft",           label: "MFT",                to: "/mft"           },
   { key: "courier",       label: "Courier",            to: "/courier"       },
   { key: "sku-activity",  label: "SKU Activity",       to: "/sku-activity"  },
+  { key: "npd",           label: "New Product Development", to: "/npd"      },
   { key: "sample",        label: "Sample",             to: "/sample"        },
   { key: "directory",     label: "Directory",          to: "/directory"     },
   { key: "vendors",       label: "Vendors",            to: "/vendors"       },
