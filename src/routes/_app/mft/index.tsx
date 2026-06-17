@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_app/mft/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
     const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
-    const [notes, skus] = await Promise.all([api.mft.list(sharedTeamId), api.skus.list(undefined, undefined, sharedTeamId)]);
+    const [notes, skus] = await Promise.all([api.mft.list(sharedTeamId), api.skus.list()]);
     return { notes, skus, sharedTeamId };
   },
   pendingComponent: PageSkeleton,

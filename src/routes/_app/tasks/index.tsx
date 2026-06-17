@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_app/tasks/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
     const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
-    const [tasks, skus] = await Promise.all([api.tasks.list(sharedTeamId), api.skus.list(undefined, undefined, sharedTeamId)]);
+    const [tasks, skus] = await Promise.all([api.tasks.list(sharedTeamId), api.skus.list()]);
     return { tasks, skus, sharedTeamId };
   },
   pendingComponent: PageSkeleton,
