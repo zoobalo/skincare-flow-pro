@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { api, ApiCourier } from "@/lib/api";
-import { Plus, Pencil, Trash2, Package, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, Search, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/courier/")({
@@ -20,6 +20,36 @@ export const Route = createFileRoute("/_app/courier/")({
   component: CourierPage,
   head: () => ({ meta: [{ title: "Courier — Zoobalo" }] }),
 });
+
+// Tracking URL templates — {n} is replaced with the docket number.
+// Falls back to a Google search for any unrecognised partner.
+const TRACKING_URLS: [string, string][] = [
+  ["delhivery",       "https://www.delhivery.com/track/package/{n}"],
+  ["bluedart",        "https://www.bluedart.com/tracking?trackfor={n}"],
+  ["blue dart",       "https://www.bluedart.com/tracking?trackfor={n}"],
+  ["dtdc",            "https://www.dtdc.in/tracking.asp?TrkType=A&strCnno={n}"],
+  ["fedex",           "https://www.fedex.com/fedextrack/?trknbr={n}"],
+  ["dhl",             "https://www.dhl.com/in-en/home/tracking.html?tracking-id={n}"],
+  ["shadowfax",       "https://tracker.shadowfax.in/?waybill={n}"],
+  ["xpressbees",      "https://www.xpressbees.com/track?awbNo={n}"],
+  ["xpress bees",     "https://www.xpressbees.com/track?awbNo={n}"],
+  ["ecom express",    "https://ecomexpress.in/tracking/?awb_field={n}"],
+  ["ekart",           "https://ekart.com/tracking/?tracking_id={n}"],
+  ["gati",            "https://gati.com/track.html?cn={n}"],
+  ["safexpress",      "https://www.safexpress.com/track-consignment/?cn={n}"],
+  ["professional courier", "https://www.tpcindia.com/track-your-shipment/{n}"],
+  ["rivigo",          "https://rivigo.com/tracking/?awb={n}"],
+];
+
+function getTrackingUrl(courierPartner: string, docketNumber: string): string {
+  const key = courierPartner.toLowerCase().trim();
+  for (const [name, template] of TRACKING_URLS) {
+    if (key.includes(name)) {
+      return template.replace("{n}", encodeURIComponent(docketNumber));
+    }
+  }
+  return `https://www.google.com/search?q=${encodeURIComponent(courierPartner + " tracking " + docketNumber)}`;
+}
 
 function CourierPage() {
   const data = Route.useLoaderData();
@@ -170,6 +200,13 @@ function CourierContent({ items, sharedTeamId }: { items: ApiCourier[]; sharedTe
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
+                      <Button
+                        size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs"
+                        onClick={() => window.open(getTrackingUrl(item.courierPartner, item.docketNumber), "_blank")}
+                        title="Track shipment"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Track
+                      </Button>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(item)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
