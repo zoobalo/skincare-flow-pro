@@ -103,6 +103,10 @@ function SkuActivityContent({
   const skusWithoutComments = skus.filter((s) => !commentsBySkuId[s.id]?.length);
   const allSkusForComment = [...skusWithComments, ...skusWithoutComments];
 
+  const skusWithDispatches = skus.filter((s) => dispatchesBySkuId[s.id]?.length);
+  const skusWithoutDispatches = skus.filter((s) => !dispatchesBySkuId[s.id]?.length);
+  const allSkusForDispatch = [...skusWithDispatches, ...skusWithoutDispatches];
+
   const sendComment = async (skuId: string) => {
     const text = (newComments[skuId] ?? "").trim();
     if (!text) return;
@@ -334,7 +338,7 @@ function SkuActivityContent({
               No SKUs found. Add SKUs first to track dispatches.
             </div>
           ) : (
-            skus.map((sku) => {
+            allSkusForDispatch.map((sku) => {
               const dispatches: ApiSkuDispatchWithSku[] = dispatchesBySkuId[sku.id] ?? [];
               const expanded = expandedDispatchSkus[sku.id] ?? dispatches.length > 0;
               return (
