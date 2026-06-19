@@ -31,10 +31,11 @@ export const Route = createFileRoute("/_app/sku-activity/")({
   head: () => ({ meta: [{ title: "SKU Activity — Zoobalo" }] }),
 });
 
-const DISPATCH_STATUSES = ["Dispatched", "In Transit", "Delivered", "Delayed"] as const;
+const DISPATCH_STATUSES = ["Planned", "Dispatched", "In Transit", "Delivered", "Delayed"] as const;
 const GOODS_TYPES = ["Final Goods", "Packaging Material"] as const;
 
 const STATUS_STYLE: Record<string, string> = {
+  Planned:     "bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400",
   Dispatched:  "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400",
   "In Transit":"bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
   Delivered:   "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400",

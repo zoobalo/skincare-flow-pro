@@ -90,7 +90,7 @@ export type ApiSkuDispatch = {
   goodsName: string; quantity: number; dispatchDate: string;
   from: string; to: string;
   transporterName: string; vehicleNumber: string; lrNumber: string; freight: number;
-  status: "Dispatched" | "In Transit" | "Delivered" | "Delayed";
+  status: "Planned" | "Dispatched" | "In Transit" | "Delivered" | "Delayed";
   notes: string; createdAt: string; updatedAt: string;
 };
 
