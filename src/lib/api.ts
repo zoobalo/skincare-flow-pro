@@ -109,8 +109,11 @@ export type ApiSkuDetail = ApiSku & {
   dispatches: ApiSkuDispatch[];
 };
 
+export type VendorStatus = "Currently Working" | "Worked Before" | "Never Worked";
+
 export type ApiPackagingItem = {
   id: string; skuId: string; name: string; vendorId: string;
+  vendorStatus: VendorStatus;
   moq: number; leadTimeDays: number; currentStock: number; transitStock: number;
   transitDeliveryDate: string | null;
   costPerUnit: number; lastPurchaseDate: string | null;
@@ -119,6 +122,7 @@ export type ApiPackagingItem = {
 
 export type ApiRawMaterial = {
   id: string; skuId: string; name: string; vendorId: string;
+  vendorStatus: VendorStatus;
   qtyPerUnit: number; unit: string; currentStock: number; costPerUnit: number;
   sku?: { id: string; code: string; name: string };
 };
@@ -351,11 +355,11 @@ function coerceShipment(s: any): ApiShipment {
 }
 
 function coercePackaging(p: any): ApiPackagingItem {
-  return { ...p, costPerUnit: parseNum(p.costPerUnit) };
+  return { ...p, costPerUnit: parseNum(p.costPerUnit), vendorStatus: p.vendorStatus ?? "Currently Working" };
 }
 
 function coerceRawMaterial(r: any): ApiRawMaterial {
-  return { ...r, qtyPerUnit: parseNum(r.qtyPerUnit), currentStock: parseNum(r.currentStock), costPerUnit: parseNum(r.costPerUnit) };
+  return { ...r, qtyPerUnit: parseNum(r.qtyPerUnit), currentStock: parseNum(r.currentStock), costPerUnit: parseNum(r.costPerUnit), vendorStatus: r.vendorStatus ?? "Currently Working" };
 }
 
 function coerceManufacturer(m: any): ApiManufacturer {

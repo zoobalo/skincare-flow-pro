@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
-import { api } from "@/lib/api";
+import { api, type VendorStatus } from "@/lib/api";
 import { fmtDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,7 +14,7 @@ import { AlertTriangle, ArrowLeft, ChevronRight, Edit, ExternalLink, Eye, Plus, 
 import { ImageUpload } from "@/components/image-upload";
 import { ProgressRail } from "@/components/progress-rail";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/skus/$skuId")({
@@ -187,6 +187,39 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
       setLinks((prev) => prev.filter((l) => l.id !== id));
       toast.success("Link deleted.");
     } catch { toast.error("Failed to delete."); }
+  };
+
+  // Local packaging + raw material state (for optimistic vendor status updates)
+  const [localPackaging, setLocalPackaging] = useState(sku.packaging);
+  const [localRm, setLocalRm] = useState(sku.rawMaterials);
+  useEffect(() => { setLocalPackaging(sku.packaging); }, [sku.packaging]);
+  useEffect(() => { setLocalRm(sku.rawMaterials); }, [sku.rawMaterials]);
+
+  const VENDOR_STATUS_CYCLE: VendorStatus[] = ["Currently Working", "Worked Before", "Never Worked"];
+  const VENDOR_STATUS_STYLE: Record<VendorStatus, string> = {
+    "Currently Working": "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 border-green-200 dark:border-green-800",
+    "Worked Before":     "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800",
+    "Never Worked":      "bg-muted text-muted-foreground border-border",
+  };
+
+  const cyclePackagingVendorStatus = async (p: typeof localPackaging[0]) => {
+    const next = VENDOR_STATUS_CYCLE[(VENDOR_STATUS_CYCLE.indexOf(p.vendorStatus) + 1) % 3];
+    setLocalPackaging((prev) => prev.map((x) => x.id === p.id ? { ...x, vendorStatus: next } : x));
+    try { await api.skus.updatePackaging(p.id, { vendorStatus: next }); }
+    catch {
+      setLocalPackaging((prev) => prev.map((x) => x.id === p.id ? { ...x, vendorStatus: p.vendorStatus } : x));
+      toast.error("Failed to update vendor status.");
+    }
+  };
+
+  const cycleRmVendorStatus = async (rm: typeof localRm[0]) => {
+    const next = VENDOR_STATUS_CYCLE[(VENDOR_STATUS_CYCLE.indexOf(rm.vendorStatus) + 1) % 3];
+    setLocalRm((prev) => prev.map((x) => x.id === rm.id ? { ...x, vendorStatus: next } : x));
+    try { await api.skus.updateRawMaterial(rm.id, { vendorStatus: next }); }
+    catch {
+      setLocalRm((prev) => prev.map((x) => x.id === rm.id ? { ...x, vendorStatus: rm.vendorStatus } : x));
+      toast.error("Failed to update vendor status.");
+    }
   };
 
   // Edit Packaging sheet
@@ -459,19 +492,28 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
             <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No packaging materials yet. Click "Add Packaging Material" to get started.</div>
           )}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {sku.packaging.map((p) => (
+            {localPackaging.map((p) => (
               <div key={p.id} className="rounded-xl border bg-card p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
+                  <div className="min-w-0">
                     <h4 className="text-sm font-semibold">{p.name}</h4>
                     <span className="text-xs text-muted-foreground">{vendors.find(v => v.id === p.vendorId)?.name ?? p.vendorId}</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     <div className="text-right text-xs text-muted-foreground">MOQ<br /><span className="font-semibold tabular-nums text-foreground">{p.moq.toLocaleString()}</span></div>
                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditPack(p)}><Edit className="h-3.5 w-3.5" /></Button>
                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deletePackaging(p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                   </div>
                 </div>
+                {/* Vendor status badge — click to cycle */}
+                <button
+                  type="button"
+                  onClick={() => cyclePackagingVendorStatus(p)}
+                  title="Click to change vendor status"
+                  className={`mt-2 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-opacity hover:opacity-75 ${VENDOR_STATUS_STYLE[p.vendorStatus]}`}
+                >
+                  {p.vendorStatus}
+                </button>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                   <div><div className="text-muted-foreground">Current stock</div><div className="font-semibold tabular-nums">{p.currentStock.toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">Transit</div><div className="font-semibold tabular-nums">{p.transitStock.toLocaleString()}</div></div>
@@ -495,19 +537,36 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
           <div className="mb-3 flex justify-end">
             <Button size="sm" onClick={() => setRmOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Add Raw Material</Button>
           </div>
-          {sku.rawMaterials.length === 0 && (
+          {localRm.length === 0 && (
             <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No raw materials yet. Click "Add Raw Material" to get started.</div>
           )}
           <div className="overflow-x-auto rounded-xl border bg-card">
-            {sku.rawMaterials.length > 0 && (
+            {localRm.length > 0 && (
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr><th className="px-4 py-2.5 font-medium">Material</th><th className="px-4 py-2.5 font-medium text-right">Qty / unit</th><th className="px-4 py-2.5 font-medium text-right">Stock</th><th className="px-4 py-2.5 font-medium text-right">Cost</th><th className="px-4 py-2.5 font-medium w-20"></th></tr>
+                  <tr>
+                    <th className="px-4 py-2.5 font-medium">Material</th>
+                    <th className="px-4 py-2.5 font-medium">Status</th>
+                    <th className="px-4 py-2.5 font-medium text-right">Qty / unit</th>
+                    <th className="px-4 py-2.5 font-medium text-right">Stock</th>
+                    <th className="px-4 py-2.5 font-medium text-right">Cost</th>
+                    <th className="px-4 py-2.5 font-medium w-20"></th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {sku.rawMaterials.map((rm) => (
+                  {localRm.map((rm) => (
                     <tr key={rm.id} className="border-t">
                       <td className="px-4 py-2.5 font-medium">{rm.name}</td>
+                      <td className="px-4 py-2.5">
+                        <button
+                          type="button"
+                          onClick={() => cycleRmVendorStatus(rm)}
+                          title="Click to change vendor status"
+                          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-opacity hover:opacity-75 ${VENDOR_STATUS_STYLE[rm.vendorStatus]}`}
+                        >
+                          {rm.vendorStatus}
+                        </button>
+                      </td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{rm.qtyPerUnit} {rm.unit}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{rm.currentStock} {rm.unit}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">₹{rm.costPerUnit}</td>
