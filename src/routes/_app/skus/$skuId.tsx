@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, ArrowLeft, ChevronRight, Edit, Eye, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronRight, Edit, ExternalLink, Eye, Plus, Trash2 } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { ProgressRail } from "@/components/progress-rail";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
@@ -33,11 +33,12 @@ export const Route = createFileRoute("/_app/skus/$skuId")({
       if (typeof window === "undefined") return null;
       throw notFound();
     }
-    const [mftNotes, comments] = await Promise.all([
+    const [mftNotes, comments, links] = await Promise.all([
       api.skus.listMft(params.skuId),
       api.skus.listComments(params.skuId),
+      api.skus.listLinks(params.skuId),
     ]);
-    return { sku, manufacturers, vendors, allPackaging, allRawMaterials, mftNotes, comments };
+    return { sku, manufacturers, vendors, allPackaging, allRawMaterials, mftNotes, comments, links };
   },
   component: SkuDetailPage,
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.sku?.name ?? "SKU"} — Zoobalo` }] }),
@@ -71,10 +72,10 @@ function getDelayDays(batch: { expectedCompletion: string; currentStage: string 
 function SkuDetailPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <div className="flex items-center justify-center p-20 text-muted-foreground text-sm">Loading…</div>;
-  return <SkuDetailContent sku={loaderData.sku} manufacturers={loaderData.manufacturers} vendors={loaderData.vendors} allPackaging={loaderData.allPackaging} allRawMaterials={loaderData.allRawMaterials} mftNotes={loaderData.mftNotes} comments={loaderData.comments} />;
+  return <SkuDetailContent sku={loaderData.sku} manufacturers={loaderData.manufacturers} vendors={loaderData.vendors} allPackaging={loaderData.allPackaging} allRawMaterials={loaderData.allRawMaterials} mftNotes={loaderData.mftNotes} comments={loaderData.comments} links={loaderData.links} />;
 }
 
-function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMaterials, mftNotes, comments }: { sku: import("@/lib/api").ApiSkuDetail; manufacturers: import("@/lib/api").ApiManufacturer[]; vendors: import("@/lib/api").ApiVendor[]; allPackaging: import("@/lib/api").ApiPackagingItem[]; allRawMaterials: import("@/lib/api").ApiRawMaterial[]; mftNotes: import("@/lib/api").ApiMftNote[]; comments: import("@/lib/api").ApiSkuComment[] }) {
+function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMaterials, mftNotes, comments, links: initialLinks }: { sku: import("@/lib/api").ApiSkuDetail; manufacturers: import("@/lib/api").ApiManufacturer[]; vendors: import("@/lib/api").ApiVendor[]; allPackaging: import("@/lib/api").ApiPackagingItem[]; allRawMaterials: import("@/lib/api").ApiRawMaterial[]; mftNotes: import("@/lib/api").ApiMftNote[]; comments: import("@/lib/api").ApiSkuComment[]; links: import("@/lib/api").ApiSkuLink[] }) {
   const router = useRouter();
   const navigate = useNavigate();
   const mfg = sku.manufacturer;
@@ -139,6 +140,54 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
   const [commentSaving, setCommentSaving] = useState(false);
   const [editCommentId, setEditCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
+
+  // Links
+  const [links, setLinks] = useState(initialLinks);
+  const [linkSheetOpen, setLinkSheetOpen] = useState(false);
+  const [editLink, setEditLink] = useState<import("@/lib/api").ApiSkuLink | null>(null);
+  const [linkForm, setLinkForm] = useState({ title: "", link: "", comment: "" });
+  const [linkSaving, setLinkSaving] = useState(false);
+
+  const openAddLink = () => {
+    setEditLink(null);
+    setLinkForm({ title: "", link: "", comment: "" });
+    setLinkSheetOpen(true);
+  };
+
+  const openEditLink = (l: import("@/lib/api").ApiSkuLink) => {
+    setEditLink(l);
+    setLinkForm({ title: l.title, link: l.link, comment: l.comment });
+    setLinkSheetOpen(true);
+  };
+
+  const saveLink = async () => {
+    if (!linkForm.title.trim() || !linkForm.link.trim()) { toast.error("Title and link are required."); return; }
+    let url = linkForm.link.trim();
+    if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+    setLinkSaving(true);
+    try {
+      if (editLink) {
+        const updated = await api.skus.updateLink(editLink.id, { title: linkForm.title.trim(), link: url, comment: linkForm.comment.trim() });
+        setLinks((prev) => prev.map((l) => l.id === editLink.id ? updated : l));
+        toast.success("Link updated.");
+      } else {
+        const created = await api.skus.addLink(sku.id, { title: linkForm.title.trim(), link: url, comment: linkForm.comment.trim() });
+        setLinks((prev) => [...prev, created]);
+        toast.success("Link added.");
+      }
+      setLinkSheetOpen(false);
+    } catch { toast.error("Failed to save link."); }
+    finally { setLinkSaving(false); }
+  };
+
+  const deleteLink = async (id: string) => {
+    if (!confirm("Delete this link?")) return;
+    try {
+      await api.skus.deleteLink(id);
+      setLinks((prev) => prev.filter((l) => l.id !== id));
+      toast.success("Link deleted.");
+    } catch { toast.error("Failed to delete."); }
+  };
 
   // Edit Packaging sheet
   const [editPackOpen, setEditPackOpen] = useState(false);
@@ -359,6 +408,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
           <TabsTrigger value="dispatch">Dispatch ({(sku as any).dispatches?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="mft">MFT ({mftNotes.length})</TabsTrigger>
           <TabsTrigger value="comments">Comments ({comments.length})</TabsTrigger>
+          <TabsTrigger value="links">Links ({links.length})</TabsTrigger>
         </TabsList>
 
         {/* ── Product Details ── */}
@@ -812,7 +862,97 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
             ))}
           </div>
         </TabsContent>
+
+        {/* ── Links ── */}
+        <TabsContent value="links" className="mt-4">
+          <div className="mb-4 flex justify-end">
+            <Button size="sm" onClick={openAddLink}>
+              <Plus className="mr-1.5 h-4 w-4" /> Add Link
+            </Button>
+          </div>
+
+          {links.length === 0 && (
+            <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
+              No links saved yet. Add one above.
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {links.map((l) => (
+              <div key={l.id} className="group rounded-xl border bg-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm">{l.title}</p>
+                    <a
+                      href={l.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 flex items-center gap-1 text-xs text-primary hover:underline break-all"
+                    >
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                      <span className="line-clamp-1">{l.link}</span>
+                    </a>
+                    {l.comment && (
+                      <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{l.comment}</p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditLink(l)}>
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deleteLink(l.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* ── Links Sheet ── */}
+      <Sheet open={linkSheetOpen} onOpenChange={setLinkSheetOpen}>
+        <SheetContent className="overflow-y-auto sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>{editLink ? "Edit Link" : "Add Link"}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-1.5">
+              <Label>Title <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="e.g. Regulatory Filing, Supplier Spec Sheet"
+                value={linkForm.title}
+                onChange={(e) => setLinkForm((f) => ({ ...f, title: e.target.value }))}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Link <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="https://example.com"
+                value={linkForm.link}
+                onChange={(e) => setLinkForm((f) => ({ ...f, link: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Comment</Label>
+              <Textarea
+                placeholder="Any notes about this link…"
+                rows={3}
+                value={linkForm.comment}
+                onChange={(e) => setLinkForm((f) => ({ ...f, comment: e.target.value }))}
+              />
+            </div>
+          </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setLinkSheetOpen(false)}>Cancel</Button>
+            <Button onClick={saveLink} disabled={linkSaving}>
+              {linkSaving ? "Saving…" : editLink ? "Save Changes" : "Add Link"}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* ── MFT Sheet ── */}
       <Sheet open={mftOpen} onOpenChange={setMftOpen}>

@@ -208,6 +208,10 @@ export type ApiSkuComment = {
 export type ApiSkuCommentWithSku = ApiSkuComment & { skuCode: string; skuName: string };
 export type ApiSkuDispatchWithSku = ApiSkuDispatch & { skuCode: string; skuName: string };
 
+export type ApiSkuLink = {
+  id: string; skuId: string; title: string; link: string; comment: string; createdAt: string;
+};
+
 export type ApiMftNote = {
   id: string; skuId: string | null; date: string; notes: string; createdAt: string;
 };
@@ -441,6 +445,13 @@ export const api = {
       fetch(`${BASE}/skus/comments/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ comment }) }).then((r) => r.json()),
     deleteComment: (id: string) =>
       fetch(`${BASE}/skus/comments/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    listLinks: (skuId: string) => get<ApiSkuLink[]>(`/skus/${skuId}/links`),
+    addLink: (skuId: string, data: { title: string; link: string; comment?: string }) =>
+      fetch(`${BASE}/skus/${skuId}/links`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateLink: (id: string, data: { title?: string; link?: string; comment?: string }) =>
+      fetch(`${BASE}/skus/links/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteLink: (id: string) =>
+      fetch(`${BASE}/skus/links/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   purchaseOrders: {

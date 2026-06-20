@@ -3,7 +3,8 @@ import { db } from "../../db/client.ts";
 import { packagingItems, skuRawMaterials, skuTests, skuDispatches } from "../../db/schema/skus.ts";
 import { mftNotes } from "../../db/schema/mft-notes.ts";
 import { skuComments } from "../../db/schema/sku-comments.ts";
-import { eq, desc } from "drizzle-orm";
+import { skuLinks } from "../../db/schema/sku-links.ts";
+import { eq, desc, asc } from "drizzle-orm";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const skuItemRoutes = new Hono()
@@ -178,6 +179,44 @@ export const skuItemRoutes = new Hono()
   })
   .delete("/comments/:id", async (c) => {
     const [deleted] = await db.delete(skuComments).where(eq(skuComments.id, c.req.param("id"))).returning();
+    if (!deleted) return c.json({ error: "Not found" }, 404);
+    return c.json({ ok: true });
+  })
+
+  // ── Links ─────────────────────────────────────────────────────────────────────
+  .get("/:skuId/links", async (c) => {
+    const rows = await db.select().from(skuLinks)
+      .where(eq(skuLinks.skuId, c.req.param("skuId")))
+      .orderBy(asc(skuLinks.createdAt));
+    return c.json(rows);
+  })
+  .post("/:skuId/links", async (c) => {
+    const { title, link, comment } = await c.req.json();
+    if (!title?.trim() || !link?.trim()) return c.json({ error: "Title and link are required" }, 400);
+    const [created] = await db.insert(skuLinks).values({
+      id:      crypto.randomUUID(),
+      skuId:   c.req.param("skuId"),
+      title:   title.trim(),
+      link:    link.trim(),
+      comment: comment?.trim() ?? "",
+    }).returning();
+    return c.json(created, 201);
+  })
+  .patch("/links/:id", async (c) => {
+    const { title, link, comment } = await c.req.json();
+    const [updated] = await db.update(skuLinks)
+      .set({
+        ...(title   !== undefined && { title:   title.trim() }),
+        ...(link    !== undefined && { link:    link.trim() }),
+        ...(comment !== undefined && { comment: comment.trim() }),
+      })
+      .where(eq(skuLinks.id, c.req.param("id")))
+      .returning();
+    if (!updated) return c.json({ error: "Not found" }, 404);
+    return c.json(updated);
+  })
+  .delete("/links/:id", async (c) => {
+    const [deleted] = await db.delete(skuLinks).where(eq(skuLinks.id, c.req.param("id"))).returning();
     if (!deleted) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true });
   });
