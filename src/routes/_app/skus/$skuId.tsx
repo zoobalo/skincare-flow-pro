@@ -16,6 +16,7 @@ import { ProgressRail } from "@/components/progress-rail";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { VendorCardComments } from "@/components/vendor-card-comments";
 
 export const Route = createFileRoute("/_app/skus/$skuId")({
   loader: async ({ params }) => {
@@ -527,6 +528,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                   </div>
                 )}
                 <div className="mt-3 border-t pt-3 text-xs text-muted-foreground">Last PO: {fmtDate(p.lastPurchaseDate)}</div>
+                <VendorCardComments vendorId={p.vendorId} />
               </div>
             ))}
           </div>
