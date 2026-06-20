@@ -212,6 +212,13 @@ export type ApiSkuLink = {
   id: string; skuId: string; title: string; link: string; comment: string; createdAt: string;
 };
 
+export type ApiWarehouseQc = {
+  id: string; teamId: string; qcDate: string; qcDoneBy: string;
+  qcTypes: string[]; skuIds: string[];
+  reportText: string; reportImageUrl: string | null; reportLink: string | null;
+  comment: string; createdAt: string; updatedAt: string;
+};
+
 export type ApiMftNote = {
   id: string; skuId: string | null; date: string; notes: string; createdAt: string;
 };
@@ -648,6 +655,16 @@ export const sharesApi = {
 export type ApiPendingUser = {
   id: string; name: string; email: string; role: string; status: string;
   department: string; teamId: string; createdAt: string;
+};
+
+export const warehouseQcApi = {
+  list: () => get<ApiWarehouseQc[]>("/warehouse-qc"),
+  create: (data: Omit<ApiWarehouseQc, "id" | "teamId" | "createdAt" | "updatedAt">) =>
+    fetch(`${BASE}/warehouse-qc`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+  update: (id: string, data: Partial<Omit<ApiWarehouseQc, "id" | "teamId" | "createdAt" | "updatedAt">>) =>
+    fetch(`${BASE}/warehouse-qc/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+  delete: (id: string) =>
+    fetch(`${BASE}/warehouse-qc/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
 };
 
 export const adminApi = {
