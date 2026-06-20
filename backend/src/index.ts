@@ -28,6 +28,7 @@ import { impLinkRoutes } from "./modules/imp-links/routes.ts";
 import { sampleRoutes } from "./modules/samples/routes.ts";
 import { sharesRoutes } from "./modules/shares/routes.ts";
 import { warehouseQcRoutes } from "./modules/warehouse-qc/routes.ts";
+import { assignedTaskRoutes } from "./modules/assigned-tasks/routes.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
 import { requireAuth } from "./modules/auth/middleware.ts";
 
@@ -84,6 +85,7 @@ app.route("/imp-links",         impLinkRoutes);
 app.route("/samples",           sampleRoutes);
 app.route("/shares",            sharesRoutes);
 app.route("/warehouse-qc",      warehouseQcRoutes);
+app.route("/assigned-tasks",    assignedTaskRoutes);
 
 serve({ fetch: root.fetch, port: env.PORT }, () => {
   console.log(`🚀  Zoobalo API running on http://localhost:${env.PORT}/api`);

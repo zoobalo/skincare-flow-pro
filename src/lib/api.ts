@@ -212,6 +212,18 @@ export type ApiSkuLink = {
   id: string; skuId: string; title: string; link: string; comment: string; createdAt: string;
 };
 
+export type ApiAssignedTask = {
+  id: string; teamId: string; title: string; comments: string;
+  urgency: "Low" | "Medium" | "High" | "Very High";
+  deadlineDate: string | null;
+  assignedTo: string; assignedToName: string;
+  assignedBy: string; assignedByName: string;
+  status: "Pending" | "Done";
+  createdAt: string; updatedAt: string;
+};
+
+export type ApiAssignableUser = { id: string; name: string; email: string; department: string };
+
 export type ApiWarehouseQc = {
   id: string; teamId: string; qcDate: string; qcDoneBy: string;
   qcTypes: string[]; skuIds: string[];
@@ -655,6 +667,18 @@ export const sharesApi = {
 export type ApiPendingUser = {
   id: string; name: string; email: string; role: string; status: string;
   department: string; teamId: string; createdAt: string;
+};
+
+export const assignedTasksApi = {
+  listForMe:  () => get<ApiAssignedTask[]>("/assigned-tasks"),
+  listByMe:   () => get<ApiAssignedTask[]>("/assigned-tasks/by-me"),
+  listUsers:  () => get<ApiAssignableUser[]>("/assigned-tasks/users"),
+  create: (data: { title: string; comments?: string; urgency?: string; deadlineDate?: string | null; assignedTo: string }) =>
+    fetch(`${BASE}/assigned-tasks`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+  updateStatus: (id: string, status: "Pending" | "Done") =>
+    fetch(`${BASE}/assigned-tasks/${id}/status`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ status }) }).then((r) => r.json()),
+  delete: (id: string) =>
+    fetch(`${BASE}/assigned-tasks/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
 };
 
 export const warehouseQcApi = {
