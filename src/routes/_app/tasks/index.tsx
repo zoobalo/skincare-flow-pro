@@ -251,9 +251,12 @@ function TasksContent({
   // ── Assigned tab data ────────────────────────────────────────────────────────
   const assignedPending   = assignedToMe.filter((t) => t.status === "Pending");
   const assignedCompleted = assignedToMe.filter((t) => t.status === "Done");
-
-  // Count of pending assigned to me (for badge)
   const pendingAssignedCount = assignedPending.length;
+
+  // ── Assigned by me tab data ──────────────────────────────────────────────────
+  const assignedByMePending   = assignedByMe.filter((t) => t.status === "Pending");
+  const assignedByMeCompleted = assignedByMe.filter((t) => t.status === "Done");
+  const pendingAssignedByMeCount = assignedByMePending.length;
 
   function fmtDateTime(iso: string) {
     return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -277,15 +280,23 @@ function TasksContent({
         }
       />
 
-      {/* Top-level tabs: My Tasks | Assigned */}
+      {/* Top-level tabs: My Tasks | Assigned to me | Assigned by me */}
       <Tabs defaultValue="my">
         <TabsList>
           <TabsTrigger value="my">My Tasks</TabsTrigger>
           <TabsTrigger value="assigned" className="relative">
-            Assigned
+            Assigned to me
             {pendingAssignedCount > 0 && (
               <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
                 {pendingAssignedCount}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="assigned-by-me" className="relative">
+            Assigned by me
+            {pendingAssignedByMeCount > 0 && (
+              <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white">
+                {pendingAssignedByMeCount}
               </span>
             )}
           </TabsTrigger>
@@ -384,7 +395,7 @@ function TasksContent({
           </Tabs>
         </TabsContent>
 
-        {/* ── Assigned ── */}
+        {/* ── Assigned to me ── */}
         <TabsContent value="assigned" className="mt-4">
           <Tabs defaultValue="a-pending">
             <TabsList>
@@ -408,6 +419,48 @@ function TasksContent({
                   <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">
                     {done ? "No completed assigned tasks yet." : "No tasks assigned to you."}
                   </div>
+                ) : (
+                  <div className="space-y-3">
+                    {items.map((t) => (
+                      <AssignedTaskCard
+                        key={t.id}
+                        task={t}
+                        done={done}
+                        currentUserId={currentUser?.id}
+                        onToggleStatus={toggleAssignedStatus}
+                        onDelete={deleteAssigned}
+                        fmtDateTime={fmtDateTime}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </TabsContent>
+
+        {/* ── Assigned by me ── */}
+        <TabsContent value="assigned-by-me" className="mt-4">
+          <Tabs defaultValue="byme-pending">
+            <TabsList>
+              <TabsTrigger value="byme-pending">
+                Pending
+                {assignedByMePending.length > 0 && (
+                  <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white">
+                    {assignedByMePending.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="byme-completed">Completed ({assignedByMeCompleted.length})</TabsTrigger>
+            </TabsList>
+
+            {([
+              { value: "byme-pending",   items: assignedByMePending,   done: false, emptyMsg: "No pending tasks assigned by you." },
+              { value: "byme-completed", items: assignedByMeCompleted, done: true,  emptyMsg: "No completed tasks yet." },
+            ] as const).map(({ value, items, done, emptyMsg }) => (
+              <TabsContent key={value} value={value} className="mt-4">
+                {items.length === 0 ? (
+                  <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">{emptyMsg}</div>
                 ) : (
                   <div className="space-y-3">
                     {items.map((t) => (
@@ -645,6 +698,14 @@ function AssignedTaskCard({
 
             <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span className={cn("inline-flex rounded-full px-2 py-0.5 font-medium", URGENCY_STYLE[task.urgency])}>{task.urgency}</span>
+              <span className={cn(
+                "inline-flex rounded-full px-2 py-0.5 font-medium",
+                done
+                  ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400"
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {done ? "Done" : "Pending"}
+              </span>
               {task.deadlineDate && (
                 <span className={cn(
                   "flex items-center gap-1",
