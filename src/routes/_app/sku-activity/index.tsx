@@ -94,6 +94,7 @@ function SkuActivityContent({
   const [dispatchForm, setDispatchForm] = useState({ ...EMPTY_DISPATCH });
   const [savingDispatch, setSavingDispatch] = useState(false);
   const [expandedDispatchSkus, setExpandedDispatchSkus] = useState<Record<string, boolean>>({});
+  const [expandedHistorySkus, setExpandedHistorySkus] = useState<Record<string, boolean>>({});
 
   // ── Comment helpers ─────────────────────────────────────────────────────────
   const commentsBySkuId = comments.reduce<Record<string, ApiSkuCommentWithSku[]>>((acc, c) => {
@@ -344,8 +345,46 @@ function SkuActivityContent({
             </div>
           ) : (
             allSkusForDispatch.map((sku) => {
-              const dispatches: ApiSkuDispatchWithSku[] = dispatchesBySkuId[sku.id] ?? [];
-              const expanded = expandedDispatchSkus[sku.id] ?? dispatches.length > 0;
+              const allDispatches: ApiSkuDispatchWithSku[] = dispatchesBySkuId[sku.id] ?? [];
+              const isHistoryEntry = (d: ApiSkuDispatchWithSku) => d.status === "Delivered" && d.qcStatus === "Done";
+              const active  = allDispatches.filter((d) => !isHistoryEntry(d));
+              const history = allDispatches.filter(isHistoryEntry);
+              const expanded = expandedDispatchSkus[sku.id] ?? active.length > 0;
+              const historyExpanded = expandedHistorySkus[sku.id] ?? false;
+
+              const renderRow = (d: ApiSkuDispatchWithSku, muted = false) => (
+                <div key={d.id} className={`group px-4 py-3 text-sm transition-colors ${muted ? "bg-muted/20 hover:bg-muted/30" : "hover:bg-muted/20"}`}>
+                  <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-4 items-start">
+                    <div>
+                      <p className={`font-medium ${muted ? "text-muted-foreground" : ""}`}>{d.goodsName}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{d.goodsType} · Qty {d.quantity}</p>
+                      {d.dispatchDate && <p className="text-xs text-muted-foreground">{fmtDate(d.dispatchDate)}</p>}
+                    </div>
+                    <div className="text-xs space-y-0.5">
+                      <p><span className="text-muted-foreground">From:</span> {d.from || "—"}</p>
+                      <p><span className="text-muted-foreground">To:</span> {d.to || "—"}</p>
+                      <p><span className="text-muted-foreground">Transporter:</span> {d.transporterName || "—"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", STATUS_STYLE[d.status] ?? "bg-muted text-muted-foreground")}>
+                        {d.status}
+                      </span>
+                      {d.lrNumber && <p className="text-xs text-muted-foreground">LR: {d.lrNumber}</p>}
+                      {d.vehicleNumber && <p className="text-xs text-muted-foreground">Veh: {d.vehicleNumber}</p>}
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDispatch(sku.id, d)}>
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteDispatch(d.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <PostDispatchSection dispatch={d} />
+                </div>
+              );
+
               return (
                 <div key={sku.id} className="rounded-xl border bg-card overflow-hidden">
                   {/* SKU header */}
@@ -359,50 +398,50 @@ function SkuActivityContent({
                       <span className="text-sm text-muted-foreground truncate">{sku.name}</span>
                       <span className={cn(
                         "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                        dispatches.length > 0 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                        active.length > 0 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                       )}>
-                        {dispatches.length} {dispatches.length === 1 ? "entry" : "entries"}
+                        {active.length} {active.length === 1 ? "active" : "active"}
                       </span>
+                      {history.length > 0 && (
+                        <span className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
+                          {history.length} in history
+                        </span>
+                      )}
                     </button>
                     <Button size="sm" variant="outline" className="h-7 shrink-0" onClick={() => openAddDispatch(sku.id)}>
                       <Plus className="h-3.5 w-3.5 mr-1" /> Add
                     </Button>
                   </div>
 
-                  {expanded && dispatches.length > 0 && (
-                    <div className="border-t divide-y">
-                      {dispatches.map((d) => (
-                        <div key={d.id} className="group px-4 py-3 text-sm hover:bg-muted/20 transition-colors">
-                          <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-4 items-start">
-                            <div>
-                              <p className="font-medium">{d.goodsName}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{d.goodsType} · Qty {d.quantity}</p>
-                              {d.dispatchDate && <p className="text-xs text-muted-foreground">{fmtDate(d.dispatchDate)}</p>}
-                            </div>
-                            <div className="text-xs space-y-0.5">
-                              <p><span className="text-muted-foreground">From:</span> {d.from || "—"}</p>
-                              <p><span className="text-muted-foreground">To:</span> {d.to || "—"}</p>
-                              <p><span className="text-muted-foreground">Transporter:</span> {d.transporterName || "—"}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", STATUS_STYLE[d.status] ?? "bg-muted text-muted-foreground")}>
-                                {d.status}
-                              </span>
-                              {d.lrNumber && <p className="text-xs text-muted-foreground">LR: {d.lrNumber}</p>}
-                              {d.vehicleNumber && <p className="text-xs text-muted-foreground">Veh: {d.vehicleNumber}</p>}
-                            </div>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDispatch(sku.id, d)}>
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteDispatch(d.id)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                          <PostDispatchSection dispatch={d} />
+                  {expanded && (
+                    <div className="border-t">
+                      {/* Active rows */}
+                      {active.length === 0 ? (
+                        <p className="px-4 py-3 text-xs text-muted-foreground">No active dispatches.</p>
+                      ) : (
+                        <div className="divide-y">
+                          {active.map((d) => renderRow(d))}
                         </div>
-                      ))}
+                      )}
+
+                      {/* History toggle + rows */}
+                      {history.length > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedHistorySkus((p) => ({ ...p, [sku.id]: !historyExpanded }))}
+                            className="flex w-full items-center gap-2 border-t px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/20 hover:text-foreground transition-colors"
+                          >
+                            {historyExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                            Dispatch History ({history.length})
+                          </button>
+                          {historyExpanded && (
+                            <div className="divide-y border-t">
+                              {history.map((d) => renderRow(d, true))}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

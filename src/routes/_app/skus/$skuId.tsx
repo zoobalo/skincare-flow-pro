@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, ArrowLeft, ChevronRight, Edit, ExternalLink, Eye, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronDown, ChevronRight, Edit, ExternalLink, Eye, Plus, Trash2 } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { ProgressRail } from "@/components/progress-rail";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
@@ -124,6 +124,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
   const [dispatchSaving, setDispatchSaving]   = useState(false);
   const [editDispatchId, setEditDispatchId]   = useState<string | null>(null);
   const [dispatchForm, setDispatchForm]       = useState({ ...EMPTY_DISPATCH });
+  const [showDispatchHistory, setShowDispatchHistory] = useState(false);
 
   // Tests sheet
   const [testOpen, setTestOpen]       = useState(false);
@@ -754,63 +755,101 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
 
         {/* ── Dispatch ── */}
         <TabsContent value="dispatch" className="mt-4">
-          <div className="mb-3 flex justify-end">
-            <Button size="sm" onClick={() => { setDispatchForm({ ...EMPTY_DISPATCH }); setEditDispatchId(null); setDispatchOpen(true); }}>
-              <Plus className="mr-1.5 h-4 w-4" />Add Dispatch
-            </Button>
-          </div>
-          {((sku as any).dispatches?.length ?? 0) === 0 && (
-            <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No dispatch records yet. Click "Add Dispatch" to start tracking.</div>
-          )}
-          <div className="space-y-3">
-            {((sku as any).dispatches ?? []).map((d: any) => {
-              const statusColors: Record<string, string> = {
-                Dispatched:  "bg-blue-100 text-blue-800 border-blue-200",
-                "In Transit":"bg-amber-100 text-amber-800 border-amber-200",
-                Delivered:   "bg-green-100 text-green-800 border-green-200",
-                Delayed:     "bg-red-100 text-red-800 border-red-200",
-              };
-              const goodsColors: Record<string, string> = {
-                "Final Goods":        "bg-purple-100 text-purple-800 border-purple-200",
-                "Packaging Material": "bg-amber-100 text-amber-800 border-amber-200",
-              };
-              return (
-                <div key={d.id} className="rounded-xl border bg-card p-4 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold">{d.goodsName || "—"}</span>
-                        <span className={`text-[11px] rounded-full border px-2 py-0.5 font-medium ${goodsColors[d.goodsType] ?? ""}`}>{d.goodsType}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{d.quantity.toLocaleString()} units · {fmtDate(d.dispatchDate)}</p>
-                      {(d.from || d.to) && (
-                        <p className="text-xs text-muted-foreground">
-                          {d.from && <span>From: <span className="text-foreground font-medium">{d.from}</span></span>}
-                          {d.from && d.to && <span className="mx-1">→</span>}
-                          {d.to && <span>To: <span className="text-foreground font-medium">{d.to}</span></span>}
-                        </p>
-                      )}
+          {(() => {
+            const allDispatches: any[] = (sku as any).dispatches ?? [];
+            const isHistory = (d: any) => d.status === "Delivered" && d.qcStatus === "Done";
+            const active  = allDispatches.filter((d) => !isHistory(d));
+            const history = allDispatches.filter(isHistory);
+
+            const statusColors: Record<string, string> = {
+              Dispatched:   "bg-blue-100 text-blue-800 border-blue-200",
+              "In Transit": "bg-amber-100 text-amber-800 border-amber-200",
+              Delivered:    "bg-green-100 text-green-800 border-green-200",
+              Delayed:      "bg-red-100 text-red-800 border-red-200",
+              Planned:      "bg-muted text-muted-foreground border-border",
+            };
+            const goodsColors: Record<string, string> = {
+              "Final Goods":        "bg-purple-100 text-purple-800 border-purple-200",
+              "Packaging Material": "bg-amber-100 text-amber-800 border-amber-200",
+            };
+
+            const renderCard = (d: any, muted = false) => (
+              <div key={d.id} className={`rounded-xl border p-4 space-y-2 ${muted ? "bg-muted/30 opacity-80" : "bg-card"}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold">{d.goodsName || "—"}</span>
+                      <span className={`text-[11px] rounded-full border px-2 py-0.5 font-medium ${goodsColors[d.goodsType] ?? ""}`}>{d.goodsType}</span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[11px] rounded-full border px-2 py-0.5 font-medium ${statusColors[d.status] ?? ""}`}>{d.status}</span>
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setDispatchForm({ goodsType: d.goodsType, goodsName: d.goodsName, quantity: d.quantity, dispatchDate: d.dispatchDate, from: d.from, to: d.to, transporterName: d.transporterName ?? "", vehicleNumber: d.vehicleNumber ?? "", lrNumber: d.lrNumber ?? "", freight: d.freight ?? 0, status: d.status, notes: d.notes }); setEditDispatchId(d.id); setDispatchOpen(true); }}><Edit className="h-3.5 w-3.5" /></Button>
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={async () => { if (!confirm("Delete dispatch record?")) return; try { await api.skus.deleteDispatch(d.id); toast.success("Deleted."); reload(); } catch { toast.error("Failed."); } }}><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </div>
+                    <p className="text-xs text-muted-foreground">{d.quantity.toLocaleString()} units · {fmtDate(d.dispatchDate)}</p>
+                    {(d.from || d.to) && (
+                      <p className="text-xs text-muted-foreground">
+                        {d.from && <span>From: <span className="text-foreground font-medium">{d.from}</span></span>}
+                        {d.from && d.to && <span className="mx-1">→</span>}
+                        {d.to && <span>To: <span className="text-foreground font-medium">{d.to}</span></span>}
+                      </p>
+                    )}
                   </div>
-                  {(d.transporterName || d.vehicleNumber || d.lrNumber || d.freight > 0) && (
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs border-t pt-2 sm:grid-cols-4">
-                      {d.transporterName && <div><span className="text-muted-foreground">Transporter: </span><span className="font-medium">{d.transporterName}</span></div>}
-                      {d.vehicleNumber   && <div><span className="text-muted-foreground">Vehicle: </span><span className="font-medium">{d.vehicleNumber}</span></div>}
-                      {d.lrNumber        && <div><span className="text-muted-foreground">LR No: </span><span className="font-medium">{d.lrNumber}</span></div>}
-                      {d.freight > 0     && <div><span className="text-muted-foreground">Freight: </span><span className="font-medium">₹{Number(d.freight).toLocaleString()}</span></div>}
-                    </div>
-                  )}
-                  {d.notes && <p className="text-xs text-muted-foreground leading-relaxed border-t pt-2">{d.notes}</p>}
-                  <PostDispatchSection dispatch={d} />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-[11px] rounded-full border px-2 py-0.5 font-medium ${statusColors[d.status] ?? ""}`}>{d.status}</span>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setDispatchForm({ goodsType: d.goodsType, goodsName: d.goodsName, quantity: d.quantity, dispatchDate: d.dispatchDate, from: d.from, to: d.to, transporterName: d.transporterName ?? "", vehicleNumber: d.vehicleNumber ?? "", lrNumber: d.lrNumber ?? "", freight: d.freight ?? 0, status: d.status, notes: d.notes }); setEditDispatchId(d.id); setDispatchOpen(true); }}><Edit className="h-3.5 w-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={async () => { if (!confirm("Delete dispatch record?")) return; try { await api.skus.deleteDispatch(d.id); toast.success("Deleted."); reload(); } catch { toast.error("Failed."); } }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+                {(d.transporterName || d.vehicleNumber || d.lrNumber || d.freight > 0) && (
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs border-t pt-2 sm:grid-cols-4">
+                    {d.transporterName && <div><span className="text-muted-foreground">Transporter: </span><span className="font-medium">{d.transporterName}</span></div>}
+                    {d.vehicleNumber   && <div><span className="text-muted-foreground">Vehicle: </span><span className="font-medium">{d.vehicleNumber}</span></div>}
+                    {d.lrNumber        && <div><span className="text-muted-foreground">LR No: </span><span className="font-medium">{d.lrNumber}</span></div>}
+                    {d.freight > 0     && <div><span className="text-muted-foreground">Freight: </span><span className="font-medium">₹{Number(d.freight).toLocaleString()}</span></div>}
+                  </div>
+                )}
+                {d.notes && <p className="text-xs text-muted-foreground leading-relaxed border-t pt-2">{d.notes}</p>}
+                <PostDispatchSection dispatch={d} />
+              </div>
+            );
+
+            return (
+              <>
+                <div className="mb-3 flex justify-end">
+                  <Button size="sm" onClick={() => { setDispatchForm({ ...EMPTY_DISPATCH }); setEditDispatchId(null); setDispatchOpen(true); }}>
+                    <Plus className="mr-1.5 h-4 w-4" />Add Dispatch
+                  </Button>
+                </div>
+
+                {/* Active dispatches */}
+                {active.length === 0 && history.length === 0 && (
+                  <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No dispatch records yet. Click "Add Dispatch" to start tracking.</div>
+                )}
+                {active.length === 0 && history.length > 0 && (
+                  <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">No active dispatches. All entries are in history.</div>
+                )}
+                <div className="space-y-3">
+                  {active.map((d) => renderCard(d))}
+                </div>
+
+                {/* Dispatch History */}
+                {history.length > 0 && (
+                  <div className="mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setShowDispatchHistory((p) => !p)}
+                      className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-3"
+                    >
+                      {showDispatchHistory ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      Dispatch History
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">{history.length}</span>
+                    </button>
+                    {showDispatchHistory && (
+                      <div className="space-y-3">
+                        {history.map((d) => renderCard(d, true))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </TabsContent>
 
         {/* ── MFT ── */}
