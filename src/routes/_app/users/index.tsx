@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { adminApi, ApiPendingUser } from "@/lib/api";
 import { useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Trash2 } from "lucide-react";
+import { getUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/users/")({
   loader: () => adminApi.listAll(),
@@ -26,6 +27,7 @@ function UsersPage() {
   const users = Route.useLoaderData() as ApiPendingUser[];
   const router = useRouter();
   const [processing, setProcessing] = useState<string | null>(null);
+  const currentUserId = getUser()?.id;
 
   const pending = users.filter((u) => u.status === "Pending");
   const active  = users.filter((u) => u.status !== "Pending");
@@ -47,6 +49,19 @@ function UsersPage() {
       if (res.error) { toast.error(res.error); return; }
       toast.success("User rejected");
       router.invalidate();
+    } finally { setProcessing(null); }
+  };
+
+  const deleteUser = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    setProcessing(id);
+    try {
+      const res = await adminApi.deleteUser(id);
+      if (res.error) { toast.error(res.error); return; }
+      toast.success("User deleted");
+      router.invalidate();
+    } catch {
+      toast.error("Failed to delete user");
     } finally { setProcessing(null); }
   };
 
@@ -117,6 +132,7 @@ function UsersPage() {
                 <th className="px-4 py-2.5 font-medium">Department</th>
                 <th className="px-4 py-2.5 font-medium">Role</th>
                 <th className="px-4 py-2.5 font-medium">Status</th>
+                <th className="px-4 py-2.5 font-medium"></th>
               </tr>
             </thead>
             <tbody>
@@ -134,10 +150,23 @@ function UsersPage() {
                   </td>
                   <td className="px-4 py-2.5">{u.role}</td>
                   <td className="px-4 py-2.5"><StatusBadge status={u.status} /></td>
+                  <td className="px-4 py-2.5">
+                    {u.id !== currentUserId && (
+                      <Button
+                        size="sm" variant="ghost"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={processing === u.id}
+                        onClick={() => deleteUser(u.id, u.name)}
+                        title="Delete user"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {active.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No active users yet.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No active users yet.</td></tr>
               )}
             </tbody>
           </table>
