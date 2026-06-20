@@ -54,7 +54,7 @@ const GST_RATES = [0, 5, 12, 18, 28] as const;
 
 const EMPTY_PACK = { name: "", vendorId: "", moq: 1000, leadTimeDays: 14, currentStock: 0, transitStock: 0, transitDeliveryDate: "", costPerUnit: 0, lastPurchaseDate: "" };
 const EMPTY_RM   = { name: "", vendorId: "", qtyPerUnit: 1, unit: "ml", currentStock: 0, costPerUnit: 0 };
-const DISPATCH_STATUSES = ["Dispatched", "In Transit", "Delivered", "Delayed"] as const;
+const DISPATCH_STATUSES = ["Planned", "Dispatched", "In Transit", "Delivered", "Delayed"] as const;
 const GOODS_TYPES = ["Final Goods", "Packaging Material"] as const;
 const EMPTY_DISPATCH = { goodsType: "Final Goods", goodsName: "", quantity: 0, dispatchDate: "", from: "", to: "", transporterName: "", vehicleNumber: "", lrNumber: "", freight: 0, status: "Dispatched", notes: "" };
 
