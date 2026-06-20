@@ -1,7 +1,7 @@
 import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
-import { api, assignedTasksApi, type ApiTask, type ApiSku, type ApiAssignedTask, type ApiAssignableUser } from "@/lib/api";
+import { api, assignedTasksApi, type ApiTask, type ApiSku, type ApiAssignedTask, type ApiAssignableUser, type ApiAssignedTaskComment } from "@/lib/api";
 import { fmtDate } from "@/lib/utils";
 import { getUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Edit2, Search, UserPlus, CheckCircle2, Clock, User } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Plus, Trash2, Edit2, Search, UserPlus, CheckCircle2, Clock, User, MessageSquare, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { PersonalModuleTabs } from "@/components/personal-module-tabs";
 import { cn } from "@/lib/utils";
@@ -411,76 +411,15 @@ function TasksContent({
                 ) : (
                   <div className="space-y-3">
                     {items.map((t) => (
-                      <div key={t.id} className={cn(
-                        "group rounded-xl border bg-card p-4 transition-colors hover:bg-muted/10",
-                        done && "opacity-70"
-                      )}>
-                        <div className="flex items-start gap-3">
-                          {/* Mark done / undo button (only assignee can toggle) */}
-                          {t.assignedTo === currentUser?.id && (
-                            <button
-                              type="button"
-                              onClick={() => toggleAssignedStatus(t)}
-                              className={cn(
-                                "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-                                done
-                                  ? "border-green-500 bg-green-500 text-white"
-                                  : "border-muted-foreground/30 hover:border-primary"
-                              )}
-                              title={done ? "Mark as pending" : "Mark as done"}
-                            >
-                              {done && <CheckCircle2 className="h-3.5 w-3.5" />}
-                            </button>
-                          )}
-
-                          <div className="flex-1 min-w-0">
-                            {/* Title */}
-                            <p className={cn("font-medium text-sm leading-snug", done && "line-through text-muted-foreground")}>
-                              {t.title}
-                            </p>
-
-                            {/* Meta row */}
-                            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                              <span className={cn("inline-flex rounded-full px-2 py-0.5 font-medium", URGENCY_STYLE[t.urgency])}>{t.urgency}</span>
-                              {t.deadlineDate && (
-                                <span className={cn(
-                                  "flex items-center gap-1",
-                                  !done && new Date(t.deadlineDate) < new Date() && "font-semibold text-destructive"
-                                )}>
-                                  <Clock className="h-3 w-3" />
-                                  {fmtDate(t.deadlineDate)}
-                                </span>
-                              )}
-                              {t.comments && <span className="italic line-clamp-1 max-w-xs">{t.comments}</span>}
-                            </div>
-
-                            {/* Assigned by / to */}
-                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
-                              <span className="flex items-center gap-1 text-muted-foreground">
-                                <User className="h-3 w-3" />
-                                <span>Assigned by <span className="font-medium text-foreground">{t.assignedByName}</span></span>
-                              </span>
-                              {t.assignedTo !== currentUser?.id && (
-                                <span className="flex items-center gap-1 text-muted-foreground">
-                                  → <span className="font-medium text-foreground">{t.assignedToName}</span>
-                                </span>
-                              )}
-                              <span className="text-muted-foreground/70">{fmtDateTime(t.createdAt)}</span>
-                            </div>
-                          </div>
-
-                          {/* Delete (assigner only) */}
-                          {t.assignedBy === currentUser?.id && (
-                            <Button
-                              size="sm" variant="ghost"
-                              className="h-7 w-7 p-0 shrink-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => deleteAssigned(t)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+                      <AssignedTaskCard
+                        key={t.id}
+                        task={t}
+                        done={done}
+                        currentUserId={currentUser?.id}
+                        onToggleStatus={toggleAssignedStatus}
+                        onDelete={deleteAssigned}
+                        fmtDateTime={fmtDateTime}
+                      />
                     ))}
                   </div>
                 )}
@@ -617,6 +556,204 @@ function TasksContent({
           </SheetFooter>
         </SheetContent>
       </Sheet>
+    </div>
+  );
+}
+
+// ── Assigned Task Card (with per-card comment state) ─────────────────────────
+
+function AssignedTaskCard({
+  task, done, currentUserId, onToggleStatus, onDelete, fmtDateTime,
+}: {
+  task: ApiAssignedTask;
+  done: boolean;
+  currentUserId: string | undefined;
+  onToggleStatus: (t: ApiAssignedTask) => void;
+  onDelete: (t: ApiAssignedTask) => void;
+  fmtDateTime: (iso: string) => string;
+}) {
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [comments, setComments]         = useState<ApiAssignedTaskComment[]>([]);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [newComment, setNewComment]     = useState("");
+  const [sending, setSending]           = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const loadComments = async () => {
+    if (commentsLoaded) return;
+    setLoadingComments(true);
+    try {
+      const data = await assignedTasksApi.listComments(task.id);
+      setComments(Array.isArray(data) ? data : []);
+      setCommentsLoaded(true);
+    } catch { /* silently fail */ } finally { setLoadingComments(false); }
+  };
+
+  const toggleComments = () => {
+    const next = !commentsOpen;
+    setCommentsOpen(next);
+    if (next) loadComments();
+  };
+
+  const sendComment = async () => {
+    if (!newComment.trim()) return;
+    setSending(true);
+    try {
+      const created = await assignedTasksApi.addComment(task.id, newComment.trim());
+      if (created?.id) {
+        setComments((prev) => [...prev, created as ApiAssignedTaskComment]);
+        setNewComment("");
+      } else {
+        toast.error(created?.error ?? "Failed to send comment.");
+      }
+    } catch { toast.error("Failed to send comment."); } finally { setSending(false); }
+  };
+
+  const deleteComment = async (commentId: string) => {
+    try {
+      await assignedTasksApi.deleteComment(task.id, commentId);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch { toast.error("Failed to delete comment."); }
+  };
+
+  return (
+    <div className={cn("rounded-xl border bg-card transition-colors", done && "opacity-70")}>
+      <div className="group p-4">
+        <div className="flex items-start gap-3">
+          {/* Mark done / undo button (only assignee can toggle) */}
+          {task.assignedTo === currentUserId && (
+            <button
+              type="button"
+              onClick={() => onToggleStatus(task)}
+              className={cn(
+                "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                done
+                  ? "border-green-500 bg-green-500 text-white"
+                  : "border-muted-foreground/30 hover:border-primary"
+              )}
+              title={done ? "Mark as pending" : "Mark as done"}
+            >
+              {done && <CheckCircle2 className="h-3.5 w-3.5" />}
+            </button>
+          )}
+
+          <div className="flex-1 min-w-0">
+            <p className={cn("font-medium text-sm leading-snug", done && "line-through text-muted-foreground")}>
+              {task.title}
+            </p>
+
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span className={cn("inline-flex rounded-full px-2 py-0.5 font-medium", URGENCY_STYLE[task.urgency])}>{task.urgency}</span>
+              {task.deadlineDate && (
+                <span className={cn(
+                  "flex items-center gap-1",
+                  !done && new Date(task.deadlineDate) < new Date() && "font-semibold text-destructive"
+                )}>
+                  <Clock className="h-3 w-3" />
+                  {fmtDate(task.deadlineDate)}
+                </span>
+              )}
+              {task.comments && <span className="italic line-clamp-1 max-w-xs">{task.comments}</span>}
+            </div>
+
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <User className="h-3 w-3" />
+                <span>Assigned by <span className="font-medium text-foreground">{task.assignedByName}</span></span>
+              </span>
+              {task.assignedTo !== currentUserId && (
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  → <span className="font-medium text-foreground">{task.assignedToName}</span>
+                </span>
+              )}
+              <span className="text-muted-foreground/70">{fmtDateTime(task.createdAt)}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Comments toggle */}
+            <button
+              type="button"
+              onClick={toggleComments}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              {comments.length > 0 && <span>{comments.length}</span>}
+              {commentsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </button>
+
+            {/* Delete (assigner only) */}
+            {task.assignedBy === currentUserId && (
+              <Button
+                size="sm" variant="ghost"
+                className="h-7 w-7 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => onDelete(task)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Comments panel */}
+      {commentsOpen && (
+        <div className="border-t bg-muted/20 px-4 pb-4 pt-3">
+          {loadingComments ? (
+            <p className="text-xs text-muted-foreground py-2">Loading comments…</p>
+          ) : comments.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-1">No comments yet. Be the first to add one.</p>
+          ) : (
+            <div className="space-y-3 mb-3">
+              {comments.map((c) => (
+                <div key={c.id} className="group/comment flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-xs font-semibold text-foreground">{c.authorName}</span>
+                      <span className="text-[11px] text-muted-foreground">{fmtDateTime(c.createdAt)}</span>
+                    </div>
+                    <p className="text-xs text-foreground/90 mt-0.5 leading-relaxed whitespace-pre-wrap">{c.text}</p>
+                  </div>
+                  {c.authorId === currentUserId && (
+                    <button
+                      type="button"
+                      onClick={() => deleteComment(c.id)}
+                      className="opacity-0 group-hover/comment:opacity-100 transition-opacity shrink-0 mt-0.5 text-muted-foreground hover:text-destructive"
+                      title="Delete comment"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* New comment input */}
+          <div className="flex gap-2 items-end">
+            <Textarea
+              ref={inputRef}
+              rows={1}
+              placeholder="Add a comment…"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendComment(); }
+              }}
+              className="min-h-0 resize-none text-xs py-2"
+            />
+            <Button
+              size="sm"
+              onClick={sendComment}
+              disabled={sending || !newComment.trim()}
+              className="shrink-0 h-8 w-8 p-0"
+            >
+              <Send className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

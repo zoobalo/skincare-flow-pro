@@ -224,6 +224,10 @@ export type ApiAssignedTask = {
 
 export type ApiAssignableUser = { id: string; name: string; email: string; department: string };
 
+export type ApiAssignedTaskComment = {
+  id: string; taskId: string; authorId: string; authorName: string; text: string; createdAt: string;
+};
+
 export type ApiWarehouseQc = {
   id: string; teamId: string; qcDate: string; qcDoneBy: string;
   qcTypes: string[]; skuIds: string[];
@@ -679,6 +683,11 @@ export const assignedTasksApi = {
     fetch(`${BASE}/assigned-tasks/${id}/status`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ status }) }).then((r) => r.json()),
   delete: (id: string) =>
     fetch(`${BASE}/assigned-tasks/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+  listComments: (taskId: string) => get<ApiAssignedTaskComment[]>(`/assigned-tasks/${taskId}/comments`),
+  addComment: (taskId: string, text: string) =>
+    fetch(`${BASE}/assigned-tasks/${taskId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ text }) }).then((r) => r.json()),
+  deleteComment: (taskId: string, commentId: string) =>
+    fetch(`${BASE}/assigned-tasks/${taskId}/comments/${commentId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
 };
 
 export const warehouseQcApi = {

@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { db } from "../../db/client.ts";
 import { assignedTasks } from "../../db/schema/assigned-tasks.ts";
+import { assignedTaskComments } from "../../db/schema/assigned-task-comments.ts";
 import { users } from "../../db/schema/users.ts";
-import { eq, or, desc, and } from "drizzle-orm";
+import { eq, desc, and, asc } from "drizzle-orm";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const assignedTaskRoutes = new Hono()
@@ -74,6 +75,45 @@ export const assignedTaskRoutes = new Hono()
     const [row] = await db.select().from(assignedTasks).where(eq(assignedTasks.id, c.req.param("id"))).limit(1);
     if (!row) return c.json({ error: "Not found" }, 404);
     if (row.assignedBy !== user.sub) return c.json({ error: "Forbidden — only the assigner can delete" }, 403);
+    await db.delete(assignedTaskComments).where(eq(assignedTaskComments.taskId, c.req.param("id")));
     await db.delete(assignedTasks).where(eq(assignedTasks.id, c.req.param("id")));
+    return c.json({ ok: true });
+  })
+
+  // ── Comments ────────────────────────────────────────────────────────────────
+  .get("/:id/comments", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const [task] = await db.select().from(assignedTasks).where(eq(assignedTasks.id, c.req.param("id"))).limit(1);
+    if (!task) return c.json({ error: "Not found" }, 404);
+    // Only assigner or assignee can view comments
+    if (task.assignedBy !== user.sub && task.assignedTo !== user.sub) return c.json({ error: "Forbidden" }, 403);
+    const rows = await db.select().from(assignedTaskComments)
+      .where(eq(assignedTaskComments.taskId, c.req.param("id")))
+      .orderBy(asc(assignedTaskComments.createdAt));
+    return c.json(rows);
+  })
+  .post("/:id/comments", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const [task] = await db.select().from(assignedTasks).where(eq(assignedTasks.id, c.req.param("id"))).limit(1);
+    if (!task) return c.json({ error: "Not found" }, 404);
+    if (task.assignedBy !== user.sub && task.assignedTo !== user.sub) return c.json({ error: "Forbidden" }, 403);
+    const { text } = await c.req.json();
+    if (!text?.trim()) return c.json({ error: "Comment text is required" }, 400);
+    const [created] = await db.insert(assignedTaskComments).values({
+      id:         crypto.randomUUID(),
+      taskId:     c.req.param("id"),
+      authorId:   user.sub,
+      authorName: user.name,
+      text:       text.trim(),
+    }).returning();
+    return c.json(created, 201);
+  })
+  .delete("/:id/comments/:commentId", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const [comment] = await db.select().from(assignedTaskComments)
+      .where(eq(assignedTaskComments.id, c.req.param("commentId"))).limit(1);
+    if (!comment) return c.json({ error: "Not found" }, 404);
+    if (comment.authorId !== user.sub) return c.json({ error: "Forbidden" }, 403);
+    await db.delete(assignedTaskComments).where(eq(assignedTaskComments.id, c.req.param("commentId")));
     return c.json({ ok: true });
   });
