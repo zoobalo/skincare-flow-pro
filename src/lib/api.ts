@@ -66,6 +66,10 @@ export type ApiVendor = {
   contacts: ApiContact[];
 };
 
+export type ApiVendorComment = {
+  id: string; vendorId: string; authorId: string; authorName: string; text: string; createdAt: string;
+};
+
 export type ApiManufacturer = {
   id: string; name: string; location: string; city: string;
   email: string; gst: string; pan: string | null; contactPerson: string; mobile: string;
@@ -393,6 +397,11 @@ export const api = {
       fetch(`${BASE}/vendors/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
       fetch(`${BASE}/vendors/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    listComments: (vendorId: string) => get<ApiVendorComment[]>(`/vendors/${vendorId}/comments`),
+    addComment: (vendorId: string, text: string) =>
+      fetch(`${BASE}/vendors/${vendorId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ text }) }).then((r) => r.json()),
+    deleteComment: (vendorId: string, commentId: string) =>
+      fetch(`${BASE}/vendors/${vendorId}/comments/${commentId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   manufacturers: {

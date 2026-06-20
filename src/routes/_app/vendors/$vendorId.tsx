@@ -1,30 +1,67 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
-import { api, fmtMonth } from "@/lib/api";
+import { api, fmtMonth, type ApiVendorComment } from "@/lib/api";
 import { fmtDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mail, MapPin, Phone, Star, UserRound } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Mail, MapPin, Phone, Send, Star, Trash2, UserRound } from "lucide-react";
 import { ChartCard } from "@/components/chart-card";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, RadialBarChart, RadialBar } from "recharts";
+import { useState, useRef } from "react";
+import { toast } from "sonner";
+import { getUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/vendors/$vendorId")({
   loader: async ({ params }) => {
-    const [vendor, dashboard] = await Promise.all([
+    const [vendor, dashboard, comments] = await Promise.all([
       api.vendors.get(params.vendorId),
       api.dashboard.kpis(),
+      api.vendors.listComments(params.vendorId),
     ]);
     if (!vendor) throw notFound();
     const spendTrend = dashboard.charts.procurementSpend.map((d) => ({ month: fmtMonth(d.month), spend: d.total }));
-    return { vendor, spendTrend };
+    return { vendor, spendTrend, comments };
   },
   component: VendorDetailPage,
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.vendor.name ?? "Vendor"} — Zoobalo` }] }),
 });
 
 function VendorDetailPage() {
-  const { vendor, spendTrend } = Route.useLoaderData();
+  const { vendor, spendTrend, comments: initialComments } = Route.useLoaderData();
+  const currentUser = getUser();
   const radial = [{ name: "Reliability", value: vendor.reliability, fill: "var(--chart-2)" }];
+
+  const [comments, setComments] = useState<ApiVendorComment[]>(initialComments);
+  const [newComment, setNewComment] = useState("");
+  const [sending, setSending] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const sendComment = async () => {
+    if (!newComment.trim()) return;
+    setSending(true);
+    try {
+      const created = await api.vendors.addComment(vendor.id, newComment.trim());
+      if (created?.id) {
+        setComments((prev) => [...prev, created as ApiVendorComment]);
+        setNewComment("");
+        textareaRef.current?.focus();
+      } else {
+        toast.error(created?.error ?? "Failed to add comment.");
+      }
+    } catch { toast.error("Failed to add comment."); } finally { setSending(false); }
+  };
+
+  const deleteComment = async (commentId: string) => {
+    try {
+      await api.vendors.deleteComment(vendor.id, commentId);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch { toast.error("Failed to delete comment."); }
+  };
+
+  function fmtDateTime(iso: string) {
+    return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
 
   return (
     <div className="space-y-6">
@@ -115,6 +152,66 @@ function VendorDetailPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* ── Comments ── */}
+      <div className="rounded-xl border bg-card">
+        <div className="border-b px-4 py-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Comments</h3>
+          {comments.length > 0 && <span className="text-xs text-muted-foreground">{comments.length} comment{comments.length !== 1 ? "s" : ""}</span>}
+        </div>
+
+        <div className="p-4 space-y-4">
+          {/* Input */}
+          <div className="flex gap-2 items-end">
+            <Textarea
+              ref={textareaRef}
+              rows={2}
+              placeholder="Add a comment about this vendor…"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendComment(); } }}
+              className="resize-none text-sm"
+            />
+            <Button
+              size="sm"
+              onClick={sendComment}
+              disabled={sending || !newComment.trim()}
+              className="shrink-0 h-9 w-9 p-0"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* List */}
+          {comments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No comments yet. Be the first to add one.</p>
+          ) : (
+            <div className="space-y-3">
+              {comments.map((c) => (
+                <div key={c.id} className="group flex items-start gap-3">
+                  <div className="flex-1 rounded-lg bg-muted/40 px-3 py-2.5">
+                    <div className="flex items-baseline gap-2 flex-wrap mb-1">
+                      <span className="text-xs font-semibold text-foreground">{c.authorName}</span>
+                      <span className="text-[11px] text-muted-foreground">{fmtDateTime(c.createdAt)}</span>
+                    </div>
+                    <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{c.text}</p>
+                  </div>
+                  {c.authorId === currentUser?.id && (
+                    <button
+                      type="button"
+                      onClick={() => deleteComment(c.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity mt-2 text-muted-foreground hover:text-destructive"
+                      title="Delete comment"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
