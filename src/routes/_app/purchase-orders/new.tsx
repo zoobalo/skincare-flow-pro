@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { api, type ApiProductionRemark, type POLineItem } from "@/lib/api";
+import { api, type ApiSku, type ApiVendor, type ApiManufacturer, type ApiPo, type ApiProductionRemark, type POLineItem } from "@/lib/api";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
 import { PODocument, buildPoHtml } from "@/components/po-document";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -98,7 +98,13 @@ function NewPOWizard() {
   return <NewPOWizardInner {...loaderData} />;
 }
 
-type LoaderData = NonNullable<Awaited<ReturnType<typeof Route.useLoaderData>>>;
+type LoaderData = {
+  skus: ApiSku[];
+  vendors: ApiVendor[];
+  manufacturers: ApiManufacturer[];
+  remarks: ApiProductionRemark[];
+  pos: ApiPo[];
+};
 
 function NewPOWizardInner({ skus, vendors, manufacturers, remarks, pos }: LoaderData) {
   const navigate = useNavigate();

@@ -26,6 +26,8 @@ import {
   shipments,
 } from "../../src/lib/mock/data.js";
 
+const SEED_TEAM_ID = "seed-team";
+
 async function seed() {
   console.log("🌱 Starting seed...\n");
 
@@ -34,6 +36,7 @@ async function seed() {
   await db.insert(vendorsTable).values(
     vendors.map((v) => ({
       id:            v.id,
+      teamId:        SEED_TEAM_ID,
       name:          v.name,
       contactPerson: v.contactPerson,
       mobile:        v.mobile,
@@ -58,6 +61,7 @@ async function seed() {
   await db.insert(manufacturersTable).values(
     manufacturers.map((m) => ({
       id:               m.id,
+      teamId:           SEED_TEAM_ID,
       name:             m.name,
       location:         m.location,
       contactPerson:    m.contactPerson,
@@ -73,6 +77,7 @@ async function seed() {
   await db.insert(skusTable).values(
     skus.map((s) => ({
       id:                     s.id,
+      teamId:                 SEED_TEAM_ID,
       code:                   s.code,
       name:                   s.name,
       category:               s.category,
@@ -90,6 +95,7 @@ async function seed() {
   const allPackaging = skus.flatMap((s) =>
     s.packaging.map((p) => ({
       id:               p.id,
+      teamId:           SEED_TEAM_ID,
       skuId:            s.id,
       name:             p.name,
       vendorId:         p.vendorId,
@@ -125,6 +131,7 @@ async function seed() {
   await db.insert(purchaseOrdersTable).values(
     purchaseOrders.map((p) => ({
       id:               p.id,
+      teamId:           SEED_TEAM_ID,
       poNumber:         p.poNumber,
       vendorId:         p.vendorId,
       skuId:            p.skuId,
@@ -144,15 +151,16 @@ async function seed() {
   await db.insert(productionBatchesTable).values(
     productionBatches.map((b) => ({
       id:                 b.id,
+      teamId:             SEED_TEAM_ID,
       batchNumber:        b.batchNumber,
       skuId:              b.skuId,
       manufacturerId:     b.manufacturerId,
       quantity:           b.quantity,
-      currentStage:       b.currentStage,
+      currentStage:       b.currentStage as string,
       startedAt:          b.startedAt,
       expectedCompletion: b.expectedCompletion,
       delayed:            b.delayed,
-    }))
+    })) as any
   ).onConflictDoNothing();
 
   // ── 8. Batch stage history ───────────────────────────────────────────────────
@@ -166,7 +174,7 @@ async function seed() {
   );
   console.log(`  Inserting ${allStageHistory.length} stage history entries...`);
   if (allStageHistory.length > 0) {
-    await db.insert(batchStageHistory).values(allStageHistory).onConflictDoNothing();
+    await db.insert(batchStageHistory).values(allStageHistory as any).onConflictDoNothing();
   }
 
   // ── 9. Shipments ─────────────────────────────────────────────────────────────
@@ -174,6 +182,7 @@ async function seed() {
   await db.insert(shipmentsTable).values(
     shipments.map((s) => ({
       id:               s.id,
+      teamId:           SEED_TEAM_ID,
       lrNumber:         s.lrNumber,
       transporter:      s.transporter,
       driverName:       s.driverName,
@@ -191,14 +200,14 @@ async function seed() {
 
   // ── 10. Users ────────────────────────────────────────────────────────────────
   const seedUsers = [
-    { id: "u1", name: "Priya Ojha",    email: "priya@skinops.demo",  role: "Ops Manager"            },
-    { id: "u2", name: "Rohan Mehta",   email: "rohan@skinops.demo",  role: "Procurement Lead"        },
-    { id: "u3", name: "Anita Verma",   email: "anita@skinops.demo",  role: "Warehouse Manager"       },
-    { id: "u4", name: "Karan Shah",    email: "karan@skinops.demo",  role: "Quality Analyst",   status: "Inactive" },
-    { id: "u5", name: "Neha Singh",    email: "neha@skinops.demo",   role: "Logistics Coordinator"   },
-  ] as const;
+    { id: "u1", teamId: SEED_TEAM_ID, name: "Priya Ojha",    email: "priya@skinops.demo",  role: "Ops Manager"            },
+    { id: "u2", teamId: SEED_TEAM_ID, name: "Rohan Mehta",   email: "rohan@skinops.demo",  role: "Procurement Lead"        },
+    { id: "u3", teamId: SEED_TEAM_ID, name: "Anita Verma",   email: "anita@skinops.demo",  role: "Warehouse Manager"       },
+    { id: "u4", teamId: SEED_TEAM_ID, name: "Karan Shah",    email: "karan@skinops.demo",  role: "Quality Analyst",   status: "Inactive" },
+    { id: "u5", teamId: SEED_TEAM_ID, name: "Neha Singh",    email: "neha@skinops.demo",   role: "Logistics Coordinator"   },
+  ];
   console.log(`  Inserting ${seedUsers.length} users...`);
-  await db.insert(usersTable).values(seedUsers).onConflictDoNothing();
+  await db.insert(usersTable).values(seedUsers as any).onConflictDoNothing();
 
   console.log("\n✅ Seed complete!");
   process.exit(0);

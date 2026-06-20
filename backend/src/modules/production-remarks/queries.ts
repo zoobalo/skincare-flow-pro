@@ -1,7 +1,7 @@
 import { db } from "../../db/client.ts";
 import { productionRemarks } from "../../db/schema/production-remarks.ts";
 import { skus } from "../../db/schema/skus.ts";
-import { eq, leftJoin } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export const getAllRemarks = (teamId: string) =>
   db
