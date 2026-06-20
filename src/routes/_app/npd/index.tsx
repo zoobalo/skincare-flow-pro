@@ -212,8 +212,13 @@ function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeam
 
   const [sheetOpen, setSheetOpen]   = useState(false);
   const [editTarget, setEditTarget] = useState<ApiNpd | null>(null);
-  const [viewDialog, setViewDialog] = useState<{ title: string; content: string } | null>(null);
-  const [viewImagesDialog, setViewImagesDialog] = useState<{ npdName: string; groups: ApiNpdImageGroup[] } | null>(null);
+  const [viewDialog, setViewDialog] = useState<{ title: string; content: string; itemId: string; field: "rmStatus" | "pmStatus" | "comments" } | null>(null);
+  const [editedContent, setEditedContent] = useState("");
+  const [savingViewDialog, setSavingViewDialog] = useState(false);
+  const [viewImagesDialog, setViewImagesDialog] = useState<{ npdName: string; groups: ApiNpdImageGroup[]; itemId: string } | null>(null);
+  const [editingImages, setEditingImages] = useState(false);
+  const [editedGroups, setEditedGroups] = useState<ApiNpdImageGroup[]>([]);
+  const [savingImages, setSavingImages] = useState(false);
   const [lightbox, setLightbox] = useState<{ urls: string[]; idx: number } | null>(null);
   const lightboxPrev = () => setLightbox((l) => l && l.idx > 0 ? { ...l, idx: l.idx - 1 } : l);
   const lightboxNext = () => setLightbox((l) => l && l.idx < l.urls.length - 1 ? { ...l, idx: l.idx + 1 } : l);
@@ -251,6 +256,29 @@ function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeam
     if (!confirm(`Delete "${item.name}"?`)) return;
     try { await api.npd.delete(item.id); toast.success("Deleted."); reload(); }
     catch { toast.error("Failed to delete."); }
+  };
+
+  const saveViewDialog = async () => {
+    if (!viewDialog) return;
+    setSavingViewDialog(true);
+    try {
+      await api.npd.update(viewDialog.itemId, { [viewDialog.field]: editedContent });
+      toast.success("Saved.");
+      setViewDialog(null);
+      await reload();
+    } catch { toast.error("Failed to save."); } finally { setSavingViewDialog(false); }
+  };
+
+  const saveImages = async () => {
+    if (!viewImagesDialog) return;
+    setSavingImages(true);
+    try {
+      await api.npd.update(viewImagesDialog.itemId, { images: editedGroups });
+      toast.success("Images saved.");
+      setViewImagesDialog(null);
+      setEditingImages(false);
+      await reload();
+    } catch { toast.error("Failed to save images."); } finally { setSavingImages(false); }
   };
 
   const openInGoogleSheets = async () => {
@@ -394,7 +422,7 @@ function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeam
                 {item.rmStatus ? (
                   <>
                     <p className="leading-relaxed line-clamp-5">{item.rmStatus}</p>
-                    <button type="button" onClick={() => setViewDialog({ title: "RM Status", content: item.rmStatus })} className="mt-1 text-[10px] text-primary hover:underline">View all</button>
+                    <button type="button" onClick={() => { setViewDialog({ title: "RM Status", content: item.rmStatus, itemId: item.id, field: "rmStatus" }); setEditedContent(item.rmStatus); }} className="mt-1 text-[10px] text-primary hover:underline">View all</button>
                   </>
                 ) : <span>—</span>}
               </div>
@@ -405,7 +433,7 @@ function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeam
                 {item.pmStatus ? (
                   <>
                     <p className="leading-relaxed line-clamp-5">{item.pmStatus}</p>
-                    <button type="button" onClick={() => setViewDialog({ title: "PM Status", content: item.pmStatus })} className="mt-1 text-[10px] text-primary hover:underline">View all</button>
+                    <button type="button" onClick={() => { setViewDialog({ title: "PM Status", content: item.pmStatus, itemId: item.id, field: "pmStatus" }); setEditedContent(item.pmStatus); }} className="mt-1 text-[10px] text-primary hover:underline">View all</button>
                   </>
                 ) : <span>—</span>}
               </div>
@@ -437,7 +465,7 @@ function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeam
                       )}
                       <button
                         type="button"
-                        onClick={() => setViewImagesDialog({ npdName: item.name, groups: item.images })}
+                        onClick={() => { setViewImagesDialog({ npdName: item.name, groups: item.images, itemId: item.id }); setEditingImages(false); setEditedGroups(item.images); }}
                         className="mt-0.5 text-[10px] text-primary hover:underline"
                       >
                         View all · {item.images.length} group{item.images.length !== 1 ? "s" : ""} · {totalImages} image{totalImages !== 1 ? "s" : ""}
@@ -455,7 +483,7 @@ function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeam
                   <>
                     <div className="font-semibold text-muted-foreground mb-1 uppercase tracking-wide text-[10px]">Comments</div>
                     <p className="line-clamp-5">{item.comments}</p>
-                    <button type="button" onClick={() => setViewDialog({ title: "Comments", content: item.comments })} className="mt-1 text-[10px] text-primary hover:underline">View all</button>
+                    <button type="button" onClick={() => { setViewDialog({ title: "Comments", content: item.comments, itemId: item.id, field: "comments" }); setEditedContent(item.comments); }} className="mt-1 text-[10px] text-primary hover:underline">View all</button>
                   </>
                 ) : (
                   <span className="text-muted-foreground">—</span>
@@ -467,47 +495,86 @@ function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeam
         </div>
       )}
 
-      {/* View all text Dialog */}
+      {/* View / Edit text Dialog */}
       <Dialog open={!!viewDialog} onOpenChange={(open) => { if (!open) setViewDialog(null); }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{viewDialog?.title}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
-            {viewDialog?.content}
-          </p>
+          <Textarea
+            value={editedContent}
+            onChange={(e) => setEditedContent(e.target.value)}
+            rows={10}
+            className="resize-none text-sm"
+            placeholder="Enter content…"
+          />
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="outline" onClick={() => setViewDialog(null)}>Cancel</Button>
+            <Button onClick={saveViewDialog} disabled={savingViewDialog}>
+              {savingViewDialog ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* View all images Dialog */}
-      <Dialog open={!!viewImagesDialog} onOpenChange={(open) => { if (!open) { setViewImagesDialog(null); setLightbox(null); } }}>
+      {/* View / Edit images Dialog */}
+      <Dialog open={!!viewImagesDialog} onOpenChange={(open) => { if (!open) { setViewImagesDialog(null); setLightbox(null); setEditingImages(false); } }}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>{viewImagesDialog?.npdName} — Reference Images</DialogTitle>
+            <div className="flex items-center justify-between gap-4 pr-6">
+              <DialogTitle>{viewImagesDialog?.npdName} — Reference Images</DialogTitle>
+              <Button
+                size="sm"
+                variant={editingImages ? "default" : "outline"}
+                onClick={() => { setEditingImages((p) => !p); if (!editingImages) setEditedGroups(viewImagesDialog?.groups ?? []); }}
+              >
+                {editingImages ? "Cancel edit" : "Edit groups"}
+              </Button>
+            </div>
           </DialogHeader>
-          <div className="overflow-y-auto flex-1 space-y-6 pr-1">
-            {viewImagesDialog?.groups.map((group, gi) => (
-              <div key={gi} className="space-y-2">
-                <h4 className="text-sm font-semibold">{group.name || `Group ${gi + 1}`} <span className="text-muted-foreground font-normal">({group.images.length} image{group.images.length !== 1 ? "s" : ""})</span></h4>
-                {group.images.length > 0 ? (
-                  <div className="grid grid-cols-4 gap-2">
-                    {group.images.map((url, i) => (
-                      <button key={i} type="button" onClick={() => setLightbox({ urls: group.images, idx: i })}>
-                        <img src={url} alt={`ref-${i + 1}`} className="w-full aspect-square rounded-lg object-cover border hover:opacity-80 transition-opacity cursor-zoom-in" />
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">No images in this group.</p>
-                )}
-                {group.comment && (
-                  <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{group.comment}</p>
-                )}
-              </div>
-            ))}
-          </div>
-          {/* Lightbox inside dialog: Radix won't treat clicks as "outside" */}
-          {lightbox && viewImagesDialog && <Lightbox lightbox={lightbox} onClose={() => setLightbox(null)} onPrev={lightboxPrev} onNext={lightboxNext} />}
+
+          {editingImages ? (
+            /* ── Edit mode ── */
+            <div className="overflow-y-auto flex-1 pr-1">
+              <ImageGroupManager groups={editedGroups} onChange={setEditedGroups} />
+            </div>
+          ) : (
+            /* ── View mode ── */
+            <div className="overflow-y-auto flex-1 space-y-6 pr-1">
+              {viewImagesDialog?.groups.map((group, gi) => (
+                <div key={gi} className="space-y-2">
+                  <h4 className="text-sm font-semibold">{group.name || `Group ${gi + 1}`} <span className="text-muted-foreground font-normal">({group.images.length} image{group.images.length !== 1 ? "s" : ""})</span></h4>
+                  {group.images.length > 0 ? (
+                    <div className="grid grid-cols-4 gap-2">
+                      {group.images.map((url, i) => (
+                        <button key={i} type="button" onClick={() => setLightbox({ urls: group.images, idx: i })}>
+                          <img src={url} alt={`ref-${i + 1}`} className="w-full aspect-square rounded-lg object-cover border hover:opacity-80 transition-opacity cursor-zoom-in" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No images in this group.</p>
+                  )}
+                  {group.comment && (
+                    <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{group.comment}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {editingImages && (
+            <div className="flex justify-end gap-2 border-t pt-3 mt-2">
+              <Button variant="outline" onClick={() => setEditingImages(false)}>Cancel</Button>
+              <Button onClick={saveImages} disabled={savingImages}>
+                {savingImages ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
+          )}
+
+          {lightbox && viewImagesDialog && !editingImages && (
+            <Lightbox lightbox={lightbox} onClose={() => setLightbox(null)} onPrev={lightboxPrev} onNext={lightboxNext} />
+          )}
         </DialogContent>
       </Dialog>
 
