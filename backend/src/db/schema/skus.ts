@@ -74,6 +74,11 @@ export const skuDispatches = pgTable("sku_dispatches", {
   freight:          numeric("freight", { precision: 10, scale: 2 }).notNull().default("0"),
   status:           text("status").notNull().default("Dispatched"),
   notes:            text("notes").notNull().default(""),
+  batchNumber:      text("batch_number"),
+  coaLink:          text("coa_link"),
+  invoiceNumber:    text("invoice_number"),
+  invoiceLink:      text("invoice_link"),
+  qcStatus:         text("qc_status"),
   createdAt:        timestamp("created_at").defaultNow().notNull(),
   updatedAt:        timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [

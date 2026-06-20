@@ -100,7 +100,13 @@ export type ApiSkuDispatch = {
   from: string; to: string;
   transporterName: string; vehicleNumber: string; lrNumber: string; freight: number;
   status: "Planned" | "Dispatched" | "In Transit" | "Delivered" | "Delayed";
-  notes: string; createdAt: string; updatedAt: string;
+  notes: string;
+  batchNumber: string | null;
+  coaLink: string | null;
+  invoiceNumber: string | null;
+  invoiceLink: string | null;
+  qcStatus: "Done" | "Pending" | null;
+  createdAt: string; updatedAt: string;
 };
 
 export type ApiSkuDetail = ApiSku & {

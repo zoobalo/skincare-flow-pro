@@ -17,6 +17,7 @@ import { PRODUCTION_STAGES } from "@/lib/mock/types";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { VendorCardComments } from "@/components/vendor-card-comments";
+import { PostDispatchSection } from "@/components/post-dispatch-section";
 
 export const Route = createFileRoute("/_app/skus/$skuId")({
   loader: async ({ params }) => {
@@ -805,6 +806,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                     </div>
                   )}
                   {d.notes && <p className="text-xs text-muted-foreground leading-relaxed border-t pt-2">{d.notes}</p>}
+                  <PostDispatchSection dispatch={d} />
                 </div>
               );
             })}

@@ -13,6 +13,7 @@ import { MessageSquare, Truck, Plus, Trash2, Edit2, Send, ChevronDown, ChevronRi
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PostDispatchSection } from "@/components/post-dispatch-section";
 import { fmtDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/sku-activity/")({
@@ -371,32 +372,35 @@ function SkuActivityContent({
                   {expanded && dispatches.length > 0 && (
                     <div className="border-t divide-y">
                       {dispatches.map((d) => (
-                        <div key={d.id} className="group grid grid-cols-[1fr_1fr_1fr_auto] gap-4 items-start px-4 py-3 text-sm hover:bg-muted/20 transition-colors">
-                          <div>
-                            <p className="font-medium">{d.goodsName}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{d.goodsType} · Qty {d.quantity}</p>
-                            {d.dispatchDate && <p className="text-xs text-muted-foreground">{fmtDate(d.dispatchDate)}</p>}
+                        <div key={d.id} className="group px-4 py-3 text-sm hover:bg-muted/20 transition-colors">
+                          <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-4 items-start">
+                            <div>
+                              <p className="font-medium">{d.goodsName}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{d.goodsType} · Qty {d.quantity}</p>
+                              {d.dispatchDate && <p className="text-xs text-muted-foreground">{fmtDate(d.dispatchDate)}</p>}
+                            </div>
+                            <div className="text-xs space-y-0.5">
+                              <p><span className="text-muted-foreground">From:</span> {d.from || "—"}</p>
+                              <p><span className="text-muted-foreground">To:</span> {d.to || "—"}</p>
+                              <p><span className="text-muted-foreground">Transporter:</span> {d.transporterName || "—"}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", STATUS_STYLE[d.status] ?? "bg-muted text-muted-foreground")}>
+                                {d.status}
+                              </span>
+                              {d.lrNumber && <p className="text-xs text-muted-foreground">LR: {d.lrNumber}</p>}
+                              {d.vehicleNumber && <p className="text-xs text-muted-foreground">Veh: {d.vehicleNumber}</p>}
+                            </div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDispatch(sku.id, d)}>
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteDispatch(d.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="text-xs space-y-0.5">
-                            <p><span className="text-muted-foreground">From:</span> {d.from || "—"}</p>
-                            <p><span className="text-muted-foreground">To:</span> {d.to || "—"}</p>
-                            <p><span className="text-muted-foreground">Transporter:</span> {d.transporterName || "—"}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", STATUS_STYLE[d.status] ?? "bg-muted text-muted-foreground")}>
-                              {d.status}
-                            </span>
-                            {d.lrNumber && <p className="text-xs text-muted-foreground">LR: {d.lrNumber}</p>}
-                            {d.vehicleNumber && <p className="text-xs text-muted-foreground">Veh: {d.vehicleNumber}</p>}
-                          </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDispatch(sku.id, d)}>
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteDispatch(d.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
+                          <PostDispatchSection dispatch={d} />
                         </div>
                       ))}
                     </div>
