@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import { api, ApiImpLink } from "@/lib/api";
 import { Plus, Pencil, Trash2, Link2, ExternalLink, Search } from "lucide-react";
 import { toast } from "sonner";
+import { PersonalModuleTabs } from "@/components/personal-module-tabs";
 
 export const Route = createFileRoute("/_app/imp-links/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
-    return { items: await api.impLinks.list(sharedTeamId), sharedTeamId };
+    return { items: await api.impLinks.list() };
   },
   component: ImpLinksPage,
   head: () => ({ meta: [{ title: "IMP Links — Zoobalo" }] }),
@@ -24,14 +24,30 @@ export const Route = createFileRoute("/_app/imp-links/")({
 function ImpLinksPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <ImpLinksContent items={data.items} sharedTeamId={data.sharedTeamId} />;
+  return <ImpLinksContent items={data.items} />;
 }
 
 const EMPTY_FORM = { name: "", link: "", comment: "" };
 
-function ImpLinksContent({ items, sharedTeamId }: { items: ApiImpLink[]; sharedTeamId?: string }) {
+function ImpLinksContent({ items: initial }: { items: ApiImpLink[] }) {
   const router = useRouter();
-  const reload = () => router.invalidate();
+  const [sharedUserId, setSharedUserId] = useState<string | undefined>(undefined);
+  const [items, setItems] = useState(initial);
+
+  useEffect(() => { setItems(initial); }, [initial]);
+
+  useEffect(() => {
+    if (sharedUserId === undefined) { setItems(initial); return; }
+    api.impLinks.list(sharedUserId).then(setItems).catch(() => {});
+  }, [sharedUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reload = () => {
+    if (sharedUserId) {
+      api.impLinks.list(sharedUserId).then(setItems).catch(() => {});
+    } else {
+      router.invalidate();
+    }
+  };
 
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -74,7 +90,7 @@ function ImpLinksContent({ items, sharedTeamId }: { items: ApiImpLink[]; sharedT
         await api.impLinks.update(editTarget.id, payload);
         toast.success("Link updated.");
       } else {
-        await api.impLinks.create(payload, sharedTeamId);
+        await api.impLinks.create(payload, sharedUserId);
         toast.success("Link saved.");
       }
       setSheetOpen(false);
@@ -103,6 +119,7 @@ function ImpLinksContent({ items, sharedTeamId }: { items: ApiImpLink[]; sharedT
 
   return (
     <div className="space-y-6 p-6">
+      <PersonalModuleTabs module="imp-links" activeSharedUserId={sharedUserId} onChange={setSharedUserId} />
       <PageHeader
         title="IMP Links"
         description="Save and access important links in one place."

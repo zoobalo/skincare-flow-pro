@@ -9,16 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit2, Trash2, Search, CalendarDays, Package, MessageSquare } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PersonalModuleTabs } from "@/components/personal-module-tabs";
 
 export const Route = createFileRoute("/_app/mft/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
-    const [notes, skus] = await Promise.all([api.mft.list(sharedTeamId), api.skus.list()]);
-    return { notes, skus, sharedTeamId };
+    const [notes, skus] = await Promise.all([api.mft.list(), api.skus.list()]);
+    return { notes, skus };
   },
   pendingComponent: PageSkeleton,
   component: MftPage,
@@ -30,7 +30,7 @@ const GENERAL = "__general__";
 function MftPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <MftContent notes={data.notes} skus={data.skus} sharedTeamId={data.sharedTeamId} />;
+  return <MftContent notes={data.notes} skus={data.skus} />;
 }
 
 function fmtDateLabel(iso: string) {
@@ -45,9 +45,25 @@ function fmtDateShort(iso: string) {
 
 const EMPTY_FORM = { skuId: GENERAL, date: "", notes: "" };
 
-function MftContent({ notes, skus, sharedTeamId }: { notes: ApiMftNote[]; skus: ApiSku[]; sharedTeamId?: string }) {
+function MftContent({ notes: initialNotes, skus }: { notes: ApiMftNote[]; skus: ApiSku[] }) {
   const router = useRouter();
-  const reload = () => router.invalidate();
+  const [sharedUserId, setSharedUserId] = useState<string | undefined>(undefined);
+  const [notes, setNotes] = useState(initialNotes);
+
+  useEffect(() => { setNotes(initialNotes); }, [initialNotes]);
+
+  useEffect(() => {
+    if (sharedUserId === undefined) { setNotes(initialNotes); return; }
+    api.mft.list(sharedUserId).then(setNotes).catch(() => {});
+  }, [sharedUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reload = () => {
+    if (sharedUserId) {
+      api.mft.list(sharedUserId).then(setNotes).catch(() => {});
+    } else {
+      router.invalidate();
+    }
+  };
 
   const skuMap = Object.fromEntries(skus.map((s) => [s.id, s]));
 
@@ -100,7 +116,7 @@ function MftContent({ notes, skus, sharedTeamId }: { notes: ApiMftNote[]; skus: 
         await api.mft.update(editing.id, payload);
         toast.success("Note updated");
       } else {
-        await api.mft.create(payload, sharedTeamId);
+        await api.mft.create(payload, sharedUserId);
         toast.success("Note added");
       }
       setSheetOpen(false);
@@ -130,6 +146,7 @@ function MftContent({ notes, skus, sharedTeamId }: { notes: ApiMftNote[]; skus: 
 
   return (
     <div className="space-y-6 p-6">
+      <PersonalModuleTabs module="mft" activeSharedUserId={sharedUserId} onChange={setSharedUserId} />
       <PageHeader
         title="MFT"
         description="Weekly manufacturing follow-up meeting notes"

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 const PROCUREMENT_DEPT = "skincare";
 
 // Routes available to non-procurement departments
-const COMMON_ROUTES = new Set(["/tasks", "/follow-ups", "/imp-links", "/courier", "/directory"]);
+const COMMON_ROUTES = new Set(["/tasks", "/follow-ups", "/imp-links", "/courier", "/directory", "/sharing"]);
 
 const DEPT_LABELS: Record<string, string> = {
   skincare:  "Procurement and Operations",
@@ -72,7 +72,7 @@ const nav = [
   ]},
   { group: "Admin", items: [
     { to: "/users",   label: "User Management", icon: UserCog, adminOnly: true },
-    { to: "/sharing", label: "Sharing",          icon: Share2,  adminOnly: true },
+    { to: "/sharing", label: "Sharing",          icon: Share2                   },
     { to: "/settings", label: "Settings",        icon: Settings                 },
   ]},
 ] as const;

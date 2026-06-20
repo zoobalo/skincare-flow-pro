@@ -13,13 +13,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Edit2, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { PersonalModuleTabs } from "@/components/personal-module-tabs";
 
 export const Route = createFileRoute("/_app/tasks/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
-    const [tasks, skus] = await Promise.all([api.tasks.list(sharedTeamId), api.skus.list()]);
-    return { tasks, skus, sharedTeamId };
+    const [tasks, skus] = await Promise.all([api.tasks.list(), api.skus.list()]);
+    return { tasks, skus };
   },
   pendingComponent: PageSkeleton,
   component: TasksPage,
@@ -51,16 +51,29 @@ const EMPTY: Omit<ApiTask, "id" | "createdAt" | "updatedAt"> = {
 function TasksPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <PageSkeleton />;
-  return <TasksContent tasks={loaderData.tasks} skus={loaderData.skus} sharedTeamId={loaderData.sharedTeamId} />;
+  return <TasksContent tasks={loaderData.tasks} skus={loaderData.skus} />;
 }
 
-function TasksContent({ tasks, skus, sharedTeamId }: { tasks: Awaited<ReturnType<typeof api.tasks.list>>; skus: Awaited<ReturnType<typeof api.skus.list>>; sharedTeamId?: string }) {
+function TasksContent({ tasks, skus }: { tasks: Awaited<ReturnType<typeof api.tasks.list>>; skus: Awaited<ReturnType<typeof api.skus.list>> }) {
   const router = useRouter();
-  const reload = () => router.invalidate();
+  const [sharedUserId, setSharedUserId] = useState<string | undefined>(undefined);
 
   const [localTasks, setLocalTasks] = useState(tasks);
-  // Sync when loader refreshes (after create/delete)
   useEffect(() => { setLocalTasks(tasks); }, [tasks]);
+
+  // Re-fetch when switching tabs
+  useEffect(() => {
+    if (sharedUserId === undefined) { setLocalTasks(tasks); return; }
+    api.tasks.list(sharedUserId).then(setLocalTasks).catch(() => {});
+  }, [sharedUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reload = () => {
+    if (sharedUserId) {
+      api.tasks.list(sharedUserId).then(setLocalTasks).catch(() => {});
+    } else {
+      router.invalidate();
+    }
+  };
 
   const updateStatusOptimistic = async (taskId: string, newStatus: ApiTask["status"]) => {
     const prev = localTasks.find((t) => t.id === taskId);
@@ -109,7 +122,7 @@ function TasksContent({ tasks, skus, sharedTeamId }: { tasks: Awaited<ReturnType
         await api.tasks.update(editTarget.id, payload);
         toast.success("Task updated.");
       } else {
-        await api.tasks.create(payload, sharedTeamId);
+        await api.tasks.create(payload, sharedUserId);
         toast.success("Task added.");
       }
       setSheetOpen(false);
@@ -159,6 +172,7 @@ function TasksContent({ tasks, skus, sharedTeamId }: { tasks: Awaited<ReturnType
 
   return (
     <div className="space-y-6">
+      <PersonalModuleTabs module="tasks" activeSharedUserId={sharedUserId} onChange={setSharedUserId} />
       <PageHeader
         title="Task Management"
         description={`${localTasks.length} task${localTasks.length !== 1 ? "s" : ""}`}

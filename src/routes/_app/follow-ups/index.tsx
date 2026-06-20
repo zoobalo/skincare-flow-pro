@@ -12,12 +12,12 @@ import { Plus, Trash2, Edit2, PhoneCall } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PersonalModuleTabs } from "@/components/personal-module-tabs";
 
 export const Route = createFileRoute("/_app/follow-ups/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
-    return { contacts: await api.followUps.list(sharedTeamId), sharedTeamId };
+    return { contacts: await api.followUps.list() };
   },
   pendingComponent: PageSkeleton,
   component: FollowUpsPage,
@@ -31,16 +31,28 @@ const EMPTY_CONTACT = { name: "", phone: "", email: "", notes: "" };
 function FollowUpsPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <FollowUpsContent contacts={data.contacts} sharedTeamId={data.sharedTeamId} />;
+  return <FollowUpsContent contacts={data.contacts} />;
 }
 
-function FollowUpsContent({ contacts: initial, sharedTeamId }: { contacts: Contact[]; sharedTeamId?: string }) {
+function FollowUpsContent({ contacts: initial }: { contacts: Contact[] }) {
   const router = useRouter();
-  const reload = () => router.invalidate();
+  const [sharedUserId, setSharedUserId] = useState<string | undefined>(undefined);
 
   const [contacts, setContacts] = useState(initial);
-  // Sync local state when the loader refreshes (after add/delete operations)
   useEffect(() => { setContacts(initial); }, [initial]);
+
+  useEffect(() => {
+    if (sharedUserId === undefined) { setContacts(initial); return; }
+    api.followUps.list(sharedUserId).then(setContacts).catch(() => {});
+  }, [sharedUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reload = () => {
+    if (sharedUserId) {
+      api.followUps.list(sharedUserId).then(setContacts).catch(() => {});
+    } else {
+      router.invalidate();
+    }
+  };
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
@@ -68,7 +80,7 @@ function FollowUpsContent({ contacts: initial, sharedTeamId }: { contacts: Conta
         await api.followUps.updateContact(editing.id, form);
         toast.success("Contact updated");
       } else {
-        await api.followUps.createContact(form, sharedTeamId);
+        await api.followUps.createContact(form, sharedUserId);
         toast.success("Contact added");
       }
       setSheetOpen(false);
@@ -151,6 +163,7 @@ function FollowUpsContent({ contacts: initial, sharedTeamId }: { contacts: Conta
 
   return (
     <div className="space-y-6 p-6">
+      <PersonalModuleTabs module="follow-ups" activeSharedUserId={sharedUserId} onChange={setSharedUserId} />
       <PageHeader
         title="Follow Up"
         description="Manage daily follow-ups with contacts"

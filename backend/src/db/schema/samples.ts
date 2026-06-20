@@ -5,8 +5,9 @@ export const samples = pgTable("samples", {
   personName: text("person_name").notNull(),
   purpose:    text("purpose"),
   comment:    text("comment"),
-  teamId:     text("team_id").notNull(),
-  createdAt:  timestamp("created_at").defaultNow().notNull(),
+  teamId:      text("team_id").notNull(),
+  ownerUserId: text("owner_user_id").notNull().default(""),
+  createdAt:   timestamp("created_at").defaultNow().notNull(),
 }, (t) => [
   index("samples_team_idx").on(t.teamId),
 ]);

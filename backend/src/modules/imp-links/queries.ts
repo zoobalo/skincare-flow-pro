@@ -2,8 +2,8 @@ import { db } from "../../db/client.ts";
 import { impLinks } from "../../db/schema/imp-links.ts";
 import { eq, desc } from "drizzle-orm";
 
-export const getAllImpLinks = (teamId: string) =>
-  db.select().from(impLinks).where(eq(impLinks.teamId, teamId)).orderBy(desc(impLinks.createdAt));
+export const getAllImpLinks = (ownerUserId: string) =>
+  db.select().from(impLinks).where(eq(impLinks.ownerUserId, ownerUserId)).orderBy(desc(impLinks.createdAt));
 
 export const createImpLink = (data: typeof impLinks.$inferInsert) =>
   db.insert(impLinks).values(data).returning();

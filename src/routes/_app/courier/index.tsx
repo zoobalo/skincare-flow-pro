@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import { api, ApiCourier } from "@/lib/api";
 import { Plus, Pencil, Trash2, Package, Search, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { PersonalModuleTabs } from "@/components/personal-module-tabs";
 
 export const Route = createFileRoute("/_app/courier/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
-    return { items: await api.couriers.list(sharedTeamId), sharedTeamId };
+    return { items: await api.couriers.list() };
   },
   component: CourierPage,
   head: () => ({ meta: [{ title: "Courier — Zoobalo" }] }),
@@ -54,14 +54,30 @@ function getTrackingUrl(courierPartner: string, docketNumber: string): string {
 function CourierPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <CourierContent items={data.items} sharedTeamId={data.sharedTeamId} />;
+  return <CourierContent items={data.items} />;
 }
 
 const EMPTY_FORM = { name: "", courierPartner: "", dispatchDate: "", docketNumber: "", comment: "" };
 
-function CourierContent({ items, sharedTeamId }: { items: ApiCourier[]; sharedTeamId?: string }) {
+function CourierContent({ items: initial }: { items: ApiCourier[] }) {
   const router = useRouter();
-  const reload = () => router.invalidate();
+  const [sharedUserId, setSharedUserId] = useState<string | undefined>(undefined);
+  const [items, setItems] = useState(initial);
+
+  useEffect(() => { setItems(initial); }, [initial]);
+
+  useEffect(() => {
+    if (sharedUserId === undefined) { setItems(initial); return; }
+    api.couriers.list(sharedUserId).then(setItems).catch(() => {});
+  }, [sharedUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reload = () => {
+    if (sharedUserId) {
+      api.couriers.list(sharedUserId).then(setItems).catch(() => {});
+    } else {
+      router.invalidate();
+    }
+  };
 
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -114,7 +130,7 @@ function CourierContent({ items, sharedTeamId }: { items: ApiCourier[]; sharedTe
         await api.couriers.update(editTarget.id, payload);
         toast.success("Courier updated.");
       } else {
-        await api.couriers.create(payload, sharedTeamId);
+        await api.couriers.create(payload, sharedUserId);
         toast.success("Courier added.");
       }
       setSheetOpen(false);
@@ -142,6 +158,7 @@ function CourierContent({ items, sharedTeamId }: { items: ApiCourier[]; sharedTe
 
   return (
     <div className="space-y-6 p-6">
+      <PersonalModuleTabs module="courier" activeSharedUserId={sharedUserId} onChange={setSharedUserId} />
       <PageHeader
         title="Courier"
         description="Track dispatched and received couriers."

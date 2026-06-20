@@ -18,6 +18,7 @@ export const tasks = pgTable("tasks", {
   productType: text("product_type").$type<TaskProductType>().default("None"),
   deadlineDate: date("deadline_date", { mode: "string" }),
   teamId:      text("team_id").notNull(),
+  ownerUserId: text("owner_user_id").notNull().default(""),
   createdAt:   timestamp("created_at").defaultNow().notNull(),
   updatedAt:   timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [

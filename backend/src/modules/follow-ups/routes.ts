@@ -1,21 +1,21 @@
 import { Hono } from "hono";
 import { getAllContacts, createContact, updateContact, deleteContact, createTask, updateTask, deleteTask } from "./queries.ts";
-import { resolveTeamId } from "../../lib/resolve-team.ts";
+import { resolveOwnerId } from "../../lib/resolve-owner.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
 
 export const followUpRoutes = new Hono()
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    const teamId = await resolveTeamId(c, user, "follow-ups");
-    if (!teamId) return c.json({ error: "Forbidden" }, 403);
-    return c.json(await getAllContacts(teamId));
+    const ownerUserId = await resolveOwnerId(c, user, "follow-ups");
+    if (!ownerUserId) return c.json({ error: "Forbidden" }, 403);
+    return c.json(await getAllContacts(ownerUserId));
   })
   .post("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    const teamId = await resolveTeamId(c, user, "follow-ups");
-    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    const ownerUserId = await resolveOwnerId(c, user, "follow-ups");
+    if (!ownerUserId) return c.json({ error: "Forbidden" }, 403);
     const body = await c.req.json();
-    const [created] = await createContact({ ...body, id: crypto.randomUUID(), teamId });
+    const [created] = await createContact({ ...body, id: crypto.randomUUID(), teamId: user.teamId, ownerUserId });
     return c.json(created, 201);
   })
   .patch("/:id", async (c) => {

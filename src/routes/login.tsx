@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { auth, sharesApi } from "@/lib/api";
 import { saveSession, getToken, getHomeRoute } from "@/lib/auth";
-import { saveGrants } from "@/lib/grants";
+import { saveGrants, saveUserGrants } from "@/lib/grants";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -37,10 +37,14 @@ function LoginPage() {
       const res = await auth.login(email, password);
       if (res.error) { setError(res.error); return; }
       saveSession(res.token, res.user);
-      // Fetch grants before navigating so sidebar has them on first render
+      // Fetch both grant types before navigating so sidebar/tabs have them on first render
       try {
-        const g = await sharesApi.listMyGrants();
-        saveGrants(Array.isArray(g) ? g : []);
+        const [teamGrants, userGrants] = await Promise.all([
+          sharesApi.listMyGrants(),
+          sharesApi.listMyUserGrants(),
+        ]);
+        saveGrants(Array.isArray(teamGrants) ? teamGrants : []);
+        saveUserGrants(Array.isArray(userGrants) ? userGrants : []);
       } catch {}
       navigate({ to: getHomeRoute(res.user) });
     } catch {

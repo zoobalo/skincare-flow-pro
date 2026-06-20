@@ -12,12 +12,12 @@ import { Plus, Trash2, RotateCcw, CheckCircle2, FlaskConical, X } from "lucide-r
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PersonalModuleTabs } from "@/components/personal-module-tabs";
 
 export const Route = createFileRoute("/_app/sample/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
-    return { samples: await api.samples.list(sharedTeamId), sharedTeamId };
+    return { samples: await api.samples.list() };
   },
   pendingComponent: PageSkeleton,
   component: SamplePage,
@@ -31,19 +31,32 @@ function fmtDate(iso: string) {
 function SamplePage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <SampleContent initialSamples={data.samples} sharedTeamId={data.sharedTeamId} />;
+  return <SampleContent initialSamples={data.samples} />;
 }
 
 type ProductRow = { productName: string; quantity: number };
 
 const EMPTY_PRODUCT: ProductRow = { productName: "", quantity: 1 };
 
-function SampleContent({ initialSamples, sharedTeamId }: { initialSamples: ApiSample[]; sharedTeamId?: string }) {
+function SampleContent({ initialSamples }: { initialSamples: ApiSample[] }) {
   const router = useRouter();
-  const reload = () => router.invalidate();
+  const [sharedUserId, setSharedUserId] = useState<string | undefined>(undefined);
 
   const [samples, setSamples] = useState(initialSamples);
   useEffect(() => { setSamples(initialSamples); }, [initialSamples]);
+
+  useEffect(() => {
+    if (sharedUserId === undefined) { setSamples(initialSamples); return; }
+    api.samples.list(sharedUserId).then(setSamples).catch(() => {});
+  }, [sharedUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reload = () => {
+    if (sharedUserId) {
+      api.samples.list(sharedUserId).then(setSamples).catch(() => {});
+    } else {
+      router.invalidate();
+    }
+  };
 
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -80,7 +93,7 @@ function SampleContent({ initialSamples, sharedTeamId }: { initialSamples: ApiSa
         purpose: purpose.trim() || undefined,
         comment: comment.trim() || undefined,
         products: validProducts.map((r) => ({ productName: r.productName.trim(), quantity: Number(r.quantity) || 1 })),
-      }, sharedTeamId);
+      }, sharedUserId);
       if (created.error) { toast.error(created.error); return; }
       setSheetOpen(false);
       toast.success("Sample record added");
@@ -132,6 +145,7 @@ function SampleContent({ initialSamples, sharedTeamId }: { initialSamples: ApiSa
 
   return (
     <div className="space-y-6 p-6">
+      <PersonalModuleTabs module="sample" activeSharedUserId={sharedUserId} onChange={setSharedUserId} />
       <PageHeader
         title="Sample Tracking"
         description="Track products given out for photoshoots, testing, and other purposes"

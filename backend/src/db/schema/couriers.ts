@@ -8,6 +8,7 @@ export const couriers = pgTable("couriers", {
   docketNumber:   text("docket_number").notNull(),
   comment:        text("comment"),
   teamId:         text("team_id").notNull(),
+  ownerUserId:    text("owner_user_id").notNull().default(""),
   createdAt:      timestamp("created_at").defaultNow().notNull(),
   updatedAt:      timestamp("updated_at").defaultNow().notNull(),
 });
