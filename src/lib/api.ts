@@ -202,7 +202,7 @@ export type ApiNpd = {
 };
 
 export type ApiSkuComment = {
-  id: string; skuId: string; comment: string; createdAt: string; updatedAt: string;
+  id: string; skuId: string; comment: string; authorName: string; createdAt: string; updatedAt: string;
 };
 
 export type ApiSkuCommentWithSku = ApiSkuComment & { skuCode: string; skuName: string };

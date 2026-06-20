@@ -284,7 +284,10 @@ function SkuActivityContent({
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="min-w-0 flex-1">
                                     <p className="text-sm leading-relaxed">{c.comment}</p>
-                                    <p className="mt-0.5 text-[10px] text-muted-foreground">{fmtDateTime(c.createdAt)}</p>
+                                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                      {c.authorName && <span className="font-medium text-foreground/60">{c.authorName} · </span>}
+                                      {fmtDateTime(c.createdAt)}
+                                    </p>
                                   </div>
                                   <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Button

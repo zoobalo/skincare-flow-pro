@@ -157,11 +157,13 @@ export const skuItemRoutes = new Hono()
     return c.json(rows);
   })
   .post("/:skuId/comments", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
     const { comment } = await c.req.json();
     const [created] = await db.insert(skuComments).values({
-      id:      crypto.randomUUID(),
-      skuId:   c.req.param("skuId"),
-      comment: comment ?? "",
+      id:         crypto.randomUUID(),
+      skuId:      c.req.param("skuId"),
+      comment:    comment ?? "",
+      authorName: user.name ?? "",
     }).returning();
     return c.json(created, 201);
   })

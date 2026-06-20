@@ -804,6 +804,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                   </div>
                 </div>
                 <p className="mt-1.5 text-xs text-muted-foreground">
+                  {c.authorName && <span className="font-medium text-foreground/70">{c.authorName} · </span>}
                   {new Date(c.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                   {c.updatedAt !== c.createdAt && " · edited"}
                 </p>
