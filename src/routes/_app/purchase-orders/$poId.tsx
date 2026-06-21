@@ -26,12 +26,24 @@ function POPrintPage() {
         @media print {
           body * { visibility: hidden; }
           #po-document, #po-document * { visibility: visible; }
+          #po-print-header {
+            display: block !important;
+            visibility: visible !important;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: white;
+            padding: 5mm 12mm 3mm;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: center;
+            z-index: 100;
+          }
+          #po-first-header { display: none !important; }
           #po-document {
             position: absolute; left: 0; top: 0; width: 100%;
             border: none !important; border-radius: 0 !important;
             box-shadow: none !important; overflow: visible !important;
             max-width: none !important;
-            padding: 10mm 12mm;
+            padding: 32mm 12mm 10mm;
             box-sizing: border-box;
           }
           #po-document thead { display: table-header-group; }
