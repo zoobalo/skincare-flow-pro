@@ -22,32 +22,23 @@ function POPrintPage() {
   return (
     <>
       <style>{`
-        @page { size: A4; margin: 28mm 0 0 0; }
+        @page { size: A4; margin: 0; }
         @media print {
           body * { visibility: hidden; }
           #po-document, #po-document * { visibility: visible; }
-          #po-print-header {
-            display: block !important;
-            visibility: visible !important;
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            background: white;
-            padding: 5mm 12mm 3mm;
-            border-bottom: 1px solid #e5e7eb;
-            text-align: center;
-            z-index: 100;
-          }
-          #po-first-header { display: none !important; }
           #po-document {
             position: absolute; left: 0; top: 0; width: 100%;
             border: none !important; border-radius: 0 !important;
             box-shadow: none !important; overflow: visible !important;
             max-width: none !important;
-            padding: 4mm 12mm 10mm;
+            padding: 0 12mm 10mm;
             box-sizing: border-box;
           }
-          #po-document thead { display: table-header-group; }
-          #po-document tbody tr { page-break-inside: avoid; break-inside: avoid; }
+          .po-layout-table { width: 100%; border-collapse: collapse; }
+          .po-layout-table > thead { display: table-header-group; }
+          .po-layout-table > thead > tr > td { padding-top: 8mm; }
+          .po-items-table > thead { display: table-header-group; }
+          .po-items-table > tbody > tr { page-break-inside: avoid; break-inside: avoid; }
         }
       `}</style>
 
