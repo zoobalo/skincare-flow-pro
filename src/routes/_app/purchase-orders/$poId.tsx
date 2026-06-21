@@ -22,11 +22,18 @@ function POPrintPage() {
   return (
     <>
       <style>{`
-        @page { margin: 0; size: A4; }
+        @page { size: A4; margin: 12mm 15mm; }
         @media print {
           body * { visibility: hidden; }
           #po-document, #po-document * { visibility: visible; }
-          #po-document { position: absolute; left: 0; top: 0; width: 100%; }
+          #po-document {
+            position: absolute; left: 0; top: 0; width: 100%;
+            border: none !important; border-radius: 0 !important;
+            box-shadow: none !important; overflow: visible !important;
+            max-width: none !important;
+          }
+          #po-document thead { display: table-header-group; }
+          #po-document tbody tr { page-break-inside: avoid; break-inside: avoid; }
         }
       `}</style>
 

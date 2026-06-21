@@ -125,7 +125,7 @@ export function PODocument(props: PODocumentProps) {
       style={{ fontFamily: "Arial, sans-serif", fontSize: 13 }}
     >
       {/* Company header */}
-      <div className="border-b px-8 py-5 text-center">
+      <div className="border-b px-8 py-5 text-center" style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
         <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: 1 }}>{CO.name}</div>
         <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>{CO.address}</div>
         <div style={{ fontSize: 11, color: "#555" }}>Phone No: {CO.phone} | email: {CO.email}</div>
@@ -138,7 +138,7 @@ export function PODocument(props: PODocumentProps) {
       </div>
 
       {/* Two-column: Party (left) | Order details (right) */}
-      <div className="grid grid-cols-2" style={{ borderBottom: "1px solid #e5e7eb" }}>
+      <div className="grid grid-cols-2" style={{ borderBottom: "1px solid #e5e7eb", pageBreakInside: "avoid", breakInside: "avoid" }}>
         <div className="px-5 py-4" style={{ borderRight: "1px solid #e5e7eb" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Party Details</div>
           <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse" }}>
@@ -178,7 +178,7 @@ export function PODocument(props: PODocumentProps) {
         </thead>
         <tbody>
           {rows.map((row, idx) => (
-            <tr key={idx}>
+            <tr key={idx} style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
               <td style={tdC}>{idx + 1}</td>
               <td style={tdL}>
                 <div style={{ fontWeight: 500 }}>{row.description}</div>
@@ -193,7 +193,7 @@ export function PODocument(props: PODocumentProps) {
             </tr>
           ))}
           {Array.from({ length: blankCount }, (_, i) => (
-            <tr key={`blank-${i}`}>
+            <tr key={`blank-${i}`} style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
               {Array.from({ length: 9 }, (_, ci) => (
                 <td key={ci} style={{ ...tdC, borderRight: ci < 8 ? "1px solid #e5e7eb" : "none", height: 28 }}></td>
               ))}
@@ -212,19 +212,19 @@ export function PODocument(props: PODocumentProps) {
       </table>
 
       {/* Amount in words */}
-      <div style={{ borderTop: "1px solid #e5e7eb", padding: "8px 16px", fontSize: 11 }}>
+      <div style={{ borderTop: "1px solid #e5e7eb", padding: "8px 16px", fontSize: 11, pageBreakInside: "avoid", breakInside: "avoid" }}>
         <span style={{ color: "#777" }}>Amount in Words: </span>
         <span style={{ fontWeight: 600 }}>{amountToWords(totTotal)}</span>
       </div>
 
       {notes && (
-        <div style={{ borderTop: "1px solid #e5e7eb", padding: "8px 16px", fontSize: 11 }}>
+        <div style={{ borderTop: "1px solid #e5e7eb", padding: "8px 16px", fontSize: 11, pageBreakInside: "avoid", breakInside: "avoid" }}>
           <span style={{ color: "#777" }}>Notes: </span><span>{notes}</span>
         </div>
       )}
 
       {terms && (
-        <div style={{ borderTop: "1px solid #e5e7eb", padding: "12px 16px", fontSize: 11 }}>
+        <div style={{ borderTop: "1px solid #e5e7eb", padding: "12px 16px", fontSize: 11, pageBreakInside: "avoid", breakInside: "avoid" }}>
           <div style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: "#555", fontSize: 10, marginBottom: 6 }}>
             Terms &amp; Conditions
           </div>
@@ -287,7 +287,7 @@ export function buildPoHtml(props: PODocumentProps): string {
 
   const dataRows = rows.map((row, idx) => {
     const skuDesc = `<div style="font-weight:500">${row.description}</div>`;
-    return `<tr>
+    return `<tr style="page-break-inside:avoid;break-inside:avoid">
       <td style="${cellB};text-align:center">${idx + 1}</td>
       <td style="${cellB}">${skuDesc}</td>
       <td style="${cellB};text-align:center">—</td>
@@ -304,21 +304,21 @@ export function buildPoHtml(props: PODocumentProps): string {
     `<tr>${Array.from({ length: 9 }, (_, i) => `<td style="${cellB}${i === 8 ? ";border-right:none" : ""};height:28px"></td>`).join("")}</tr>`
   ).join("");
 
-  const termsHtml = terms ? `<div style="border-top:1px solid #e5e7eb;padding:12px 16px;font-size:11px"><div style="font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;font-size:10px;margin-bottom:6px">Terms &amp; Conditions</div><div style="white-space:pre-line;line-height:1.6;color:#444">${terms.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</div></div>` : "";
-  const notesHtml = notes ? `<div style="border-top:1px solid #e5e7eb;padding:8px 16px;font-size:11px"><span style="color:#777">Notes: </span>${notes}</div>` : "";
+  const termsHtml = terms ? `<div class="po-no-break" style="border-top:1px solid #e5e7eb;padding:12px 16px;font-size:11px"><div style="font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;font-size:10px;margin-bottom:6px">Terms &amp; Conditions</div><div style="white-space:pre-line;line-height:1.6;color:#444">${terms.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</div></div>` : "";
+  const notesHtml = notes ? `<div class="po-no-break" style="border-top:1px solid #e5e7eb;padding:8px 16px;font-size:11px"><span style="color:#777">Notes: </span>${notes}</div>` : "";
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${poNumber}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#111;background:#fff}@page{margin:0;size:A4}@media print{body{margin:0}}table{border-collapse:collapse}</style>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#111;background:#fff}@page{size:A4;margin:12mm 15mm}@media print{body{margin:0}}table{border-collapse:collapse}thead{display:table-header-group}tbody tr{page-break-inside:avoid;break-inside:avoid}.po-no-break{page-break-inside:avoid;break-inside:avoid}</style>
 </head><body>
 <div style="max-width:900px;margin:0 auto;border:1px solid #e5e7eb">
-  <div style="border-bottom:1px solid #e5e7eb;padding:20px 32px;text-align:center">
+  <div class="po-no-break" style="border-bottom:1px solid #e5e7eb;padding:20px 32px;text-align:center">
     <div style="font-size:18px;font-weight:700;letter-spacing:1px">${CO.name}</div>
     <div style="font-size:11px;color:#555;margin-top:4px">${CO.address}</div>
     <div style="font-size:11px;color:#555">Phone No: ${CO.phone} | email: ${CO.email}</div>
     <div style="font-size:11px;color:#555">GST No: ${CO.gst} | PAN NO: ${CO.pan}</div>
   </div>
   <div style="border-bottom:1px solid #e5e7eb;padding:10px 32px;text-align:center;font-size:15px;font-weight:600">PURCHASE ORDER</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e5e7eb">
+  <div class="po-no-break" style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e5e7eb">
     <div style="padding:16px 20px;border-right:1px solid #e5e7eb">
       <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Party Details</div>
       <table style="width:100%;font-size:11px"><tbody>${toPartyRows}</tbody></table>
@@ -341,7 +341,7 @@ export function buildPoHtml(props: PODocumentProps): string {
       </tr>
     </tfoot>
   </table>
-  <div style="border-top:1px solid #e5e7eb;padding:8px 16px;font-size:11px">
+  <div class="po-no-break" style="border-top:1px solid #e5e7eb;padding:8px 16px;font-size:11px">
     <span style="color:#777">Amount in Words: </span>
     <span style="font-weight:600">${amountToWords(totTotal)}</span>
   </div>
