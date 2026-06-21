@@ -88,9 +88,9 @@ export function PODocument(props: PODocumentProps) {
     ? items
     : [{ description: materialType, quantity, rate, gstRate, subtotal: quantity * rate, gstAmount, total }];
 
-  const totSubtotal  = rows.reduce((s, r) => s + r.subtotal, 0);
-  const totGstAmount = rows.reduce((s, r) => s + r.gstAmount, 0);
-  const totTotal     = rows.reduce((s, r) => s + r.total, 0);
+  const totSubtotal  = rows.reduce((s, r) => s + (r.subtotal ?? 0), 0);
+  const totGstAmount = rows.reduce((s, r) => s + (r.gstAmount ?? 0), 0);
+  const totTotal     = rows.reduce((s, r) => s + (r.total ?? 0), 0);
 
   // Fill blank rows so the table always shows at least 5 data rows
   const blankCount = Math.max(0, 5 - rows.length);
@@ -192,12 +192,12 @@ export function PODocument(props: PODocumentProps) {
                 <div style={{ fontWeight: 500 }}>{row.description}</div>
               </td>
               <td style={tdC}>—</td>
-              <td style={tdR}>{row.quantity.toLocaleString("en-IN")}</td>
-              <td style={tdR}>{fmt(row.rate)}</td>
-              <td style={tdR}>{fmt(row.subtotal)}</td>
-              <td style={tdC}>{row.gstRate}%</td>
-              <td style={tdR}>{fmt(row.gstAmount)}</td>
-              <td style={{ ...tdR, borderRight: "none", fontWeight: 600 }}>{fmt(row.total)}</td>
+              <td style={tdR}>{(row.quantity ?? 0).toLocaleString("en-IN")}</td>
+              <td style={tdR}>{fmt(row.rate ?? 0)}</td>
+              <td style={tdR}>{fmt(row.subtotal ?? 0)}</td>
+              <td style={tdC}>{row.gstRate ?? 0}%</td>
+              <td style={tdR}>{fmt(row.gstAmount ?? 0)}</td>
+              <td style={{ ...tdR, borderRight: "none", fontWeight: 600 }}>{fmt(row.total ?? 0)}</td>
             </tr>
           ))}
           {Array.from({ length: blankCount }, (_, i) => (
@@ -252,9 +252,9 @@ export function buildPoHtml(props: PODocumentProps): string {
     ? items
     : [{ description: materialType, quantity, rate, gstRate, subtotal: quantity * rate, gstAmount, total }];
 
-  const totSubtotal  = rows.reduce((s, r) => s + r.subtotal, 0);
-  const totGstAmount = rows.reduce((s, r) => s + r.gstAmount, 0);
-  const totTotal     = rows.reduce((s, r) => s + r.total, 0);
+  const totSubtotal  = rows.reduce((s, r) => s + (r.subtotal ?? 0), 0);
+  const totGstAmount = rows.reduce((s, r) => s + (r.gstAmount ?? 0), 0);
+  const totTotal     = rows.reduce((s, r) => s + (r.total ?? 0), 0);
   const blankCount   = Math.max(0, 5 - rows.length);
 
   const orderRows: [string, string][] = [
