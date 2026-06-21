@@ -316,7 +316,7 @@ export function buildPoHtml(props: PODocumentProps): string {
   const notesHtml = notes ? `<div class="po-no-break" style="border-top:1px solid #e5e7eb;padding:8px 16px;font-size:11px"><span style="color:#777">Notes: </span>${notes}</div>` : "";
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${poNumber}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#111;background:#fff;padding:10mm 12mm}@page{size:A4;margin:0}table{border-collapse:collapse}thead{display:table-header-group}tbody tr{page-break-inside:avoid;break-inside:avoid}.po-no-break{page-break-inside:avoid;break-inside:avoid}#po-print-header{display:none}@media print{body{padding-top:32mm}#po-print-header{display:block;position:fixed;top:0;left:0;right:0;background:white;padding:5mm 12mm 3mm;border-bottom:1px solid #e5e7eb;text-align:center;z-index:100}#po-first-header{display:none}}</style>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#111;background:#fff;padding:4mm 12mm 10mm}@page{size:A4;margin:28mm 0 0 0}table{border-collapse:collapse}thead{display:table-header-group}tbody tr{page-break-inside:avoid;break-inside:avoid}.po-no-break{page-break-inside:avoid;break-inside:avoid}#po-print-header{display:none}@media print{#po-print-header{display:block;position:fixed;top:0;left:0;right:0;background:white;padding:5mm 12mm 3mm;border-bottom:1px solid #e5e7eb;text-align:center;z-index:100}#po-first-header{display:none}}</style>
 </head><body>
 <div id="po-print-header">
   <div style="font-size:18px;font-weight:700;letter-spacing:1px">${CO.name}</div>
