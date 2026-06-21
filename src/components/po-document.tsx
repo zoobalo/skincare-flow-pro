@@ -308,7 +308,7 @@ export function buildPoHtml(props: PODocumentProps): string {
   const notesHtml = notes ? `<div class="po-no-break" style="border-top:1px solid #e5e7eb;padding:8px 16px;font-size:11px"><span style="color:#777">Notes: </span>${notes}</div>` : "";
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${poNumber}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#111;background:#fff}@page{size:A4;margin:12mm 15mm}@media print{body{margin:0}}table{border-collapse:collapse}thead{display:table-header-group}tbody tr{page-break-inside:avoid;break-inside:avoid}.po-no-break{page-break-inside:avoid;break-inside:avoid}</style>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#111;background:#fff;padding:10mm 12mm}@page{size:A4;margin:0}table{border-collapse:collapse}thead{display:table-header-group}tbody tr{page-break-inside:avoid;break-inside:avoid}.po-no-break{page-break-inside:avoid;break-inside:avoid}</style>
 </head><body>
 <div style="max-width:900px;margin:0 auto;border:1px solid #e5e7eb">
   <div class="po-no-break" style="border-bottom:1px solid #e5e7eb;padding:20px 32px;text-align:center">

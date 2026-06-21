@@ -22,7 +22,7 @@ function POPrintPage() {
   return (
     <>
       <style>{`
-        @page { size: A4; margin: 12mm 15mm; }
+        @page { size: A4; margin: 0; }
         @media print {
           body * { visibility: hidden; }
           #po-document, #po-document * { visibility: visible; }
@@ -31,6 +31,8 @@ function POPrintPage() {
             border: none !important; border-radius: 0 !important;
             box-shadow: none !important; overflow: visible !important;
             max-width: none !important;
+            padding: 10mm 12mm;
+            box-sizing: border-box;
           }
           #po-document thead { display: table-header-group; }
           #po-document tbody tr { page-break-inside: avoid; break-inside: avoid; }
