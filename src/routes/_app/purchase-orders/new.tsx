@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { fmtDate, DEFAULT_PO_TERMS } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { api, type ApiSku, type ApiVendor, type ApiManufacturer, type ApiPo, typ
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
 import { PODocument, buildPoHtml } from "@/components/po-document";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, ChevronLeft, ChevronRight, Mail, MessageSquareWarning, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ImageIcon, Mail, MessageSquareWarning, Plus, Trash2, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -29,7 +29,10 @@ export const Route = createFileRoute("/_app/purchase-orders/new")({
   head: () => ({ meta: [{ title: "Create Purchase Order — Zoobalo" }] }),
 });
 
-const steps = ["SKU & Material", "Vendor", "Quantity & Pricing", "Delivery", "Terms & Conditions", "Review & Send"] as const;
+const steps = ["SKU & Material", "Vendor", "Quantity & Pricing", "Delivery", "Terms & Conditions", "Attachments", "Review & Send"] as const;
+
+const API_BASE = `${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}`;
+const UPLOAD_ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 
 function genPoNumber() {
@@ -129,6 +132,10 @@ function NewPOWizardInner({ skus, vendors, manufacturers, remarks, pos }: Loader
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [remarksOpen, setRemarksOpen] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const setItem = (idx: number, field: string, value: string | number) =>
     setLineItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
@@ -138,6 +145,37 @@ function NewPOWizardInner({ skus, vendors, manufacturers, remarks, pos }: Loader
 
   const removeItem = (idx: number) =>
     setLineItems(prev => prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev);
+
+  const handleImageFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+    setUploadError(null);
+    const invalid = files.find(f => !UPLOAD_ALLOWED.includes(f.type) || f.size > 1024 * 1024);
+    if (invalid) { setUploadError("Each image must be JPEG/PNG/WebP/GIF and under 1 MB."); return; }
+    setUploadingImages(true);
+    try {
+      const { getToken } = await import("@/lib/auth");
+      const token = getToken();
+      const urls = await Promise.all(files.map(async (file) => {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch(`${API_BASE}/api/upload`, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? "Upload failed");
+        return `${API_BASE}${body.url}` as string;
+      }));
+      setImages(prev => [...prev, ...urls]);
+    } catch {
+      setUploadError("One or more images failed to upload. Please try again.");
+    } finally {
+      setUploadingImages(false);
+    }
+  };
 
   const handleSkuChange = (newSkuId: string) => {
     setSkuId(newSkuId);
@@ -199,6 +237,7 @@ function NewPOWizardInner({ skus, vendors, manufacturers, remarks, pos }: Loader
     status,
     notes:            notes || null,
     terms:            terms || null,
+    images:           images.length > 0 ? images : null,
   });
 
   const createBatchFromPo = async () => {
@@ -261,7 +300,7 @@ function NewPOWizardInner({ skus, vendors, manufacturers, remarks, pos }: Loader
       rate: lineItems[0]?.rate ?? 0,
       gstRate: lineItems[0]?.gstRate ?? 18,
       gstAmount: totalGst, total: grandTotal,
-      items: computedItems, category, deliveryAt: deliveryAddress, notes, terms, vendor: partyForDoc as any, sku,
+      items: computedItems, category, deliveryAt: deliveryAddress, notes, terms, images, vendor: partyForDoc as any, sku,
     });
     const win = window.open("", "_blank");
     if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 300); }
@@ -292,7 +331,7 @@ function NewPOWizardInner({ skus, vendors, manufacturers, remarks, pos }: Loader
         );
       })()}
 
-      <ol className="grid grid-cols-2 gap-2 md:grid-cols-5">
+      <ol className="grid grid-cols-2 gap-2 md:grid-cols-7">
         {steps.map((label, i) => (
           <li key={label} className={cn("flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-xs", i === step && "border-primary bg-primary/5", i < step && "border-success/40 bg-success/5")}>
             <span className={cn("flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold", i < step ? "border-success bg-success text-success-foreground" : i === step ? "border-primary text-primary" : "border-border text-muted-foreground")}>
@@ -502,6 +541,62 @@ function NewPOWizardInner({ skus, vendors, manufacturers, remarks, pos }: Loader
         )}
 
         {step === 5 && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium">Attachment Images</p>
+              <p className="text-xs text-muted-foreground mt-1">Images will appear as a dedicated last page in the PO. You can attach multiple. Optional — skip if not needed.</p>
+            </div>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              className="hidden"
+              onChange={handleImageFiles}
+            />
+            {images.length > 0 && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {images.map((url, idx) => (
+                  <div key={idx} className="relative rounded-lg border overflow-hidden bg-muted">
+                    <img src={url} alt={`Attachment ${idx + 1}`} className="w-full h-32 object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
+                      className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/80 text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              disabled={uploadingImages}
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 py-8 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 disabled:opacity-50"
+            >
+              {uploadingImages ? (
+                <span className="text-xs">Uploading…</span>
+              ) : (
+                <>
+                  <ImageIcon className="h-8 w-8 opacity-40" />
+                  <span>{images.length > 0 ? "Add more images" : "Click to upload images"}</span>
+                  <span className="text-xs opacity-60">JPEG, PNG, WebP or GIF · max 1 MB each · multiple allowed</span>
+                </>
+              )}
+            </button>
+            {images.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Upload className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{images.length} image{images.length > 1 ? "s" : ""} attached — will appear on last page of PO</span>
+              </div>
+            )}
+            {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+          </div>
+        )}
+
+        {step === 6 && (
           <div className="max-h-[70vh] overflow-y-auto rounded-lg border bg-white p-2">
             <PODocument
               poNumber={poNumber}
@@ -517,6 +612,7 @@ function NewPOWizardInner({ skus, vendors, manufacturers, remarks, pos }: Loader
               deliveryAt={deliveryAddress}
               notes={notes}
               terms={terms}
+              images={images}
               vendor={partyForDoc as any}
               sku={sku}
             />

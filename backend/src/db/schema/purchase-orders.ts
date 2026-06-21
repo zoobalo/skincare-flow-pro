@@ -48,6 +48,7 @@ export const purchaseOrders = pgTable("purchase_orders", {
   deliveryAddress:  text("delivery_address"),
   notes:            text("notes"),
   terms:            text("terms"),
+  images:           jsonb("images").$type<string[]>(),
   teamId:        text("team_id").notNull(),
   createdAt:        timestamp("created_at").defaultNow().notNull(),
   updatedAt:        timestamp("updated_at").defaultNow().notNull(),

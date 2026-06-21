@@ -68,6 +68,7 @@ export type PODocumentProps = {
   deliveryAt?: string | null;
   notes?: string | null;
   terms?: string | null;
+  images?: string[] | null;
   vendor?: {
     name?: string; address?: string; city?: string; gst?: string; pan?: string | null;
     contactPerson?: string; mobile?: string; email?: string;
@@ -77,7 +78,7 @@ export type PODocumentProps = {
 
 // ── React component ───────────────────────────────────────────────────────────
 export function PODocument(props: PODocumentProps) {
-  const { poNumber, poDate, materialType, quantity, rate, gstRate, gstAmount, total, category, items, deliveryAt, notes, terms, vendor } = props;
+  const { poNumber, poDate, materialType, quantity, rate, gstRate, gstAmount, total, category, items, deliveryAt, notes, terms, images, vendor } = props;
 
   const fmt = (n: number) => n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -243,6 +244,21 @@ export function PODocument(props: PODocumentProps) {
                 </div>
               )}
 
+              {images && images.length > 0 && (
+                <div style={{ breakBefore: "page", padding: "16px 32px" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: "#555", marginBottom: 16 }}>
+                    Attachments
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+                    {images.map((url, i) => (
+                      <div key={i} style={{ border: "1px solid #e5e7eb", borderRadius: 6, overflow: "hidden", pageBreakInside: "avoid", breakInside: "avoid" }}>
+                        <img src={url} alt={`Attachment ${i + 1}`} style={{ width: "100%", maxHeight: 280, objectFit: "contain", display: "block" }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </td>
           </tr>
         </tbody>
@@ -253,7 +269,7 @@ export function PODocument(props: PODocumentProps) {
 
 // ── Standalone HTML generator for download/print ──────────────────────────────
 export function buildPoHtml(props: PODocumentProps): string {
-  const { poNumber, poDate, materialType, quantity, rate, gstRate, gstAmount, total, category, items, deliveryAt, notes, terms, vendor } = props;
+  const { poNumber, poDate, materialType, quantity, rate, gstRate, gstAmount, total, category, items, deliveryAt, notes, terms, images, vendor } = props;
   const fmt = (n: number) => n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const rows: POLineItem[] = items && items.length > 0
@@ -323,6 +339,9 @@ export function buildPoHtml(props: PODocumentProps): string {
   const notesHtml = notes
     ? `<div style="border-top:1px solid #e5e7eb;padding:8px 16px;font-size:11px;page-break-inside:avoid;break-inside:avoid"><span style="color:#777">Notes: </span>${notes}</div>`
     : "";
+  const imagesHtml = images && images.length > 0
+    ? `<div style="break-before:page;padding:16px 32px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:16px">Attachments</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">${images.map(url => `<div style="border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;page-break-inside:avoid;break-inside:avoid"><img src="${url}" style="width:100%;max-height:280px;object-fit:contain;display:block"/></div>`).join("")}</div></div>`
+    : "";
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${poNumber}</title>
 <style>
@@ -382,7 +401,7 @@ table{border-collapse:collapse}
           <span style="color:#777">Amount in Words: </span>
           <span style="font-weight:600">${amountToWords(totTotal)}</span>
         </div>
-        ${notesHtml}${termsHtml}
+        ${notesHtml}${termsHtml}${imagesHtml}
       </td>
     </tr>
   </tbody>

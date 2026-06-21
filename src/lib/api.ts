@@ -157,6 +157,7 @@ export type ApiPo = {
   dispatchDate: string; expectedDelivery: string;
   status: "To be sent" | "Sent" | "Pending" | "Approved" | "In Production" | "Dispatched" | "Delivered" | "Delayed";
   paymentDue: number | null; amountPaid: number | null; paymentDueDate: string | null; notes: string | null; terms: string | null;
+  images?: string[] | null;
   vendor?: { id: string; name: string; city: string } | null;
   manufacturer?: { id: string; name: string; city: string; location: string } | null;
   sku?: { id: string; code: string; name: string };
