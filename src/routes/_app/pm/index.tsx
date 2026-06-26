@@ -28,8 +28,7 @@ export const Route = createFileRoute("/_app/pm/")({
 
 const PM_CATEGORIES = [
   "All",
-  "Corrugated Box", "Rigid Box", "Mono Carton", "Tube",
-  "Bottle", "Jar", "Pouch", "Label", "Foil/Laminate", "Other",
+  "Corrugated Box", "Rigid Box", "Other",
 ];
 
 const EMPTY = {
