@@ -45,6 +45,8 @@ import { Route as AppArtworkIndexRouteImport } from './routes/_app/artwork/index
 import { Route as AppAnalyticsIndexRouteImport } from './routes/_app/analytics/index'
 import { Route as AppVendorsVendorIdRouteImport } from './routes/_app/vendors/$vendorId'
 import { Route as AppSkusSkuIdRouteImport } from './routes/_app/skus/$skuId'
+import { Route as AppPmIndexRouteImport } from './routes/_app/pm/index'
+import { Route as AppPmPmIdRouteImport } from './routes/_app/pm/$pmId'
 import { Route as AppPurchaseOrdersNewRouteImport } from './routes/_app/purchase-orders/new'
 import { Route as AppPurchaseOrdersPoIdRouteImport } from './routes/_app/purchase-orders/$poId'
 import { Route as AppInventoryRawMaterialsRouteImport } from './routes/_app/inventory/raw-materials'
@@ -230,6 +232,16 @@ const AppSkusSkuIdRoute = AppSkusSkuIdRouteImport.update({
   path: '/skus/$skuId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPmIndexRoute = AppPmIndexRouteImport.update({
+  id: '/pm/',
+  path: '/pm/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPmPmIdRoute = AppPmPmIdRouteImport.update({
+  id: '/pm/$pmId',
+  path: '/pm/$pmId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPurchaseOrdersNewRoute = AppPurchaseOrdersNewRouteImport.update({
   id: '/purchase-orders/new',
   path: '/purchase-orders/new',
@@ -265,6 +277,8 @@ export interface FileRoutesByFullPath {
   '/purchase-orders/new': typeof AppPurchaseOrdersNewRoute
   '/skus/$skuId': typeof AppSkusSkuIdRoute
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
+  '/pm/$pmId': typeof AppPmPmIdRoute
+  '/pm/': typeof AppPmIndexRoute
   '/analytics/': typeof AppAnalyticsIndexRoute
   '/artwork/': typeof AppArtworkIndexRoute
   '/courier/': typeof AppCourierIndexRoute
@@ -306,6 +320,8 @@ export interface FileRoutesByTo {
   '/purchase-orders/new': typeof AppPurchaseOrdersNewRoute
   '/skus/$skuId': typeof AppSkusSkuIdRoute
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
+  '/pm/$pmId': typeof AppPmPmIdRoute
+  '/pm': typeof AppPmIndexRoute
   '/analytics': typeof AppAnalyticsIndexRoute
   '/artwork': typeof AppArtworkIndexRoute
   '/courier': typeof AppCourierIndexRoute
@@ -349,6 +365,8 @@ export interface FileRoutesById {
   '/_app/purchase-orders/new': typeof AppPurchaseOrdersNewRoute
   '/_app/skus/$skuId': typeof AppSkusSkuIdRoute
   '/_app/vendors/$vendorId': typeof AppVendorsVendorIdRoute
+  '/_app/pm/$pmId': typeof AppPmPmIdRoute
+  '/_app/pm/': typeof AppPmIndexRoute
   '/_app/analytics/': typeof AppAnalyticsIndexRoute
   '/_app/artwork/': typeof AppArtworkIndexRoute
   '/_app/courier/': typeof AppCourierIndexRoute
@@ -392,6 +410,8 @@ export interface FileRouteTypes {
     | '/purchase-orders/new'
     | '/skus/$skuId'
     | '/vendors/$vendorId'
+    | '/pm/$pmId'
+    | '/pm/'
     | '/analytics/'
     | '/artwork/'
     | '/courier/'
@@ -433,6 +453,8 @@ export interface FileRouteTypes {
     | '/purchase-orders/new'
     | '/skus/$skuId'
     | '/vendors/$vendorId'
+    | '/pm/$pmId'
+    | '/pm'
     | '/analytics'
     | '/artwork'
     | '/courier'
@@ -475,6 +497,8 @@ export interface FileRouteTypes {
     | '/_app/purchase-orders/new'
     | '/_app/skus/$skuId'
     | '/_app/vendors/$vendorId'
+    | '/_app/pm/$pmId'
+    | '/_app/pm/'
     | '/_app/analytics/'
     | '/_app/artwork/'
     | '/_app/courier/'
@@ -767,6 +791,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSkusSkuIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/pm/': {
+      id: '/_app/pm/'
+      path: '/pm'
+      fullPath: '/pm/'
+      preLoaderRoute: typeof AppPmIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pm/$pmId': {
+      id: '/_app/pm/$pmId'
+      path: '/pm/$pmId'
+      fullPath: '/pm/$pmId'
+      preLoaderRoute: typeof AppPmPmIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/purchase-orders/new': {
       id: '/_app/purchase-orders/new'
       path: '/purchase-orders/new'
@@ -806,6 +844,8 @@ interface AppRouteChildren {
   AppPurchaseOrdersNewRoute: typeof AppPurchaseOrdersNewRoute
   AppSkusSkuIdRoute: typeof AppSkusSkuIdRoute
   AppVendorsVendorIdRoute: typeof AppVendorsVendorIdRoute
+  AppPmIndexRoute: typeof AppPmIndexRoute
+  AppPmPmIdRoute: typeof AppPmPmIdRoute
   AppAnalyticsIndexRoute: typeof AppAnalyticsIndexRoute
   AppArtworkIndexRoute: typeof AppArtworkIndexRoute
   AppCourierIndexRoute: typeof AppCourierIndexRoute
@@ -843,6 +883,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppPurchaseOrdersNewRoute: AppPurchaseOrdersNewRoute,
   AppSkusSkuIdRoute: AppSkusSkuIdRoute,
   AppVendorsVendorIdRoute: AppVendorsVendorIdRoute,
+  AppPmIndexRoute: AppPmIndexRoute,
+  AppPmPmIdRoute: AppPmPmIdRoute,
   AppAnalyticsIndexRoute: AppAnalyticsIndexRoute,
   AppArtworkIndexRoute: AppArtworkIndexRoute,
   AppCourierIndexRoute: AppCourierIndexRoute,

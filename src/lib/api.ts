@@ -307,6 +307,44 @@ export type ApiSample = {
   products: ApiSampleProduct[];
 };
 
+export type ApiPm = {
+  id: string; code: string; name: string; category: string;
+  description: string; image: string;
+  currentStock: number; minThreshold: number; moq: number; leadTimeDays: number;
+  costPerUnit: number | null;
+  docsLink?: string | null;
+  teamId: string; createdAt: string; updatedAt: string;
+};
+
+export type ApiPmVendor = {
+  id: string; pmId: string; vendorId: string;
+  vendorStatus: VendorStatus;
+  moq: number | null; leadTimeDays: number | null; costPerUnit: number | null;
+  notes: string; teamId: string;
+};
+
+export type ApiPmDispatch = {
+  id: string; pmId: string; quantity: number; dispatchDate: string;
+  from: string; to: string;
+  transporterName: string; vehicleNumber: string; lrNumber: string;
+  freight: number; status: string; notes: string; createdAt: string;
+};
+
+export type ApiPmComment = {
+  id: string; pmId: string; authorId: string; authorName: string; text: string; createdAt: string;
+};
+
+export type ApiPmLink = {
+  id: string; pmId: string; title: string; link: string; comment: string; createdAt: string;
+};
+
+export type ApiPmDetail = ApiPm & {
+  vendors: ApiPmVendor[];
+  dispatches: ApiPmDispatch[];
+  comments: ApiPmComment[];
+  links: ApiPmLink[];
+};
+
 export type ApiShare = {
   id: string; module: string; ownerTeamId: string;
   granteeUserId: string; createdBy: string; createdAt: string;
@@ -656,6 +694,57 @@ export const api = {
       fetch(`${BASE}/couriers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     delete: (id: string) =>
       fetch(`${BASE}/couriers/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+  },
+
+  pm: {
+    list: async (search?: string, category?: string) => {
+      const q = new URLSearchParams();
+      if (search)   q.set("search",   search);
+      if (category) q.set("category", category);
+      const qs = q.toString();
+      const items = await get<any[]>(`/pm${qs ? "?" + qs : ""}`);
+      return items.map((p) => ({ ...p, costPerUnit: p.costPerUnit != null ? parseNum(p.costPerUnit) : null })) as ApiPm[];
+    },
+    get: async (id: string) => {
+      const p = await get<any>(`/pm/${id}`);
+      if (!p?.id) return null;
+      return {
+        ...p,
+        costPerUnit: p.costPerUnit != null ? parseNum(p.costPerUnit) : null,
+        vendors:   (p.vendors   ?? []).map((v: any) => ({ ...v, costPerUnit: v.costPerUnit != null ? parseNum(v.costPerUnit) : null })),
+        dispatches: (p.dispatches ?? []).map((d: any) => ({ ...d, freight: parseNum(d.freight) })),
+        comments:  p.comments  ?? [],
+        links:     p.links     ?? [],
+      } as ApiPmDetail;
+    },
+    create: (data: Partial<ApiPm>) =>
+      fetch(`${BASE}/pm`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    update: (id: string, data: Partial<ApiPm>) =>
+      fetch(`${BASE}/pm/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    delete: (id: string) =>
+      fetch(`${BASE}/pm/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    addVendor: (pmId: string, data: Partial<ApiPmVendor>) =>
+      fetch(`${BASE}/pm/${pmId}/vendors`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateVendor: (vid: string, data: Partial<ApiPmVendor>) =>
+      fetch(`${BASE}/pm/vendors/${vid}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteVendor: (vid: string) =>
+      fetch(`${BASE}/pm/vendors/${vid}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    addDispatch: (pmId: string, data: Partial<ApiPmDispatch>) =>
+      fetch(`${BASE}/pm/${pmId}/dispatches`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateDispatch: (did: string, data: Partial<ApiPmDispatch>) =>
+      fetch(`${BASE}/pm/dispatches/${did}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteDispatch: (did: string) =>
+      fetch(`${BASE}/pm/dispatches/${did}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    addComment: (pmId: string, text: string) =>
+      fetch(`${BASE}/pm/${pmId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ text }) }).then((r) => r.json()),
+    deleteComment: (pmId: string, cid: string) =>
+      fetch(`${BASE}/pm/${pmId}/comments/${cid}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    addLink: (pmId: string, data: { title: string; link: string; comment?: string }) =>
+      fetch(`${BASE}/pm/${pmId}/links`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateLink: (lid: string, data: { title?: string; link?: string; comment?: string }) =>
+      fetch(`${BASE}/pm/links/${lid}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteLink: (lid: string) =>
+      fetch(`${BASE}/pm/links/${lid}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   samples: {

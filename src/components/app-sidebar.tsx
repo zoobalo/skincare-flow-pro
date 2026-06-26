@@ -33,6 +33,7 @@ const nav = [
   ]},
   { group: "Products", items: [
     { to: "/skus", label: "SKU Management", icon: Package },
+    { to: "/pm",   label: "PM Management",  icon: PackageOpen },
   ]},
   { group: "Work", items: [
     { to: "/tasks",        label: "Task Management", icon: ListChecks   },
