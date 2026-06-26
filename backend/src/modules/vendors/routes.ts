@@ -35,10 +35,12 @@ export const vendorRoutes = new Hono()
   })
   .patch("/:id", async (c) => {
     const body = await c.req.json();
-    if (body.materials && !Array.isArray(body.materials)) {
-      body.materials = body.materials.split(",").map((s: string) => s.trim()).filter(Boolean);
+    const { name, contactPerson, mobile, email, gst, pan, address, city, materials, leadTimeDays, paymentTerms, rating, reliability, delayPercent, totalOrders, runningOrders, totalSpend, contacts, docsLink } = body;
+    const patch: Record<string, unknown> = { name, contactPerson, mobile, email, gst, pan, address, city, leadTimeDays, paymentTerms, rating, reliability, delayPercent, totalOrders, runningOrders, totalSpend, contacts, docsLink };
+    if (materials !== undefined) {
+      patch.materials = Array.isArray(materials) ? materials : materials?.split(",").map((s: string) => s.trim()).filter(Boolean) ?? [];
     }
-    const [updated] = await updateVendor(c.req.param("id"), body);
+    const [updated] = await updateVendor(c.req.param("id"), patch);
     if (!updated) return c.json({ error: "Vendor not found" }, 404);
     return c.json(updated);
   })
