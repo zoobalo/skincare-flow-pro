@@ -5,7 +5,7 @@ import { fmtDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Mail, MapPin, Phone, Send, Star, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, FolderOpen, Mail, MapPin, Phone, Send, Star, Trash2, UserRound } from "lucide-react";
 import { ChartCard } from "@/components/chart-card";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, RadialBarChart, RadialBar } from "recharts";
 import { useState, useRef } from "react";
@@ -87,6 +87,16 @@ function VendorDetailPage() {
             <div className="col-span-2"><dt className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />Address</dt><dd className="mt-0.5">{vendor.address}, {vendor.city}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Payment terms</dt><dd className="mt-0.5">{vendor.paymentTerms}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Lead time</dt><dd className="mt-0.5">{vendor.leadTimeDays} days</dd></div>
+            {vendor.docsLink && (
+              <div className="col-span-2">
+                <dt className="text-xs text-muted-foreground flex items-center gap-1"><FolderOpen className="h-3 w-3" />Documents</dt>
+                <dd className="mt-0.5">
+                  <a href={vendor.docsLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+                    <FolderOpen className="h-3.5 w-3.5" />Open document folder
+                  </a>
+                </dd>
+              </div>
+            )}
           </dl>
           {vendor.contacts && vendor.contacts.length > 0 && (
             <div className="mt-4 border-t pt-4">

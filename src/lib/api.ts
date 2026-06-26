@@ -64,6 +64,7 @@ export type ApiVendor = {
   rating: number; reliability: number; delayPercent: number;
   totalOrders: number; runningOrders: number; totalSpend: number;
   contacts: ApiContact[];
+  docsLink?: string | null;
 };
 
 export type ApiVendorComment = {
@@ -77,6 +78,7 @@ export type ApiManufacturer = {
   leadTimeDays: number; paymentTerms: string;
   rating: number; reliability: number; delayPercent: number;
   contacts: ApiContact[];
+  docsLink?: string | null;
   productionBatches: ApiBatch[];
 };
 

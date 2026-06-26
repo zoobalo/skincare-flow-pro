@@ -30,6 +30,7 @@ const EMPTY = {
   leadTimeDays: 21, paymentTerms: "Net 30", rating: 4.0,
   reliability: 85, delayPercent: 10, totalOrders: 0, runningOrders: 0, totalSpend: 0,
   contacts: [] as ApiContact[],
+  docsLink: "",
 };
 
 function VendorSheet({
@@ -47,6 +48,7 @@ function VendorSheet({
     pan: initial?.pan ?? "",
     materials: Array.isArray(initial?.materials) ? initial.materials.join(", ") : (initial?.materials ?? ""),
     contacts: (initial?.contacts as ApiContact[]) ?? [],
+    docsLink: initial?.docsLink ?? "",
   });
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -137,6 +139,10 @@ function VendorSheet({
               <Label>Delay %</Label>
               <Input type="number" min="0" max="100" value={form.delayPercent} onChange={set("delayPercent")} />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Documents Link</Label>
+            <Input type="url" placeholder="https://drive.google.com/..." value={form.docsLink} onChange={set("docsLink")} />
           </div>
           <div className="border-t pt-4">
             <ContactsEditor contacts={form.contacts} onChange={(contacts) => setForm((f) => ({ ...f, contacts }))} />

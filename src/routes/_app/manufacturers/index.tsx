@@ -30,6 +30,7 @@ const EMPTY = {
   leadTimeDays: 30, paymentTerms: "Net 30",
   rating: 4.0, reliability: 90, delayPercent: 5,
   contacts: [] as ApiContact[],
+  docsLink: "",
 };
 
 function ManufacturerSheet({
@@ -41,7 +42,7 @@ function ManufacturerSheet({
   onSave: (data: typeof EMPTY) => Promise<void>;
 }) {
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY, ...initial, pan: initial?.pan ?? "", contacts: (initial?.contacts as ApiContact[]) ?? [] });
+  const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY, ...initial, pan: initial?.pan ?? "", contacts: (initial?.contacts as ApiContact[]) ?? [], docsLink: initial?.docsLink ?? "" });
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
 
@@ -134,6 +135,10 @@ function ManufacturerSheet({
               <Label>Delay %</Label>
               <Input type="number" min="0" max="100" value={form.delayPercent} onChange={set("delayPercent")} />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Documents Link</Label>
+            <Input type="url" placeholder="https://drive.google.com/..." value={form.docsLink} onChange={set("docsLink")} />
           </div>
           <div className="border-t pt-4">
             <ContactsEditor contacts={form.contacts} onChange={(contacts) => setForm((f) => ({ ...f, contacts }))} />
