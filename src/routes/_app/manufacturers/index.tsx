@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Plus, Factory, Pencil, Trash2, Mail, MapPin, Phone, Star, Search } from "lucide-react";
+import { Plus, Factory, Pencil, Trash2, Mail, MapPin, Phone, Star, Search, FolderOpen } from "lucide-react";
 import { ContactsEditor } from "@/components/contacts-editor";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -287,6 +287,14 @@ function ManufacturersContent({ manufacturers: allManufacturers, sharedTeamId }:
               )}
               {m.leadTimeDays > 0 && (
                 <div><span className="text-muted-foreground">Lead time · </span><span className="font-medium">{m.leadTimeDays}d</span></div>
+              )}
+              {m.docsLink && (
+                <div className="col-span-2 flex items-center gap-1.5">
+                  <FolderOpen className="h-3 w-3 shrink-0 text-primary" />
+                  <a href={m.docsLink} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline truncate">
+                    View Documents
+                  </a>
+                </div>
               )}
             </div>
             {/* Key metrics */}
