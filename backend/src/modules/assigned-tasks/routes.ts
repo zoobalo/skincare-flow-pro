@@ -69,6 +69,19 @@ export const assignedTaskRoutes = new Hono()
       .returning();
     return c.json(updated);
   })
+  // Edit (assigner only)
+  .patch("/:id", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const [row] = await db.select().from(assignedTasks).where(eq(assignedTasks.id, c.req.param("id"))).limit(1);
+    if (!row) return c.json({ error: "Not found" }, 404);
+    if (row.assignedBy !== user.sub) return c.json({ error: "Forbidden" }, 403);
+    const { title, urgency, deadlineDate, comments } = await c.req.json();
+    const [updated] = await db.update(assignedTasks)
+      .set({ title, urgency, deadlineDate: deadlineDate || null, comments, updatedAt: new Date() })
+      .where(eq(assignedTasks.id, c.req.param("id")))
+      .returning();
+    return c.json(updated);
+  })
   // Delete (assigner only)
   .delete("/:id", async (c) => {
     const user = c.get("user" as never) as JWTPayload;

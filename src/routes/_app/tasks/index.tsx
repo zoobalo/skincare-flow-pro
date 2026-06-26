@@ -160,6 +160,35 @@ function TasksContent({
     }
   };
 
+  // ── Edit assigned task sheet ────────────────────────────────────────────────
+  const [editAssignTarget, setEditAssignTarget] = useState<ApiAssignedTask | null>(null);
+  const [editAssignSaving, setEditAssignSaving] = useState(false);
+  const [editAssignForm, setEditAssignForm] = useState({
+    title: "", urgency: "Medium" as ApiAssignedTask["urgency"], deadlineDate: "", comments: "",
+  });
+
+  const openEditAssign = (task: ApiAssignedTask) => {
+    setEditAssignForm({ title: task.title, urgency: task.urgency, deadlineDate: task.deadlineDate ?? "", comments: task.comments ?? "" });
+    setEditAssignTarget(task);
+  };
+
+  const handleEditAssign = async () => {
+    if (!editAssignForm.title.trim()) { toast.error("Task title is required."); return; }
+    setEditAssignSaving(true);
+    try {
+      const res = await assignedTasksApi.update(editAssignTarget!.id, {
+        title: editAssignForm.title.trim(),
+        urgency: editAssignForm.urgency,
+        deadlineDate: editAssignForm.deadlineDate || null,
+        comments: editAssignForm.comments,
+      });
+      if (res?.error) { toast.error(res.error); return; }
+      setEditAssignTarget(null);
+      toast.success("Task updated.");
+      await reloadAssigned();
+    } catch { toast.error("Failed to update."); } finally { setEditAssignSaving(false); }
+  };
+
   // ── Assign task sheet ───────────────────────────────────────────────────────
   const [assignSheetOpen, setAssignSheetOpen] = useState(false);
   const [assignSaving, setAssignSaving]       = useState(false);
@@ -429,6 +458,7 @@ function TasksContent({
                         currentUserId={currentUser?.id}
                         onToggleStatus={toggleAssignedStatus}
                         onDelete={deleteAssigned}
+                        onEdit={openEditAssign}
                         fmtDateTime={fmtDateTime}
                       />
                     ))}
@@ -471,6 +501,7 @@ function TasksContent({
                         currentUserId={currentUser?.id}
                         onToggleStatus={toggleAssignedStatus}
                         onDelete={deleteAssigned}
+                        onEdit={openEditAssign}
                         fmtDateTime={fmtDateTime}
                       />
                     ))}
@@ -609,6 +640,51 @@ function TasksContent({
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* ── Edit Assigned Task Sheet ── */}
+      <Sheet key={editAssignTarget?.id ?? "edit-assign"} open={!!editAssignTarget} onOpenChange={(v) => { if (!v) setEditAssignTarget(null); }}>
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader><SheetTitle>Edit Assigned Task</SheetTitle></SheetHeader>
+          <div className="mt-6 space-y-4">
+            <div className="space-y-1.5">
+              <Label>Task Title <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="What needs to be done?"
+                value={editAssignForm.title}
+                onChange={(e) => setEditAssignForm((f) => ({ ...f, title: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Urgency</Label>
+                <Select value={editAssignForm.urgency} onValueChange={(v) => setEditAssignForm((f) => ({ ...f, urgency: v as ApiAssignedTask["urgency"] }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{URGENCIES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Deadline</Label>
+                <Input type="date" value={editAssignForm.deadlineDate} onChange={(e) => setEditAssignForm((f) => ({ ...f, deadlineDate: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Notes / Context</Label>
+              <Textarea
+                rows={4}
+                placeholder="Any context or instructions…"
+                value={editAssignForm.comments}
+                onChange={(e) => setEditAssignForm((f) => ({ ...f, comments: e.target.value }))}
+              />
+            </div>
+          </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setEditAssignTarget(null)}>Cancel</Button>
+            <Button onClick={handleEditAssign} disabled={editAssignSaving}>
+              {editAssignSaving ? "Saving…" : "Save changes"}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -616,13 +692,14 @@ function TasksContent({
 // ── Assigned Task Card (with per-card comment state) ─────────────────────────
 
 function AssignedTaskCard({
-  task, done, currentUserId, onToggleStatus, onDelete, fmtDateTime,
+  task, done, currentUserId, onToggleStatus, onDelete, onEdit, fmtDateTime,
 }: {
   task: ApiAssignedTask;
   done: boolean;
   currentUserId: string | undefined;
   onToggleStatus: (t: ApiAssignedTask) => void;
   onDelete: (t: ApiAssignedTask) => void;
+  onEdit: (t: ApiAssignedTask) => void;
   fmtDateTime: (iso: string) => string;
 }) {
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -715,7 +792,7 @@ function AssignedTaskCard({
                   {fmtDate(task.deadlineDate)}
                 </span>
               )}
-              {task.comments && <span className="italic line-clamp-1 max-w-xs">{task.comments}</span>}
+              {task.comments && <span className="italic break-words">{task.comments}</span>}
             </div>
 
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
@@ -744,15 +821,25 @@ function AssignedTaskCard({
               {commentsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </button>
 
-            {/* Delete (assigner only) */}
+            {/* Edit + Delete (assigner only) */}
             {task.assignedBy === currentUserId && (
-              <Button
-                size="sm" variant="ghost"
-                className="h-7 w-7 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => onDelete(task)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              <>
+                <Button
+                  size="sm" variant="ghost"
+                  className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => onEdit(task)}
+                  title="Edit task"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm" variant="ghost"
+                  className="h-7 w-7 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => onDelete(task)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
             )}
           </div>
         </div>
