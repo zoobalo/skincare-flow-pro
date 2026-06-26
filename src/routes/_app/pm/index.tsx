@@ -5,6 +5,7 @@ import { api, type ApiPm, type ApiVendor } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import {
   Plus, Package, Pencil, Trash2, Search, FolderOpen, AlertTriangle, ArrowRight,
@@ -32,7 +33,7 @@ const PM_CATEGORIES = [
 ];
 
 const EMPTY = {
-  code: "", name: "", category: "Corrugated Box", description: "",
+  code: "", name: "", category: "Corrugated Box", description: "", specifications: "",
   currentStock: 0, minThreshold: 0, moq: 0, leadTimeDays: 30,
   costPerUnit: "" as string | number,
   docsLink: "",
@@ -95,6 +96,16 @@ function PmSheet({
           <div className="space-y-1.5">
             <Label>Description</Label>
             <Input placeholder="Brief description" value={form.description} onChange={set("description")} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Product Specifications</Label>
+            <Textarea
+              placeholder="Material, dimensions, print specs, colour, finish…"
+              rows={4}
+              className="resize-none text-sm"
+              value={form.specifications}
+              onChange={(e) => setForm((f) => ({ ...f, specifications: e.target.value }))}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">

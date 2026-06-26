@@ -309,7 +309,7 @@ export type ApiSample = {
 
 export type ApiPm = {
   id: string; code: string; name: string; category: string;
-  description: string; image: string;
+  description: string; specifications: string; image: string;
   currentStock: number; minThreshold: number; moq: number; leadTimeDays: number;
   costPerUnit: number | null;
   docsLink?: string | null;

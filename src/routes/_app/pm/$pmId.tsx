@@ -231,6 +231,12 @@ function PmDetailContent({ pm: initialPm, vendors }: { pm: ApiPmDetail; vendors:
                   <dd className="mt-0.5">{pm.description}</dd>
                 </div>
               )}
+              {pm.specifications && (
+                <div className="col-span-2 sm:col-span-3">
+                  <dt className="text-xs text-muted-foreground">Product Specifications</dt>
+                  <dd className="mt-0.5 whitespace-pre-wrap text-sm">{pm.specifications}</dd>
+                </div>
+              )}
               <div>
                 <dt className="text-xs text-muted-foreground">Current Stock</dt>
                 <dd className={`mt-0.5 font-semibold ${lowStock ? "text-destructive" : ""}`}>
