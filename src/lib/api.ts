@@ -604,6 +604,9 @@ export const api = {
     summary:      () => get<any>("/inventory/summary"),
     packaging:    async () => (await get<any[]>("/inventory/packaging")).map(coercePackaging),
     rawMaterials: async () => (await get<any[]>("/inventory/raw-materials")).map(coerceRawMaterial),
+    sheetUrl: "https://docs.google.com/spreadsheets/d/1cuFynl6RDWmIWBw8E2jQ5aWI_G4BiSYaRjupmVg03jU/edit",
+    pushToSheet: () => fetch(`${BASE}/inventory/sheet/push`, { method: "POST", headers: authHeaders() }).then((r) => r.json()),
+    pullFromSheet: () => fetch(`${BASE}/inventory/sheet/pull`, { method: "POST", headers: authHeaders() }).then((r) => r.json()),
   },
 
   users: {

@@ -1,13 +1,15 @@
 import { PageSkeleton } from "@/components/page-skeleton";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { KpiCard } from "@/components/kpi-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
-import { Boxes, AlertTriangle, Truck, Warehouse } from "lucide-react";
+import { Boxes, AlertTriangle, Truck, Warehouse, Upload, Download, ExternalLink, Loader2 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { ChartCard } from "@/components/chart-card";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_app/inventory/")({
   loader: async () => {
@@ -39,6 +41,41 @@ export const Route = createFileRoute("/_app/inventory/")({
 function InventoryPage() {
   const { summary, packaging, rawMaterials, skus, vendorMap, stockValue, lowItems, agingData } =
     Route.useLoaderData();
+  const router = useRouter();
+
+  const [sheetOp, setSheetOp] = useState<"push" | "pull" | null>(null);
+  const [sheetMsg, setSheetMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  async function handlePush() {
+    setSheetOp("push");
+    setSheetMsg(null);
+    try {
+      const res = await api.inventory.pushToSheet();
+      if (res.error) setSheetMsg({ type: "error", text: res.error });
+      else setSheetMsg({ type: "success", text: `Pushed ${res.rows} SKUs × ${res.locations} locations to sheet` });
+    } catch {
+      setSheetMsg({ type: "error", text: "Failed to push to sheet" });
+    } finally {
+      setSheetOp(null);
+    }
+  }
+
+  async function handlePull() {
+    setSheetOp("pull");
+    setSheetMsg(null);
+    try {
+      const res = await api.inventory.pullFromSheet();
+      if (res.error) setSheetMsg({ type: "error", text: res.error });
+      else {
+        setSheetMsg({ type: "success", text: `Updated ${res.updated} SKUs from sheet` });
+        await router.invalidate();
+      }
+    } catch {
+      setSheetMsg({ type: "error", text: "Failed to pull from sheet" });
+    } finally {
+      setSheetOp(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -118,6 +155,35 @@ function InventoryPage() {
         </TabsContent>
 
         <TabsContent value="fg" className="mt-4">
+          <div className="mb-4 flex items-center justify-between rounded-xl border bg-card px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">Finished Goods Sheet</p>
+              <p className="text-xs text-muted-foreground">Sync inventory with Google Sheets tracker</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={handlePush} disabled={sheetOp !== null}>
+                {sheetOp === "push"
+                  ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  : <Upload className="mr-1.5 h-3.5 w-3.5" />}
+                OUT
+              </Button>
+              <Button size="sm" variant="outline" onClick={handlePull} disabled={sheetOp !== null}>
+                {sheetOp === "pull"
+                  ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  : <Download className="mr-1.5 h-3.5 w-3.5" />}
+                IN
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => window.open(api.inventory.sheetUrl, "_blank")}>
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                Sheet
+              </Button>
+            </div>
+          </div>
+          {sheetMsg && (
+            <div className={`mb-4 rounded-lg px-3 py-2 text-sm ${sheetMsg.type === "success" ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300" : "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"}`}>
+              {sheetMsg.text}
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {skus.map((s) => (
               <div key={s.id} className="flex items-center gap-3 rounded-xl border bg-card p-4">
