@@ -647,30 +647,48 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                       <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Packaging Inventory</p>
                       <div className="space-y-1.5">
                         {localPackaging.map((p) => {
-                          const available = p.currentStock + p.mfrStock;
-                          const sufficient = available >= batch.quantity;
-                          const partial = available > 0 && !sufficient;
+                          const total = p.currentStock + p.mfrStock;
+                          const mfrReady = p.mfrStock >= batch.quantity;
+                          const totalSufficient = total >= batch.quantity;
+                          const needToSend = batch.quantity - p.mfrStock;
                           return (
-                            <div key={p.id} className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-xs">
-                              <span className="font-medium truncate max-w-[45%]">{p.name}</span>
-                              <div className="flex items-center gap-3 shrink-0">
-                                {p.transitStock > 0 && (
-                                  <span className="text-amber-600 dark:text-amber-400">+{p.transitStock.toLocaleString()} transit</span>
-                                )}
-                                <span className="text-muted-foreground">
-                                  <span className="text-muted-foreground/70">{p.currentStock.toLocaleString()} own</span>
-                                  <span className="text-muted-foreground/50 mx-1">+</span>
-                                  <span className="text-muted-foreground/70">{p.mfrStock.toLocaleString()} mfr</span>
-                                  <span className="text-muted-foreground/50 mx-1">=</span>
-                                  <span className={`font-semibold ${sufficient ? "text-green-600 dark:text-green-400" : partial ? "text-amber-600 dark:text-amber-400" : "text-destructive"}`}>
-                                    {available.toLocaleString()}
-                                  </span>
-                                  <span className="text-muted-foreground/60"> / {batch.quantity.toLocaleString()}</span>
-                                </span>
-                                {sufficient ? (
-                                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
+                            <div key={p.id} className="rounded-lg bg-muted/40 px-3 py-2 text-xs">
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="font-medium">{p.name}</span>
+                                {mfrReady ? (
+                                  <div className="flex items-center gap-1 shrink-0 text-green-600 dark:text-green-400 font-medium">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    Mfr ready
+                                  </div>
+                                ) : totalSufficient ? (
+                                  <div className="flex items-center gap-1 shrink-0 text-amber-600 dark:text-amber-400 font-medium">
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                    Send to Mfr
+                                  </div>
                                 ) : (
-                                  <AlertTriangle className={`h-3.5 w-3.5 shrink-0 ${partial ? "text-amber-500" : "text-destructive"}`} />
+                                  <div className="flex items-center gap-1 shrink-0 text-destructive font-medium">
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                    Insufficient
+                                  </div>
+                                )}
+                              </div>
+                              <div className="mt-1 text-muted-foreground">
+                                <span className={`font-semibold ${mfrReady ? "text-green-600 dark:text-green-400" : totalSufficient ? "text-amber-600 dark:text-amber-400" : "text-destructive"}`}>
+                                  {total.toLocaleString()}
+                                </span>
+                                {" "}
+                                <span className="text-muted-foreground/60">
+                                  ({p.currentStock.toLocaleString()} vendor + {p.mfrStock.toLocaleString()} Mfr)
+                                </span>
+                                {" / "}
+                                <span className="font-medium text-foreground">{batch.quantity.toLocaleString()}</span>
+                                {!mfrReady && needToSend > 0 && (
+                                  <span className="ml-2 text-amber-600 dark:text-amber-400">
+                                    (Need to send {needToSend.toLocaleString()} more to Mfr)
+                                  </span>
+                                )}
+                                {p.transitStock > 0 && (
+                                  <span className="ml-2 text-amber-600 dark:text-amber-400">· +{p.transitStock.toLocaleString()} in transit</span>
                                 )}
                               </div>
                             </div>
