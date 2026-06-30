@@ -21,8 +21,8 @@ export const Route = createFileRoute("/_app/inventory/")({
       api.vendors.list(),
     ]);
     const vendorMap = Object.fromEntries(vendors.map((v) => [v.id, v.name]));
-    const stockValue = packaging.reduce((acc, p) => acc + p.currentStock * p.costPerUnit, 0);
-    const lowItems = packaging.filter((p) => p.currentStock < p.moq * 0.5);
+    const stockValue = packaging.reduce((acc, p) => acc + (p.currentStock ?? 0) * (p.costPerUnit ?? 0), 0);
+    const lowItems = packaging.filter((p) => (p.currentStock ?? 0) < (p.moq ?? 0) * 0.5);
     const today = new Date();
     const agingData = packaging
       .filter((p) => p.lastPurchaseDate)
@@ -81,8 +81,8 @@ function InventoryPage() {
     <div className="space-y-6">
       <PageHeader title="Inventory" description="Live stock across warehouses, transit, and manufacturers" />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Total Units in Stock" value={summary.totalPackagingStock.toLocaleString()} icon={Boxes} tone="success" />
-        <KpiCard label="In Transit"           value={summary.totalPackagingInTransit.toLocaleString()} icon={Truck} tone="info" />
+        <KpiCard label="Total Units in Stock" value={(summary.totalPackagingStock ?? 0).toLocaleString()} icon={Boxes} tone="success" />
+        <KpiCard label="In Transit"           value={(summary.totalPackagingInTransit ?? 0).toLocaleString()} icon={Truck} tone="info" />
         <KpiCard label="Stock Value"          value={`₹${(stockValue / 100000).toFixed(1)}L`} icon={Warehouse} />
         <KpiCard label="Low Stock Items"      value={lowItems.length} icon={AlertTriangle} tone="warning" />
       </div>
@@ -114,7 +114,7 @@ function InventoryPage() {
                     <td className="px-4 py-2.5 font-medium">{rm.name}</td>
                     <td className="px-4 py-2.5">{rm.sku?.code}</td>
                     <td className="px-4 py-2.5">{vendorMap[rm.vendorId] ?? rm.vendorId}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">{rm.currentStock.toLocaleString()} {rm.unit}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{(rm.currentStock ?? 0).toLocaleString()} {rm.unit}</td>
                     <td className="px-4 py-2.5 text-right tabular-nums">₹{rm.costPerUnit}</td>
                   </tr>
                 ))}
@@ -142,10 +142,10 @@ function InventoryPage() {
                     <td className="px-4 py-2.5 font-medium">{p.name}</td>
                     <td className="px-4 py-2.5">{p.sku?.code}</td>
                     <td className="px-4 py-2.5">{vendorMap[p.vendorId] ?? p.vendorId}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">{p.currentStock.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">{p.transitStock.toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{(p.currentStock ?? 0).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{(p.transitStock ?? 0).toLocaleString()}</td>
                     <td className="px-4 py-2.5">
-                      <StatusBadge status={p.currentStock < p.moq * 0.5 ? "Low Stock" : "Healthy"} />
+                      <StatusBadge status={(p.currentStock ?? 0) < (p.moq ?? 0) * 0.5 ? "Low Stock" : "Healthy"} />
                     </td>
                   </tr>
                 ))}
@@ -192,9 +192,9 @@ function InventoryPage() {
                   : <div className="h-14 w-14 rounded-lg bg-muted" />}
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{s.name}</div>
-                  <div className="text-xs text-muted-foreground">{s.code} · {s.currentInventory.toLocaleString()} units</div>
+                  <div className="text-xs text-muted-foreground">{s.code} · {(s.currentInventory ?? 0).toLocaleString()} units</div>
                 </div>
-                <StatusBadge status={s.currentInventory < s.minThreshold ? "Low Stock" : "Healthy"} />
+                <StatusBadge status={(s.currentInventory ?? 0) < (s.minThreshold ?? 0) ? "Low Stock" : "Healthy"} />
               </div>
             ))}
           </div>
@@ -202,7 +202,7 @@ function InventoryPage() {
 
         <TabsContent value="transit" className="mt-4">
           <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
-            {summary.totalPackagingInTransit.toLocaleString()} units currently in transit. See Logistics module for shipment-level detail.
+            {(summary.totalPackagingInTransit ?? 0).toLocaleString()} units currently in transit. See Logistics module for shipment-level detail.
           </div>
         </TabsContent>
 
