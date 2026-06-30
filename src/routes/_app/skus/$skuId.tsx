@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, ArrowLeft, ChevronDown, ChevronRight, Edit, ExternalLink, Eye, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Edit, ExternalLink, Eye, Plus, Trash2 } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { ProgressRail } from "@/components/progress-rail";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
@@ -638,6 +638,42 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                   {batch.comment && (
                     <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
                       <span className="font-semibold text-foreground">Note: </span>{batch.comment}
+                    </div>
+                  )}
+
+                  {/* Packaging inventory status */}
+                  {localPackaging.length > 0 && (
+                    <div className="mt-3 border-t pt-3">
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Packaging Inventory</p>
+                      <div className="space-y-1.5">
+                        {localPackaging.map((p) => {
+                          const available = p.currentStock + p.mfrStock;
+                          const sufficient = available >= batch.quantity;
+                          const partial = available > 0 && !sufficient;
+                          return (
+                            <div key={p.id} className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-xs">
+                              <span className="font-medium truncate max-w-[45%]">{p.name}</span>
+                              <div className="flex items-center gap-3 shrink-0">
+                                {p.transitStock > 0 && (
+                                  <span className="text-amber-600 dark:text-amber-400">+{p.transitStock.toLocaleString()} transit</span>
+                                )}
+                                <span className="text-muted-foreground">
+                                  Avail:{" "}
+                                  <span className={`font-semibold ${sufficient ? "text-green-600 dark:text-green-400" : partial ? "text-amber-600 dark:text-amber-400" : "text-destructive"}`}>
+                                    {available.toLocaleString()}
+                                  </span>
+                                  <span className="text-muted-foreground/60"> / {batch.quantity.toLocaleString()}</span>
+                                </span>
+                                {sufficient ? (
+                                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
+                                ) : (
+                                  <AlertTriangle className={`h-3.5 w-3.5 shrink-0 ${partial ? "text-amber-500" : "text-destructive"}`} />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
