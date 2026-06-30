@@ -658,7 +658,10 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                                   <span className="text-amber-600 dark:text-amber-400">+{p.transitStock.toLocaleString()} transit</span>
                                 )}
                                 <span className="text-muted-foreground">
-                                  Avail:{" "}
+                                  <span className="text-muted-foreground/70">{p.currentStock.toLocaleString()} own</span>
+                                  <span className="text-muted-foreground/50 mx-1">+</span>
+                                  <span className="text-muted-foreground/70">{p.mfrStock.toLocaleString()} mfr</span>
+                                  <span className="text-muted-foreground/50 mx-1">=</span>
                                   <span className={`font-semibold ${sufficient ? "text-green-600 dark:text-green-400" : partial ? "text-amber-600 dark:text-amber-400" : "text-destructive"}`}>
                                     {available.toLocaleString()}
                                   </span>
