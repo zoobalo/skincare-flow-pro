@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { db } from "../../db/client.ts";
-import { packagingItems, skuRawMaterials, skuTests, skuDispatches } from "../../db/schema/skus.ts";
+import { skus, packagingItems, skuRawMaterials, skuTests, skuDispatches, skuInventoryLocations } from "../../db/schema/skus.ts";
 import { mftNotes } from "../../db/schema/mft-notes.ts";
 import { skuComments } from "../../db/schema/sku-comments.ts";
 import { skuLinks } from "../../db/schema/sku-links.ts";
@@ -219,4 +219,46 @@ export const skuItemRoutes = new Hono()
     const [deleted] = await db.delete(skuLinks).where(eq(skuLinks.id, c.req.param("id"))).returning();
     if (!deleted) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true });
+  })
+
+  // ── Inventory Locations ───────────────────────────────────────────────────────
+  .post("/:skuId/inventory-locations", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const { name, quantity } = await c.req.json();
+    if (!name?.trim()) return c.json({ error: "Name is required" }, 400);
+    const skuId = c.req.param("skuId");
+    const [created] = await db.insert(skuInventoryLocations).values({
+      id: crypto.randomUUID(), skuId, name: name.trim(), quantity: quantity ?? 0, teamId: user.teamId,
+    }).returning();
+    await recalcSkuInventory(skuId);
+    return c.json(created, 201);
+  })
+  .patch("/inventory-locations/:id", async (c) => {
+    const { name, quantity } = await c.req.json();
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    if (name      !== undefined) patch.name     = name.trim();
+    if (quantity  !== undefined) patch.quantity  = quantity;
+    const [updated] = await db.update(skuInventoryLocations)
+      .set(patch)
+      .where(eq(skuInventoryLocations.id, c.req.param("id")))
+      .returning();
+    if (!updated) return c.json({ error: "Not found" }, 404);
+    await recalcSkuInventory(updated.skuId);
+    return c.json(updated);
+  })
+  .delete("/inventory-locations/:id", async (c) => {
+    const [deleted] = await db.delete(skuInventoryLocations)
+      .where(eq(skuInventoryLocations.id, c.req.param("id")))
+      .returning();
+    if (!deleted) return c.json({ error: "Not found" }, 404);
+    await recalcSkuInventory(deleted.skuId);
+    return c.json({ ok: true });
   });
+
+async function recalcSkuInventory(skuId: string) {
+  const locs = await db.select({ quantity: skuInventoryLocations.quantity })
+    .from(skuInventoryLocations)
+    .where(eq(skuInventoryLocations.skuId, skuId));
+  const total = locs.reduce((s, l) => s + l.quantity, 0);
+  await db.update(skus).set({ currentInventory: total, updatedAt: new Date() }).where(eq(skus.id, skuId));
+}

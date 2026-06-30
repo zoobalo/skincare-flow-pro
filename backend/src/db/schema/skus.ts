@@ -102,6 +102,18 @@ export const skuDispatches = pgTable("sku_dispatches", {
   index("dispatch_sku_idx").on(t.skuId),
 ]);
 
+export const skuInventoryLocations = pgTable("sku_inventory_locations", {
+  id:        text("id").primaryKey(),
+  skuId:     text("sku_id").notNull().references(() => skus.id, { onDelete: "cascade" }),
+  name:      text("name").notNull(),
+  quantity:  integer("quantity").notNull().default(0),
+  teamId:    text("team_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+  index("inventory_loc_sku_idx").on(t.skuId),
+]);
+
 export const skuTests = pgTable("sku_tests", {
   id:         text("id").primaryKey(),
   skuId:      text("sku_id").notNull().references(() => skus.id, { onDelete: "cascade" }),
@@ -114,13 +126,18 @@ export const skuTests = pgTable("sku_tests", {
 ]);
 
 export const skusRelations = relations(skus, ({ one, many }) => ({
-  manufacturer:    one(manufacturers, { fields: [skus.manufacturerId], references: [manufacturers.id] }),
-  packaging:       many(packagingItems),
-  rawMaterials:    many(skuRawMaterials),
-  tests:           many(skuTests),
-  dispatches:      many(skuDispatches),
-  purchaseOrders:  many(purchaseOrders),
-  productionBatches: many(productionBatches),
+  manufacturer:       one(manufacturers, { fields: [skus.manufacturerId], references: [manufacturers.id] }),
+  packaging:          many(packagingItems),
+  rawMaterials:       many(skuRawMaterials),
+  tests:              many(skuTests),
+  dispatches:         many(skuDispatches),
+  purchaseOrders:     many(purchaseOrders),
+  productionBatches:  many(productionBatches),
+  inventoryLocations: many(skuInventoryLocations),
+}));
+
+export const skuInventoryLocationsRelations = relations(skuInventoryLocations, ({ one }) => ({
+  sku: one(skus, { fields: [skuInventoryLocations.skuId], references: [skus.id] }),
 }));
 
 export const packagingItemsRelations = relations(packagingItems, ({ one }) => ({

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
-import { api, type VendorStatus } from "@/lib/api";
+import { api, type VendorStatus, type ApiInventoryLocation } from "@/lib/api";
 import { fmtDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Edit, ExternalLink, Eye, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Edit, ExternalLink, Eye, Pencil, Plus, Trash2, Warehouse } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { ProgressRail } from "@/components/progress-rail";
 import { PRODUCTION_STAGES } from "@/lib/mock/types";
@@ -197,6 +197,50 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
   const [localRm, setLocalRm] = useState(sku.rawMaterials);
   useEffect(() => { setLocalPackaging(sku.packaging); }, [sku.packaging]);
   useEffect(() => { setLocalRm(sku.rawMaterials); }, [sku.rawMaterials]);
+
+  // Inventory locations state
+  const [invLocs, setInvLocs] = useState<ApiInventoryLocation[]>(sku.inventoryLocations ?? []);
+  const [invOpen, setInvOpen] = useState(false);
+  const [invAddName, setInvAddName] = useState("");
+  const [invAddQty, setInvAddQty] = useState("");
+  const [invAdding, setInvAdding] = useState(false);
+  const [invEditId, setInvEditId] = useState<string | null>(null);
+  const [invEditName, setInvEditName] = useState("");
+  const [invEditQty, setInvEditQty] = useState("");
+  const [invEditSaving, setInvEditSaving] = useState(false);
+  const invTotal = invLocs.length > 0 ? invLocs.reduce((s, l) => s + l.quantity, 0) : sku.currentInventory;
+
+  const handleAddLoc = async () => {
+    if (!invAddName.trim()) { toast.error("Name is required."); return; }
+    setInvAdding(true);
+    try {
+      const created = await api.skus.addInventoryLocation(sku.id, { name: invAddName.trim(), quantity: Number(invAddQty) || 0 });
+      if (created?.error) { toast.error(created.error); return; }
+      setInvLocs((p) => [...p, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setInvAddName(""); setInvAddQty("");
+    } catch { toast.error("Failed to add location."); }
+    finally { setInvAdding(false); }
+  };
+
+  const handleSaveLocEdit = async () => {
+    if (!invEditId) return;
+    setInvEditSaving(true);
+    try {
+      const updated = await api.skus.updateInventoryLocation(invEditId, { name: invEditName.trim(), quantity: Number(invEditQty) || 0 });
+      if (updated?.error) { toast.error(updated.error); return; }
+      setInvLocs((p) => p.map((l) => l.id === invEditId ? updated : l).sort((a, b) => a.name.localeCompare(b.name)));
+      setInvEditId(null);
+    } catch { toast.error("Failed to save."); }
+    finally { setInvEditSaving(false); }
+  };
+
+  const handleDeleteLoc = async (id: string) => {
+    if (!confirm("Delete this location?")) return;
+    try {
+      await api.skus.deleteInventoryLocation(id);
+      setInvLocs((p) => p.filter((l) => l.id !== id));
+    } catch { toast.error("Failed to delete."); }
+  };
 
   const VENDOR_STATUS_CYCLE: VendorStatus[] = ["Currently Working", "Worked Before", "Never Worked"];
   const VENDOR_STATUS_STYLE: Record<VendorStatus, string> = {
@@ -454,7 +498,90 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
               {sku.image ? <img src={sku.image} alt={sku.name} className="aspect-square w-full object-cover" /> : <div className="aspect-square w-full bg-muted flex items-center justify-center text-muted-foreground text-sm">No image</div>}
             </div>
             <div className="lg:col-span-2 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Current inventory</div><div className="mt-1 flex items-baseline gap-2"><span className="text-2xl font-semibold tabular-nums">{sku.currentInventory.toLocaleString()}</span><StatusBadge status={low ? "Low Stock" : "Healthy"} /></div><div className="mt-1 text-xs text-muted-foreground">Min threshold: {sku.minThreshold.toLocaleString()}</div></div>
+              {/* ── Current Inventory ── */}
+              <div className="rounded-xl border bg-card p-4 flex flex-col gap-0">
+                <button
+                  type="button"
+                  className="flex items-center justify-between w-full text-left"
+                  onClick={() => setInvOpen((p) => !p)}
+                >
+                  <span className="text-xs text-muted-foreground">Current inventory</span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Warehouse className="h-3.5 w-3.5" />
+                    {invLocs.length > 0 ? `${invLocs.length} location${invLocs.length !== 1 ? "s" : ""}` : "Manage"}
+                    {invOpen ? <ChevronDown className="h-3 w-3 rotate-180 transition-transform" /> : <ChevronDown className="h-3 w-3 transition-transform" />}
+                  </span>
+                </button>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold tabular-nums">{invTotal.toLocaleString()}</span>
+                  <StatusBadge status={invTotal < sku.minThreshold ? "Low Stock" : "Healthy"} />
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">Min threshold: {sku.minThreshold.toLocaleString()}</div>
+
+                {invOpen && (
+                  <div className="mt-3 border-t pt-3 space-y-3">
+                    {/* Location list */}
+                    {invLocs.length > 0 && (
+                      <div className="space-y-1">
+                        {invLocs.map((loc) => (
+                          <div key={loc.id}>
+                            {invEditId === loc.id ? (
+                              <div className="flex items-center gap-2">
+                                <Input className="h-7 text-xs flex-1" value={invEditName} onChange={(e) => setInvEditName(e.target.value)} />
+                                <Input className="h-7 text-xs w-20" type="number" min="0" value={invEditQty} onChange={(e) => setInvEditQty(e.target.value)} />
+                                <Button size="sm" className="h-7 px-2 text-xs" onClick={handleSaveLocEdit} disabled={invEditSaving}>{invEditSaving ? "…" : "Save"}</Button>
+                                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setInvEditId(null)}>Cancel</Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-1.5 text-xs group">
+                                <span className="text-muted-foreground">{loc.name}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold tabular-nums">{loc.quantity.toLocaleString()}</span>
+                                  <button type="button" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { setInvEditId(loc.id); setInvEditName(loc.name); setInvEditQty(String(loc.quantity)); }}>
+                                    <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                  </button>
+                                  <button type="button" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteLoc(loc.id)}>
+                                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        <div className="flex justify-between px-3 pt-1 text-xs">
+                          <span className="text-muted-foreground font-medium">Total</span>
+                          <span className="font-semibold tabular-nums">{invTotal.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Add new location */}
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Add location</p>
+                      <div className="flex gap-2">
+                        <Input
+                          className="h-7 text-xs flex-1"
+                          placeholder="e.g. Blinkit, Amazon…"
+                          value={invAddName}
+                          onChange={(e) => setInvAddName(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleAddLoc()}
+                        />
+                        <Input
+                          className="h-7 text-xs w-20"
+                          type="number" min="0"
+                          placeholder="Qty"
+                          value={invAddQty}
+                          onChange={(e) => setInvAddQty(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleAddLoc()}
+                        />
+                        <Button size="sm" className="h-7 px-2 text-xs" onClick={handleAddLoc} disabled={invAdding}>
+                          {invAdding ? "…" : <Plus className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Production lead time</div><div className="mt-1 text-2xl font-semibold tabular-nums">{sku.productionTimelineDays}d</div><div className="mt-1 text-xs text-muted-foreground">From PO to dispatch</div></div>
               <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Manufacturer</div><div className="mt-1 text-base font-semibold">{mfg?.name ?? "—"}</div><div className="mt-1 text-xs text-muted-foreground">{mfg?.location} {mfg?.qcPassRate ? `· QC ${mfg.qcPassRate}%` : ""}</div></div>
               <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Packaging stock value</div><div className="mt-1 text-2xl font-semibold tabular-nums">₹{Math.round(totalPackagingValue).toLocaleString()}</div><div className="mt-1 text-xs text-muted-foreground">Across {sku.packaging.length} items</div></div>

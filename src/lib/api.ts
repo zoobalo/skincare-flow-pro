@@ -119,6 +119,11 @@ export type ApiSkuDispatch = {
   createdAt: string; updatedAt: string;
 };
 
+export type ApiInventoryLocation = {
+  id: string; skuId: string; name: string; quantity: number;
+  teamId: string; createdAt: string; updatedAt: string;
+};
+
 export type ApiSkuDetail = ApiSku & {
   manufacturer: ApiManufacturer;
   packaging: ApiPackagingItem[];
@@ -127,6 +132,7 @@ export type ApiSkuDetail = ApiSku & {
   productionBatches: ApiBatch[];
   tests: ApiSkuTest[];
   dispatches: ApiSkuDispatch[];
+  inventoryLocations: ApiInventoryLocation[];
 };
 
 export type VendorStatus = "Currently Working" | "Worked Before" | "Never Worked";
@@ -543,6 +549,12 @@ export const api = {
       fetch(`${BASE}/skus/links/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
     deleteLink: (id: string) =>
       fetch(`${BASE}/skus/links/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+    addInventoryLocation: (skuId: string, data: { name: string; quantity: number }) =>
+      fetch(`${BASE}/skus/${skuId}/inventory-locations`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    updateInventoryLocation: (id: string, data: { name?: string; quantity?: number }) =>
+      fetch(`${BASE}/skus/inventory-locations/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
+    deleteInventoryLocation: (id: string) =>
+      fetch(`${BASE}/skus/inventory-locations/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
   purchaseOrders: {

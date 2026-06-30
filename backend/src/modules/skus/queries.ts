@@ -33,8 +33,9 @@ export const getSkuById = (id: string) =>
           vendor: { columns: { id: true, name: true, city: true } },
         },
       },
-      tests:      { orderBy: (t, { asc }) => [asc(t.createdAt)] },
-      dispatches: { orderBy: (d, { desc }) => [desc(d.dispatchDate)] },
+      tests:              { orderBy: (t, { asc }) => [asc(t.createdAt)] },
+      dispatches:         { orderBy: (d, { desc }) => [desc(d.dispatchDate)] },
+      inventoryLocations: { orderBy: (l, { asc }) => [asc(l.name)] },
     },
   });
 
