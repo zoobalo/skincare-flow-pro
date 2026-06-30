@@ -37,8 +37,8 @@ export const pmRoutes = new Hono()
   .patch("/:id", async (c) => {
     try {
       const body = await c.req.json();
-      const { code, name, category, description, specifications, image, currentStock, mfrStock, minThreshold, moq, leadTimeDays, costPerUnit, docsLink } = body;
-      const [updated] = await updatePm(c.req.param("id"), { code, name, category, description, specifications, image, currentStock, mfrStock, minThreshold, moq, leadTimeDays, costPerUnit, docsLink });
+      const { code, name, category, description, specifications, image, currentStock, mfrStock, otherStock, minThreshold, moq, leadTimeDays, costPerUnit, docsLink } = body;
+      const [updated] = await updatePm(c.req.param("id"), { code, name, category, description, specifications, image, currentStock, mfrStock, otherStock, minThreshold, moq, leadTimeDays, costPerUnit, docsLink });
       if (!updated) return c.json({ error: "PM not found" }, 404);
       return c.json(updated);
     } catch (err: any) {

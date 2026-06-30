@@ -34,7 +34,7 @@ const PM_CATEGORIES = [
 
 const EMPTY = {
   code: "", name: "", category: "Corrugated Box", description: "", specifications: "",
-  currentStock: 0, mfrStock: 0, minThreshold: 0, moq: 0, leadTimeDays: 30,
+  currentStock: 0, mfrStock: 0, otherStock: 0, minThreshold: 0, moq: 0, leadTimeDays: 30,
   costPerUnit: "" as string | number,
   docsLink: "",
 };
@@ -107,20 +107,23 @@ function PmSheet({
               onChange={(e) => setForm((f) => ({ ...f, specifications: e.target.value }))}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label>Current Stock</Label>
               <Input type="number" min="0" value={form.currentStock} onChange={set("currentStock")} />
             </div>
             <div className="space-y-1.5">
-              <Label>Min. Threshold</Label>
-              <Input type="number" min="0" value={form.minThreshold} onChange={set("minThreshold")} />
+              <Label>Mfr. Warehouse</Label>
+              <Input type="number" min="0" value={form.mfrStock} onChange={set("mfrStock")} placeholder="0" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Other Stock</Label>
+              <Input type="number" min="0" value={form.otherStock} onChange={set("otherStock")} placeholder="0" />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Manufacturer Warehouse Stock</Label>
-            <Input type="number" min="0" value={form.mfrStock} onChange={set("mfrStock")} placeholder="0" />
-            <p className="text-xs text-muted-foreground">Stock held at manufacturer's warehouse on your account.</p>
+            <Label>Min. Threshold</Label>
+            <Input type="number" min="0" value={form.minThreshold} onChange={set("minThreshold")} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -180,6 +183,7 @@ function PmContent({ pms: allPms, vendors }: { pms: ApiPm[]; vendors: ApiVendor[
       code: form.code.toUpperCase(),
       currentStock:  Number(form.currentStock),
       mfrStock:      Number(form.mfrStock),
+      otherStock:    Number(form.otherStock),
       minThreshold:  Number(form.minThreshold),
       moq:           Number(form.moq),
       leadTimeDays:  Number(form.leadTimeDays),
@@ -196,6 +200,7 @@ function PmContent({ pms: allPms, vendors }: { pms: ApiPm[]; vendors: ApiVendor[
       code: form.code.toUpperCase(),
       currentStock:  Number(form.currentStock),
       mfrStock:      Number(form.mfrStock),
+      otherStock:    Number(form.otherStock),
       minThreshold:  Number(form.minThreshold),
       moq:           Number(form.moq),
       leadTimeDays:  Number(form.leadTimeDays),
@@ -268,7 +273,7 @@ function PmContent({ pms: allPms, vendors }: { pms: ApiPm[]; vendors: ApiVendor[
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {pms.map((pm) => {
-          const totalStock = pm.currentStock + pm.mfrStock;
+          const totalStock = pm.currentStock + pm.mfrStock + pm.otherStock;
           const lowStock = pm.minThreshold > 0 && totalStock < pm.minThreshold;
           return (
             <div key={pm.id} className="rounded-xl border bg-card p-5 flex flex-col gap-4">
@@ -317,10 +322,11 @@ function PmContent({ pms: allPms, vendors }: { pms: ApiPm[]; vendors: ApiVendor[
                 </div>
               </div>
               {/* Stock breakdown */}
-              {(pm.currentStock > 0 || pm.mfrStock > 0) && (
-                <div className="flex gap-4 text-xs text-muted-foreground">
+              {(pm.currentStock > 0 || pm.mfrStock > 0 || pm.otherStock > 0) && (
+                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                   <span>Vendor/Own: <span className="font-medium text-foreground">{pm.currentStock.toLocaleString()}</span></span>
-                  <span>Mfr. warehouse: <span className="font-medium text-foreground">{pm.mfrStock.toLocaleString()}</span></span>
+                  <span>Mfr: <span className="font-medium text-foreground">{pm.mfrStock.toLocaleString()}</span></span>
+                  <span>Other: <span className="font-medium text-foreground">{pm.otherStock.toLocaleString()}</span></span>
                 </div>
               )}
 

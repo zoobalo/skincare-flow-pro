@@ -126,7 +126,7 @@ export type VendorStatus = "Currently Working" | "Worked Before" | "Never Worked
 export type ApiPackagingItem = {
   id: string; skuId: string; name: string; vendorId: string;
   vendorStatus: VendorStatus;
-  moq: number; leadTimeDays: number; currentStock: number; mfrStock: number; transitStock: number;
+  moq: number; leadTimeDays: number; currentStock: number; mfrStock: number; otherStock: number; transitStock: number;
   transitDeliveryDate: string | null;
   costPerUnit: number; lastPurchaseDate: string | null;
   sku?: { id: string; code: string; name: string };
@@ -310,7 +310,7 @@ export type ApiSample = {
 export type ApiPm = {
   id: string; code: string; name: string; category: string;
   description: string; specifications: string; image: string;
-  currentStock: number; mfrStock: number; minThreshold: number; moq: number; leadTimeDays: number;
+  currentStock: number; mfrStock: number; otherStock: number; minThreshold: number; moq: number; leadTimeDays: number;
   costPerUnit: number | null;
   docsLink?: string | null;
   teamId: string; createdAt: string; updatedAt: string;
