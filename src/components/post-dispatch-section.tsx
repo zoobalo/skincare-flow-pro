@@ -207,14 +207,12 @@ export function PostDispatchSection({ dispatch, onDone }: { dispatch: ApiSkuDisp
                       <Checkbox
                         checked={local[`${key}Received` as keyof LocalState] as boolean}
                         onCheckedChange={(v) => setBool(`${key}Received` as keyof LocalState)(Boolean(v))}
-                        disabled={isDone}
                       />
                     </div>
                     <div key={`${key}-uplod`} className={`px-3 py-2 flex items-center justify-center ${idx % 2 === 1 ? "bg-muted/20" : ""}`}>
                       <Checkbox
                         checked={local[`${key}Uploaded` as keyof LocalState] as boolean}
                         onCheckedChange={(v) => setBool(`${key}Uploaded` as keyof LocalState)(Boolean(v))}
-                        disabled={isDone}
                       />
                     </div>
                   </>
@@ -235,11 +233,17 @@ export function PostDispatchSection({ dispatch, onDone }: { dispatch: ApiSkuDisp
           </div>
 
           {/* Actions */}
-          {!isDone ? (
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={saveChecklist} disabled={saving}>
-                {saving ? "Saving…" : "Save"}
-              </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {isDone && (
+              <div className="flex items-center gap-1.5 rounded-lg bg-green-50 dark:bg-green-950/30 px-3 py-2 text-xs text-green-700 dark:text-green-400">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Completed
+              </div>
+            )}
+            <Button size="sm" variant="outline" onClick={saveChecklist} disabled={saving}>
+              {saving ? "Saving…" : "Save"}
+            </Button>
+            {!isDone && (
               <Button
                 size="sm"
                 onClick={markDone}
@@ -248,13 +252,8 @@ export function PostDispatchSection({ dispatch, onDone }: { dispatch: ApiSkuDisp
               >
                 Done
               </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 rounded-lg bg-green-50 dark:bg-green-950/30 px-3 py-2 text-xs text-green-700 dark:text-green-400">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Dispatch completed
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>
