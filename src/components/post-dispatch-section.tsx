@@ -247,8 +247,9 @@ export function PostDispatchSection({ dispatch, onDone }: { dispatch: ApiSkuDisp
               <Button
                 size="sm"
                 onClick={markDone}
-                disabled={saving}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={saving || checkedCount < totalChecks}
+                title={checkedCount < totalChecks ? `${totalChecks - checkedCount} item(s) still unchecked` : undefined}
+                className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-40"
               >
                 Done
               </Button>
