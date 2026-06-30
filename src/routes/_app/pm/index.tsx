@@ -34,7 +34,7 @@ const PM_CATEGORIES = [
 
 const EMPTY = {
   code: "", name: "", category: "Corrugated Box", description: "", specifications: "",
-  currentStock: 0, minThreshold: 0, moq: 0, leadTimeDays: 30,
+  currentStock: 0, mfrStock: 0, minThreshold: 0, moq: 0, leadTimeDays: 30,
   costPerUnit: "" as string | number,
   docsLink: "",
 };
@@ -117,6 +117,11 @@ function PmSheet({
               <Input type="number" min="0" value={form.minThreshold} onChange={set("minThreshold")} />
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label>Manufacturer Warehouse Stock</Label>
+            <Input type="number" min="0" value={form.mfrStock} onChange={set("mfrStock")} placeholder="0" />
+            <p className="text-xs text-muted-foreground">Stock held at manufacturer's warehouse on your account.</p>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>MOQ</Label>
@@ -174,6 +179,7 @@ function PmContent({ pms: allPms, vendors }: { pms: ApiPm[]; vendors: ApiVendor[
       ...form,
       code: form.code.toUpperCase(),
       currentStock:  Number(form.currentStock),
+      mfrStock:      Number(form.mfrStock),
       minThreshold:  Number(form.minThreshold),
       moq:           Number(form.moq),
       leadTimeDays:  Number(form.leadTimeDays),
@@ -189,6 +195,7 @@ function PmContent({ pms: allPms, vendors }: { pms: ApiPm[]; vendors: ApiVendor[
       ...form,
       code: form.code.toUpperCase(),
       currentStock:  Number(form.currentStock),
+      mfrStock:      Number(form.mfrStock),
       minThreshold:  Number(form.minThreshold),
       moq:           Number(form.moq),
       leadTimeDays:  Number(form.leadTimeDays),
@@ -261,7 +268,8 @@ function PmContent({ pms: allPms, vendors }: { pms: ApiPm[]; vendors: ApiVendor[
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {pms.map((pm) => {
-          const lowStock = pm.minThreshold > 0 && pm.currentStock < pm.minThreshold;
+          const totalStock = pm.currentStock + pm.mfrStock;
+          const lowStock = pm.minThreshold > 0 && totalStock < pm.minThreshold;
           return (
             <div key={pm.id} className="rounded-xl border bg-card p-5 flex flex-col gap-4">
               <div className="flex items-start justify-between gap-2">
@@ -290,13 +298,13 @@ function PmContent({ pms: allPms, vendors }: { pms: ApiPm[]; vendors: ApiVendor[
 
               {/* Stock + key metrics */}
               <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className={`rounded-lg p-2 ${lowStock ? "bg-destructive/10" : "bg-muted/40"}`}>
+                <div className={`rounded-lg p-2 col-span-1 ${lowStock ? "bg-destructive/10" : "bg-muted/40"}`}>
                   <div className="text-muted-foreground flex items-center gap-1">
                     {lowStock && <AlertTriangle className="h-3 w-3 text-destructive" />}
-                    Stock
+                    Total Stock
                   </div>
                   <div className={`font-semibold tabular-nums ${lowStock ? "text-destructive" : ""}`}>
-                    {pm.currentStock.toLocaleString()}
+                    {totalStock.toLocaleString()}
                   </div>
                 </div>
                 <div className="rounded-lg bg-muted/40 p-2">
@@ -308,6 +316,13 @@ function PmContent({ pms: allPms, vendors }: { pms: ApiPm[]; vendors: ApiVendor[
                   <div className="font-semibold tabular-nums">{pm.leadTimeDays}d</div>
                 </div>
               </div>
+              {/* Stock breakdown */}
+              {(pm.currentStock > 0 || pm.mfrStock > 0) && (
+                <div className="flex gap-4 text-xs text-muted-foreground">
+                  <span>Vendor/Own: <span className="font-medium text-foreground">{pm.currentStock.toLocaleString()}</span></span>
+                  <span>Mfr. warehouse: <span className="font-medium text-foreground">{pm.mfrStock.toLocaleString()}</span></span>
+                </div>
+              )}
 
               {pm.costPerUnit != null && (
                 <p className="text-xs text-muted-foreground">

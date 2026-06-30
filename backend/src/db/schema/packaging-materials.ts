@@ -10,6 +10,7 @@ export const packagingMaterials = pgTable("packaging_materials", {
   specifications: text("specifications").notNull().default(""),
   image:          text("image").notNull().default(""),
   currentStock: integer("current_stock").notNull().default(0),
+  mfrStock:     integer("mfr_stock").notNull().default(0),
   minThreshold: integer("min_threshold").notNull().default(0),
   moq:          integer("moq").notNull().default(0),
   leadTimeDays: integer("lead_time_days").notNull().default(30),
