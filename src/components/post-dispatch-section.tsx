@@ -2,38 +2,127 @@ import { useState } from "react";
 import { api, type ApiSkuDispatch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardCheck, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ClipboardCheck, ChevronDown, ChevronUp, Plus, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
-export function PostDispatchSection({ dispatch }: { dispatch: ApiSkuDispatch }) {
+const CHECKLIST = [
+  { key: "coa",          label: "COA" },
+  { key: "invoice",      label: "Invoice" },
+  { key: "grn",          label: "GRN" },
+  { key: "warehouseQc",  label: "Warehouse QC" },
+  { key: "officeExtQc",  label: "Office External QC" },
+  { key: "officeIntQc",  label: "Office Internal QC" },
+  { key: "otherQc",      label: "Other QC" },
+] as const;
+
+type ChecklistKey = typeof CHECKLIST[number]["key"];
+
+type LocalState = {
+  batchNumbers: string[];
+  coaReceived: boolean; coaUploaded: boolean;
+  invoiceReceived: boolean; invoiceUploaded: boolean;
+  grnReceived: boolean; grnUploaded: boolean;
+  warehouseQcReceived: boolean; warehouseQcUploaded: boolean;
+  officeExtQcReceived: boolean; officeExtQcUploaded: boolean;
+  officeIntQcReceived: boolean; officeIntQcUploaded: boolean;
+  otherQcReceived: boolean; otherQcUploaded: boolean;
+};
+
+function parseBatchNumbers(raw: string): string[] {
+  try { return JSON.parse(raw) as string[]; } catch { return []; }
+}
+
+export function PostDispatchSection({ dispatch, onDone }: { dispatch: ApiSkuDispatch; onDone?: () => void }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [local, setLocal] = useState({
-    batchNumber:   dispatch.batchNumber   ?? "",
-    coaLink:       dispatch.coaLink       ?? "",
-    invoiceNumber: dispatch.invoiceNumber ?? "",
-    invoiceLink:   dispatch.invoiceLink   ?? "",
-    qcStatus:      dispatch.qcStatus      ?? "",
+  const [local, setLocal] = useState<LocalState>({
+    batchNumbers:      parseBatchNumbers(dispatch.batchNumbers ?? "[]"),
+    coaReceived:       dispatch.coaReceived ?? false,
+    coaUploaded:       dispatch.coaUploaded ?? false,
+    invoiceReceived:   dispatch.invoiceReceived ?? false,
+    invoiceUploaded:   dispatch.invoiceUploaded ?? false,
+    grnReceived:       dispatch.grnReceived ?? false,
+    grnUploaded:       dispatch.grnUploaded ?? false,
+    warehouseQcReceived:  dispatch.warehouseQcReceived ?? false,
+    warehouseQcUploaded:  dispatch.warehouseQcUploaded ?? false,
+    officeExtQcReceived:  dispatch.officeExtQcReceived ?? false,
+    officeExtQcUploaded:  dispatch.officeExtQcUploaded ?? false,
+    officeIntQcReceived:  dispatch.officeIntQcReceived ?? false,
+    officeIntQcUploaded:  dispatch.officeIntQcUploaded ?? false,
+    otherQcReceived:   dispatch.otherQcReceived ?? false,
+    otherQcUploaded:   dispatch.otherQcUploaded ?? false,
   });
 
-  const hasData = local.batchNumber || local.coaLink || local.invoiceNumber || local.invoiceLink || local.qcStatus;
+  const checkedCount = CHECKLIST.reduce((n, { key }) =>
+    n + (local[`${key}Received` as keyof LocalState] ? 1 : 0)
+      + (local[`${key}Uploaded` as keyof LocalState] ? 1 : 0), 0);
+  const totalChecks = CHECKLIST.length * 2;
+  const isDone = dispatch.qcStatus === "Done";
 
-  const save = async () => {
+  const setBool = (field: keyof LocalState) => (checked: boolean) =>
+    setLocal((p) => ({ ...p, [field]: checked }));
+
+  const addBatch = () => setLocal((p) => ({ ...p, batchNumbers: [...p.batchNumbers, ""] }));
+  const removeBatch = (i: number) =>
+    setLocal((p) => ({ ...p, batchNumbers: p.batchNumbers.filter((_, idx) => idx !== i) }));
+  const editBatch = (i: number, val: string) =>
+    setLocal((p) => ({ ...p, batchNumbers: p.batchNumbers.map((b, idx) => idx === i ? val : b) }));
+
+  const saveChecklist = async () => {
     setSaving(true);
     try {
       await api.skus.updateDispatch(dispatch.id, {
-        batchNumber:   local.batchNumber   || null,
-        coaLink:       local.coaLink       || null,
-        invoiceNumber: local.invoiceNumber || null,
-        invoiceLink:   local.invoiceLink   || null,
-        qcStatus:      (local.qcStatus     || null) as "Done" | "Pending" | null,
+        batchNumbers: JSON.stringify(local.batchNumbers.filter(Boolean)),
+        coaReceived:       local.coaReceived,
+        coaUploaded:       local.coaUploaded,
+        invoiceReceived:   local.invoiceReceived,
+        invoiceUploaded:   local.invoiceUploaded,
+        grnReceived:       local.grnReceived,
+        grnUploaded:       local.grnUploaded,
+        warehouseQcReceived:  local.warehouseQcReceived,
+        warehouseQcUploaded:  local.warehouseQcUploaded,
+        officeExtQcReceived:  local.officeExtQcReceived,
+        officeExtQcUploaded:  local.officeExtQcUploaded,
+        officeIntQcReceived:  local.officeIntQcReceived,
+        officeIntQcUploaded:  local.officeIntQcUploaded,
+        otherQcReceived:   local.otherQcReceived,
+        otherQcUploaded:   local.otherQcUploaded,
       });
-      toast.success("Post dispatch data saved.");
-      setOpen(false);
+      toast.success("Saved.");
     } catch {
-      toast.error("Failed to save post dispatch data.");
+      toast.error("Failed to save.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const markDone = async () => {
+    setSaving(true);
+    try {
+      await api.skus.updateDispatch(dispatch.id, {
+        batchNumbers: JSON.stringify(local.batchNumbers.filter(Boolean)),
+        coaReceived:       local.coaReceived,
+        coaUploaded:       local.coaUploaded,
+        invoiceReceived:   local.invoiceReceived,
+        invoiceUploaded:   local.invoiceUploaded,
+        grnReceived:       local.grnReceived,
+        grnUploaded:       local.grnUploaded,
+        warehouseQcReceived:  local.warehouseQcReceived,
+        warehouseQcUploaded:  local.warehouseQcUploaded,
+        officeExtQcReceived:  local.officeExtQcReceived,
+        officeExtQcUploaded:  local.officeExtQcUploaded,
+        officeIntQcReceived:  local.officeIntQcReceived,
+        officeIntQcUploaded:  local.officeIntQcUploaded,
+        otherQcReceived:   local.otherQcReceived,
+        otherQcUploaded:   local.otherQcUploaded,
+        qcStatus: "Done",
+        status: "Delivered",
+      });
+      toast.success("Dispatch marked as complete.");
+      onDone?.();
+    } catch {
+      toast.error("Failed to mark as done.");
     } finally {
       setSaving(false);
     }
@@ -44,109 +133,128 @@ export function PostDispatchSection({ dispatch }: { dispatch: ApiSkuDispatch }) 
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        className="flex w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         <ClipboardCheck className="h-3.5 w-3.5 shrink-0" />
         <span className="font-medium">Post Dispatch</span>
-        {hasData && !open && (
+        {isDone ? (
+          <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+            <CheckCircle2 className="h-3.5 w-3.5" />Complete
+          </span>
+        ) : checkedCount > 0 ? (
+          <span className="text-foreground/60">{checkedCount}/{totalChecks} checked</span>
+        ) : (
+          <span className="text-muted-foreground/60">· not started</span>
+        )}
+        {local.batchNumbers.filter(Boolean).length > 0 && !open && (
           <span className="text-foreground/60 truncate">
-            {local.batchNumber ? `· Batch ${local.batchNumber}` : ""}
-            {local.invoiceNumber ? ` · Inv ${local.invoiceNumber}` : ""}
-            {local.qcStatus ? ` · QC: ${local.qcStatus}` : ""}
+            · {local.batchNumbers.filter(Boolean).map((b, i) => `Batch ${i + 1}: ${b}`).join(", ")}
           </span>
         )}
-        {!hasData && !open && (
-          <span className="text-muted-foreground/60">· not filled</span>
-        )}
-        {open ? <ChevronUp className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
+        <span className="ml-auto">
+          {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        </span>
       </button>
 
       {open && (
-        <div className="mt-3 space-y-3">
-          {/* Summary row when data exists */}
-          {hasData && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1 rounded-lg bg-muted/40 px-3 py-2 text-xs">
-              {local.batchNumber   && <span><span className="text-muted-foreground">Batch: </span><span className="font-medium">{local.batchNumber}</span></span>}
-              {local.invoiceNumber && <span><span className="text-muted-foreground">Invoice: </span><span className="font-medium">{local.invoiceNumber}</span></span>}
-              {local.qcStatus && (
-                <span>
-                  <span className="text-muted-foreground">QC: </span>
-                  <span className={`font-medium ${local.qcStatus === "Done" ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`}>
-                    {local.qcStatus}
-                  </span>
-                </span>
-              )}
-              {local.coaLink && (
-                <a href={local.coaLink} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
-                  <ExternalLink className="h-3 w-3" /> COA
-                </a>
-              )}
-              {local.invoiceLink && (
-                <a href={local.invoiceLink} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
-                  <ExternalLink className="h-3 w-3" /> Invoice Doc
-                </a>
-              )}
+        <div className="mt-3 space-y-4">
+          {/* Batch Numbers */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Batch Numbers</p>
+            <div className="space-y-1.5">
+              {local.batchNumbers.map((bn, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-14 shrink-0">Batch {i + 1}</span>
+                  <Input
+                    className="h-7 text-xs flex-1"
+                    placeholder="e.g. BT2406001"
+                    value={bn}
+                    onChange={(e) => editBatch(i, e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeBatch(i)}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addBatch}
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <Plus className="h-3 w-3" />Add batch number
+              </button>
+            </div>
+          </div>
+
+          {/* Checklist */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Checklist</p>
+            <div className="rounded-lg border overflow-hidden">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-0 text-[11px]">
+                <div className="bg-muted/60 px-3 py-1.5 font-medium text-muted-foreground">Document</div>
+                <div className="bg-muted/60 px-3 py-1.5 font-medium text-muted-foreground text-center">Received?</div>
+                <div className="bg-muted/60 px-3 py-1.5 font-medium text-muted-foreground text-center">Uploaded?</div>
+                {CHECKLIST.map(({ key, label }, idx) => (
+                  <>
+                    <div key={`${key}-label`} className={`px-3 py-2 text-xs flex items-center ${idx % 2 === 1 ? "bg-muted/20" : ""}`}>
+                      {label}
+                    </div>
+                    <div key={`${key}-recv`} className={`px-3 py-2 flex items-center justify-center ${idx % 2 === 1 ? "bg-muted/20" : ""}`}>
+                      <Checkbox
+                        checked={local[`${key}Received` as keyof LocalState] as boolean}
+                        onCheckedChange={(v) => setBool(`${key}Received` as keyof LocalState)(Boolean(v))}
+                        disabled={isDone}
+                      />
+                    </div>
+                    <div key={`${key}-uplod`} className={`px-3 py-2 flex items-center justify-center ${idx % 2 === 1 ? "bg-muted/20" : ""}`}>
+                      <Checkbox
+                        checked={local[`${key}Uploaded` as keyof LocalState] as boolean}
+                        onCheckedChange={(v) => setBool(`${key}Uploaded` as keyof LocalState)(Boolean(v))}
+                        disabled={isDone}
+                      />
+                    </div>
+                  </>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Progress summary */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${(checkedCount / totalChecks) * 100}%` }}
+              />
+            </div>
+            <span>{checkedCount}/{totalChecks} checked</span>
+          </div>
+
+          {/* Actions */}
+          {!isDone ? (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={saveChecklist} disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </Button>
+              <Button
+                size="sm"
+                onClick={markDone}
+                disabled={saving}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Done
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 rounded-lg bg-green-50 dark:bg-green-950/30 px-3 py-2 text-xs text-green-700 dark:text-green-400">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Dispatch completed
             </div>
           )}
-
-          {/* Edit form */}
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Batch Number</Label>
-              <Input
-                className="h-8 text-xs"
-                placeholder="e.g. BT2406001"
-                value={local.batchNumber}
-                onChange={(e) => setLocal((p) => ({ ...p, batchNumber: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Invoice Number</Label>
-              <Input
-                className="h-8 text-xs"
-                placeholder="e.g. INV-2024-001"
-                value={local.invoiceNumber}
-                onChange={(e) => setLocal((p) => ({ ...p, invoiceNumber: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">COA Link</Label>
-              <Input
-                className="h-8 text-xs"
-                placeholder="https://…"
-                value={local.coaLink}
-                onChange={(e) => setLocal((p) => ({ ...p, coaLink: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Invoice Link</Label>
-              <Input
-                className="h-8 text-xs"
-                placeholder="https://…"
-                value={local.invoiceLink}
-                onChange={(e) => setLocal((p) => ({ ...p, invoiceLink: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">QC Status</Label>
-              <Select
-                value={local.qcStatus}
-                onValueChange={(v) => setLocal((p) => ({ ...p, qcStatus: v === "__clear__" ? "" : v }))}
-              >
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select…" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Done">Done</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="__clear__">— Clear —</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <Button size="sm" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
-            <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          </div>
         </div>
       )}
     </div>

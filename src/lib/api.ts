@@ -108,6 +108,14 @@ export type ApiSkuDispatch = {
   invoiceNumber: string | null;
   invoiceLink: string | null;
   qcStatus: "Done" | "Pending" | null;
+  batchNumbers: string;
+  coaReceived: boolean; coaUploaded: boolean;
+  invoiceReceived: boolean; invoiceUploaded: boolean;
+  grnReceived: boolean; grnUploaded: boolean;
+  warehouseQcReceived: boolean; warehouseQcUploaded: boolean;
+  officeExtQcReceived: boolean; officeExtQcUploaded: boolean;
+  officeIntQcReceived: boolean; officeIntQcUploaded: boolean;
+  otherQcReceived: boolean; otherQcUploaded: boolean;
   createdAt: string; updatedAt: string;
 };
 

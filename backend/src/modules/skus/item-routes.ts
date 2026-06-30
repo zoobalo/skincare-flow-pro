@@ -104,7 +104,7 @@ export const skuItemRoutes = new Hono()
   .patch("/dispatches/:id", async (c) => {
     const body = await c.req.json();
     const patch: Record<string, unknown> = { updatedAt: new Date() };
-    const fields = ["goodsType","goodsName","quantity","dispatchDate","from","to","transporterName","vehicleNumber","lrNumber","freight","status","notes","batchNumber","coaLink","invoiceNumber","invoiceLink","qcStatus"];
+    const fields = ["goodsType","goodsName","quantity","dispatchDate","from","to","transporterName","vehicleNumber","lrNumber","freight","status","notes","batchNumber","coaLink","invoiceNumber","invoiceLink","qcStatus","batchNumbers","coaReceived","coaUploaded","invoiceReceived","invoiceUploaded","grnReceived","grnUploaded","warehouseQcReceived","warehouseQcUploaded","officeExtQcReceived","officeExtQcUploaded","officeIntQcReceived","officeIntQcUploaded","otherQcReceived","otherQcUploaded"];
     for (const f of fields) if (body[f] !== undefined) patch[f] = body[f];
     const [updated] = await db.update(skuDispatches).set(patch).where(eq(skuDispatches.id, c.req.param("id"))).returning();
     if (!updated) return c.json({ error: "Not found" }, 404);
