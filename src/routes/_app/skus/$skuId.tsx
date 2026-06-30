@@ -208,7 +208,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
   const [invEditName, setInvEditName] = useState("");
   const [invEditQty, setInvEditQty] = useState("");
   const [invEditSaving, setInvEditSaving] = useState(false);
-  const invTotal = invLocs.length > 0 ? invLocs.reduce((s, l) => s + l.quantity, 0) : sku.currentInventory;
+  const invTotal = invLocs.length > 0 ? invLocs.reduce((s, l) => s + (l.quantity ?? 0), 0) : (sku.currentInventory ?? 0);
 
   const handleAddLoc = async () => {
     if (!invAddName.trim()) { toast.error("Name is required."); return; }
@@ -513,10 +513,10 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                   </span>
                 </button>
                 <div className="mt-1 flex items-baseline gap-2">
-                  <span className="text-2xl font-semibold tabular-nums">{invTotal.toLocaleString()}</span>
-                  <StatusBadge status={invTotal < sku.minThreshold ? "Low Stock" : "Healthy"} />
+                  <span className="text-2xl font-semibold tabular-nums">{(invTotal ?? 0).toLocaleString()}</span>
+                  <StatusBadge status={(invTotal ?? 0) < (sku.minThreshold ?? 0) ? "Low Stock" : "Healthy"} />
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground">Min threshold: {sku.minThreshold.toLocaleString()}</div>
+                <div className="mt-1 text-xs text-muted-foreground">Min threshold: {(sku.minThreshold ?? 0).toLocaleString()}</div>
 
                 {invOpen && (
                   <div className="mt-3 border-t pt-3 space-y-3">
@@ -536,7 +536,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                               <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-1.5 text-xs group">
                                 <span className="text-muted-foreground">{loc.name}</span>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-semibold tabular-nums">{loc.quantity.toLocaleString()}</span>
+                                  <span className="font-semibold tabular-nums">{(loc.quantity ?? 0).toLocaleString()}</span>
                                   <button type="button" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { setInvEditId(loc.id); setInvEditName(loc.name); setInvEditQty(String(loc.quantity)); }}>
                                     <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                                   </button>
@@ -550,7 +550,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                         ))}
                         <div className="flex justify-between px-3 pt-1 text-xs">
                           <span className="text-muted-foreground font-medium">Total</span>
-                          <span className="font-semibold tabular-nums">{invTotal.toLocaleString()}</span>
+                          <span className="font-semibold tabular-nums">{(invTotal ?? 0).toLocaleString()}</span>
                         </div>
                       </div>
                     )}
@@ -645,11 +645,11 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                   {p.vendorStatus}
                 </button>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                  <div><div className="text-muted-foreground">Own stock</div><div className="font-semibold tabular-nums">{p.currentStock.toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Mfr. warehouse</div><div className="font-semibold tabular-nums">{p.mfrStock.toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Other stock</div><div className="font-semibold tabular-nums">{p.otherStock.toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Total stock</div><div className="font-semibold tabular-nums">{(p.currentStock + p.mfrStock + p.otherStock).toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Transit</div><div className="font-semibold tabular-nums">{p.transitStock.toLocaleString()}</div></div>
+                  <div><div className="text-muted-foreground">Own stock</div><div className="font-semibold tabular-nums">{(p.currentStock ?? 0).toLocaleString()}</div></div>
+                  <div><div className="text-muted-foreground">Mfr. warehouse</div><div className="font-semibold tabular-nums">{(p.mfrStock ?? 0).toLocaleString()}</div></div>
+                  <div><div className="text-muted-foreground">Other stock</div><div className="font-semibold tabular-nums">{(p.otherStock ?? 0).toLocaleString()}</div></div>
+                  <div><div className="text-muted-foreground">Total stock</div><div className="font-semibold tabular-nums">{((p.currentStock ?? 0) + (p.mfrStock ?? 0) + (p.otherStock ?? 0)).toLocaleString()}</div></div>
+                  <div><div className="text-muted-foreground">Transit</div><div className="font-semibold tabular-nums">{(p.transitStock ?? 0).toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">Cost / unit</div><div className="font-semibold tabular-nums">₹{p.costPerUnit}</div></div>
                   <div><div className="text-muted-foreground">Lead time</div><div className="font-semibold tabular-nums">{p.leadTimeDays}d</div></div>
                 </div>

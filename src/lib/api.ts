@@ -491,9 +491,10 @@ export const api = {
         rawMaterials:      (s.rawMaterials      ?? []).map(coerceRawMaterial),
         purchaseOrders:    (s.purchaseOrders    ?? []).map(coercePo),
         productionBatches: (s.productionBatches ?? []),
-        tests:             (s.tests             ?? []),
-        dispatches:        (s.dispatches        ?? []),
-        importantLinks:    s.importantLinks ?? "[]",
+        tests:              (s.tests              ?? []),
+        dispatches:         (s.dispatches         ?? []),
+        inventoryLocations: (s.inventoryLocations ?? []),
+        importantLinks:     s.importantLinks ?? "[]",
       } as ApiSkuDetail;
     },
     create: (data: Partial<ApiSku>, sharedTeamId?: string) =>
