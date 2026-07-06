@@ -52,7 +52,7 @@ const RAW_UNITS = ["ml", "g", "kg", "L", "pcs", "mg"];
 const PO_STATUSES = ["To be sent", "Sent", "Pending", "Approved", "In Production", "Dispatched", "Delivered", "Delayed"] as const;
 const GST_RATES = [0, 5, 12, 18, 28] as const;
 
-const EMPTY_PACK = { name: "", vendorId: "", moq: 1000, leadTimeDays: 14, currentStock: 0, mfrStock: 0, otherStock: 0, transitStock: 0, transitDeliveryDate: "", costPerUnit: 0, lastPurchaseDate: "" };
+const EMPTY_PACK = { name: "", vendorId: "", moq: 1000, leadTimeDays: 14, currentStock: 0, mfrStock: 0, otherStock: 0, llcUdaipurStock: 0, edgistifyGurgaonStock: 0, transitStock: 0, transitDeliveryDate: "", costPerUnit: 0, lastPurchaseDate: "" };
 const EMPTY_RM   = { name: "", vendorId: "", qtyPerUnit: 1, unit: "ml", currentStock: 0, costPerUnit: 0 };
 const DISPATCH_STATUSES = ["Planned", "Dispatched", "In Transit", "Delivered", "Delayed"] as const;
 const GOODS_TYPES = ["Final Goods", "Packaging Material"] as const;
@@ -314,7 +314,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
     if (!packForm.name || !packForm.vendorId) { toast.error("Name and vendor are required."); return; }
     setPackSaving(true);
     try {
-      await api.skus.addPackaging(sku.id, { ...packForm, moq: +packForm.moq, leadTimeDays: +packForm.leadTimeDays, currentStock: +packForm.currentStock, mfrStock: +packForm.mfrStock, otherStock: +packForm.otherStock, transitStock: +packForm.transitStock, transitDeliveryDate: packForm.transitDeliveryDate || null, costPerUnit: +packForm.costPerUnit, lastPurchaseDate: packForm.lastPurchaseDate || null });
+      await api.skus.addPackaging(sku.id, { ...packForm, moq: +packForm.moq, leadTimeDays: +packForm.leadTimeDays, currentStock: +packForm.currentStock, mfrStock: +packForm.mfrStock, otherStock: +packForm.otherStock, llcUdaipurStock: +packForm.llcUdaipurStock, edgistifyGurgaonStock: +packForm.edgistifyGurgaonStock, transitStock: +packForm.transitStock, transitDeliveryDate: packForm.transitDeliveryDate || null, costPerUnit: +packForm.costPerUnit, lastPurchaseDate: packForm.lastPurchaseDate || null });
       toast.success("Packaging material added."); setPackOpen(false); setPackForm({ ...EMPTY_PACK, vendorId: vendors[0]?.id ?? "" }); reload();
     } catch { toast.error("Failed to add packaging."); } finally { setPackSaving(false); }
   };
@@ -394,14 +394,14 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
 
   const openEditPack = (p: typeof sku.packaging[0]) => {
     setEditPackId(p.id);
-    setEditPackForm({ name: p.name, vendorId: p.vendorId, moq: p.moq, leadTimeDays: p.leadTimeDays, currentStock: p.currentStock, mfrStock: p.mfrStock, otherStock: p.otherStock, transitStock: p.transitStock, transitDeliveryDate: p.transitDeliveryDate ?? "", costPerUnit: p.costPerUnit, lastPurchaseDate: p.lastPurchaseDate ?? "" });
+    setEditPackForm({ name: p.name, vendorId: p.vendorId, moq: p.moq, leadTimeDays: p.leadTimeDays, currentStock: p.currentStock, mfrStock: p.mfrStock, otherStock: p.otherStock, llcUdaipurStock: p.llcUdaipurStock ?? 0, edgistifyGurgaonStock: p.edgistifyGurgaonStock ?? 0, transitStock: p.transitStock, transitDeliveryDate: p.transitDeliveryDate ?? "", costPerUnit: p.costPerUnit, lastPurchaseDate: p.lastPurchaseDate ?? "" });
     setEditPackOpen(true);
   };
   const saveEditPack = async () => {
     if (!editPackId) return;
     setEditPackSaving(true);
     try {
-      await api.skus.updatePackaging(editPackId, { ...editPackForm, moq: +editPackForm.moq, leadTimeDays: +editPackForm.leadTimeDays, currentStock: +editPackForm.currentStock, mfrStock: +editPackForm.mfrStock, otherStock: +editPackForm.otherStock, transitStock: +editPackForm.transitStock, transitDeliveryDate: editPackForm.transitDeliveryDate || null, costPerUnit: +editPackForm.costPerUnit, lastPurchaseDate: editPackForm.lastPurchaseDate || null });
+      await api.skus.updatePackaging(editPackId, { ...editPackForm, moq: +editPackForm.moq, leadTimeDays: +editPackForm.leadTimeDays, currentStock: +editPackForm.currentStock, mfrStock: +editPackForm.mfrStock, otherStock: +editPackForm.otherStock, llcUdaipurStock: +editPackForm.llcUdaipurStock, edgistifyGurgaonStock: +editPackForm.edgistifyGurgaonStock, transitStock: +editPackForm.transitStock, transitDeliveryDate: editPackForm.transitDeliveryDate || null, costPerUnit: +editPackForm.costPerUnit, lastPurchaseDate: editPackForm.lastPurchaseDate || null });
       toast.success("Packaging updated."); setEditPackOpen(false); reload();
     } catch { toast.error("Failed to update packaging."); } finally { setEditPackSaving(false); }
   };
@@ -648,7 +648,9 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                   <div><div className="text-muted-foreground">Own stock</div><div className="font-semibold tabular-nums">{(p.currentStock ?? 0).toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">Mfr. warehouse</div><div className="font-semibold tabular-nums">{(p.mfrStock ?? 0).toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">Other stock</div><div className="font-semibold tabular-nums">{(p.otherStock ?? 0).toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Total stock</div><div className="font-semibold tabular-nums">{((p.currentStock ?? 0) + (p.mfrStock ?? 0) + (p.otherStock ?? 0)).toLocaleString()}</div></div>
+                  <div><div className="text-muted-foreground">LLC Udaipur</div><div className="font-semibold tabular-nums">{(p.llcUdaipurStock ?? 0).toLocaleString()}</div></div>
+                  <div><div className="text-muted-foreground">Edgistify Gurgaon</div><div className="font-semibold tabular-nums">{(p.edgistifyGurgaonStock ?? 0).toLocaleString()}</div></div>
+                  <div><div className="text-muted-foreground">Total stock</div><div className="font-semibold tabular-nums">{((p.currentStock ?? 0) + (p.mfrStock ?? 0) + (p.otherStock ?? 0) + (p.llcUdaipurStock ?? 0) + (p.edgistifyGurgaonStock ?? 0)).toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">Transit</div><div className="font-semibold tabular-nums">{(p.transitStock ?? 0).toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">Cost / unit</div><div className="font-semibold tabular-nums">₹{p.costPerUnit}</div></div>
                   <div><div className="text-muted-foreground">Lead time</div><div className="font-semibold tabular-nums">{p.leadTimeDays}d</div></div>
@@ -775,7 +777,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                       <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Packaging Inventory</p>
                       <div className="space-y-1.5">
                         {localPackaging.map((p) => {
-                          const total = p.currentStock + p.mfrStock + p.otherStock;
+                          const total = p.currentStock + p.mfrStock + p.otherStock + (p.llcUdaipurStock ?? 0) + (p.edgistifyGurgaonStock ?? 0);
                           const mfrReady = p.mfrStock >= batch.quantity;
                           const totalSufficient = total >= batch.quantity;
                           const needToSend = batch.quantity - p.mfrStock;
@@ -806,7 +808,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                                 </span>
                                 {" "}
                                 <span className="text-muted-foreground/60">
-                                  ({p.currentStock.toLocaleString()} vendor + {p.mfrStock.toLocaleString()} Mfr{p.otherStock > 0 ? ` + ${p.otherStock.toLocaleString()} other` : ""})
+                                  ({p.currentStock.toLocaleString()} vendor + {p.mfrStock.toLocaleString()} Mfr{p.otherStock > 0 ? ` + ${p.otherStock.toLocaleString()} other` : ""}{(p.llcUdaipurStock ?? 0) > 0 ? ` + ${p.llcUdaipurStock.toLocaleString()} LLC Udaipur` : ""}{(p.edgistifyGurgaonStock ?? 0) > 0 ? ` + ${p.edgistifyGurgaonStock.toLocaleString()} Edgistify Gurgaon` : ""})
                                 </span>
                                 {" / "}
                                 <span className="font-medium text-foreground">{batch.quantity.toLocaleString()}</span>
@@ -1512,6 +1514,8 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
               <div className="space-y-1.5"><Label>Current Stock</Label><Input type="number" value={packForm.currentStock} onChange={setPack("currentStock")} /></div>
               <div className="space-y-1.5"><Label>Mfr. Warehouse</Label><Input type="number" value={packForm.mfrStock} onChange={setPack("mfrStock")} /></div>
               <div className="space-y-1.5"><Label>Other Stock</Label><Input type="number" value={packForm.otherStock} onChange={setPack("otherStock")} /></div>
+              <div className="space-y-1.5"><Label>LLC Udaipur Stock</Label><Input type="number" value={packForm.llcUdaipurStock} onChange={setPack("llcUdaipurStock")} /></div>
+              <div className="space-y-1.5"><Label>Edgistify Gurgaon Stock</Label><Input type="number" value={packForm.edgistifyGurgaonStock} onChange={setPack("edgistifyGurgaonStock")} /></div>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Transit Stock</Label><Input type="number" value={packForm.transitStock} onChange={setPack("transitStock")} /></div>
@@ -1685,6 +1689,8 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
               <div className="space-y-1.5"><Label>Current Stock</Label><Input type="number" value={editPackForm.currentStock} onChange={setEditPack("currentStock")} /></div>
               <div className="space-y-1.5"><Label>Mfr. Warehouse</Label><Input type="number" value={editPackForm.mfrStock} onChange={setEditPack("mfrStock")} /></div>
               <div className="space-y-1.5"><Label>Other Stock</Label><Input type="number" value={editPackForm.otherStock} onChange={setEditPack("otherStock")} /></div>
+              <div className="space-y-1.5"><Label>LLC Udaipur Stock</Label><Input type="number" value={editPackForm.llcUdaipurStock} onChange={setEditPack("llcUdaipurStock")} /></div>
+              <div className="space-y-1.5"><Label>Edgistify Gurgaon Stock</Label><Input type="number" value={editPackForm.edgistifyGurgaonStock} onChange={setEditPack("edgistifyGurgaonStock")} /></div>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Transit Stock</Label><Input type="number" value={editPackForm.transitStock} onChange={setEditPack("transitStock")} /></div>

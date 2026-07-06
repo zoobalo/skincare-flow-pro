@@ -38,6 +38,8 @@ export const packagingItems = pgTable("packaging_items", {
   currentStock:     integer("current_stock").notNull().default(0),
   mfrStock:         integer("mfr_stock").notNull().default(0),
   otherStock:       integer("other_stock").notNull().default(0),
+  llcUdaipurStock:       integer("llc_udaipur_stock").notNull().default(0),
+  edgistifyGurgaonStock: integer("edgistify_gurgaon_stock").notNull().default(0),
   transitStock:         integer("transit_stock").notNull().default(0),
   transitDeliveryDate:  date("transit_delivery_date", { mode: "string" }),
   costPerUnit:          numeric("cost_per_unit", { precision: 10, scale: 2 }).notNull(),
