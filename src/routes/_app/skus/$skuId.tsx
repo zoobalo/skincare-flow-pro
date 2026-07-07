@@ -52,7 +52,7 @@ const RAW_UNITS = ["ml", "g", "kg", "L", "pcs", "mg"];
 const PO_STATUSES = ["To be sent", "Sent", "Pending", "Approved", "In Production", "Dispatched", "Delivered", "Delayed"] as const;
 const GST_RATES = [0, 5, 12, 18, 28] as const;
 
-const EMPTY_PACK = { name: "", vendorId: "", moq: 1000, leadTimeDays: 14, currentStock: 0, mfrStock: 0, otherStock: 0, llcUdaipurStock: 0, edgistifyGurgaonStock: 0, transitStock: 0, transitDeliveryDate: "", costPerUnit: 0, lastPurchaseDate: "" };
+const EMPTY_PACK = { name: "", vendorId: "", moq: 1000, leadTimeDays: 14, currentStock: 0, mfrStock: 0, otherStock: 0, llcUdaipurStock: 0, edgistifyGurgaonStock: 0, unprintedStock: 0, unprintedStockNote: "", transitStock: 0, transitDeliveryDate: "", costPerUnit: 0, lastPurchaseDate: "" };
 const EMPTY_RM   = { name: "", vendorId: "", qtyPerUnit: 1, unit: "ml", currentStock: 0, costPerUnit: 0 };
 const DISPATCH_STATUSES = ["Planned", "Dispatched", "In Transit", "Delivered", "Delayed"] as const;
 const GOODS_TYPES = ["Final Goods", "Packaging Material"] as const;
@@ -314,7 +314,7 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
     if (!packForm.name || !packForm.vendorId) { toast.error("Name and vendor are required."); return; }
     setPackSaving(true);
     try {
-      await api.skus.addPackaging(sku.id, { ...packForm, moq: +packForm.moq, leadTimeDays: +packForm.leadTimeDays, currentStock: +packForm.currentStock, mfrStock: +packForm.mfrStock, otherStock: +packForm.otherStock, llcUdaipurStock: +packForm.llcUdaipurStock, edgistifyGurgaonStock: +packForm.edgistifyGurgaonStock, transitStock: +packForm.transitStock, transitDeliveryDate: packForm.transitDeliveryDate || null, costPerUnit: +packForm.costPerUnit, lastPurchaseDate: packForm.lastPurchaseDate || null });
+      await api.skus.addPackaging(sku.id, { ...packForm, moq: +packForm.moq, leadTimeDays: +packForm.leadTimeDays, currentStock: +packForm.currentStock, mfrStock: +packForm.mfrStock, otherStock: +packForm.otherStock, llcUdaipurStock: +packForm.llcUdaipurStock, edgistifyGurgaonStock: +packForm.edgistifyGurgaonStock, unprintedStock: +packForm.unprintedStock, unprintedStockNote: packForm.unprintedStockNote, transitStock: +packForm.transitStock, transitDeliveryDate: packForm.transitDeliveryDate || null, costPerUnit: +packForm.costPerUnit, lastPurchaseDate: packForm.lastPurchaseDate || null });
       toast.success("Packaging material added."); setPackOpen(false); setPackForm({ ...EMPTY_PACK, vendorId: vendors[0]?.id ?? "" }); reload();
     } catch { toast.error("Failed to add packaging."); } finally { setPackSaving(false); }
   };
@@ -394,14 +394,14 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
 
   const openEditPack = (p: typeof sku.packaging[0]) => {
     setEditPackId(p.id);
-    setEditPackForm({ name: p.name, vendorId: p.vendorId, moq: p.moq, leadTimeDays: p.leadTimeDays, currentStock: p.currentStock, mfrStock: p.mfrStock, otherStock: p.otherStock, llcUdaipurStock: p.llcUdaipurStock ?? 0, edgistifyGurgaonStock: p.edgistifyGurgaonStock ?? 0, transitStock: p.transitStock, transitDeliveryDate: p.transitDeliveryDate ?? "", costPerUnit: p.costPerUnit, lastPurchaseDate: p.lastPurchaseDate ?? "" });
+    setEditPackForm({ name: p.name, vendorId: p.vendorId, moq: p.moq, leadTimeDays: p.leadTimeDays, currentStock: p.currentStock, mfrStock: p.mfrStock, otherStock: p.otherStock, llcUdaipurStock: p.llcUdaipurStock ?? 0, edgistifyGurgaonStock: p.edgistifyGurgaonStock ?? 0, unprintedStock: p.unprintedStock ?? 0, unprintedStockNote: p.unprintedStockNote ?? "", transitStock: p.transitStock, transitDeliveryDate: p.transitDeliveryDate ?? "", costPerUnit: p.costPerUnit, lastPurchaseDate: p.lastPurchaseDate ?? "" });
     setEditPackOpen(true);
   };
   const saveEditPack = async () => {
     if (!editPackId) return;
     setEditPackSaving(true);
     try {
-      await api.skus.updatePackaging(editPackId, { ...editPackForm, moq: +editPackForm.moq, leadTimeDays: +editPackForm.leadTimeDays, currentStock: +editPackForm.currentStock, mfrStock: +editPackForm.mfrStock, otherStock: +editPackForm.otherStock, llcUdaipurStock: +editPackForm.llcUdaipurStock, edgistifyGurgaonStock: +editPackForm.edgistifyGurgaonStock, transitStock: +editPackForm.transitStock, transitDeliveryDate: editPackForm.transitDeliveryDate || null, costPerUnit: +editPackForm.costPerUnit, lastPurchaseDate: editPackForm.lastPurchaseDate || null });
+      await api.skus.updatePackaging(editPackId, { ...editPackForm, moq: +editPackForm.moq, leadTimeDays: +editPackForm.leadTimeDays, currentStock: +editPackForm.currentStock, mfrStock: +editPackForm.mfrStock, otherStock: +editPackForm.otherStock, llcUdaipurStock: +editPackForm.llcUdaipurStock, edgistifyGurgaonStock: +editPackForm.edgistifyGurgaonStock, unprintedStock: +editPackForm.unprintedStock, unprintedStockNote: editPackForm.unprintedStockNote, transitStock: +editPackForm.transitStock, transitDeliveryDate: editPackForm.transitDeliveryDate || null, costPerUnit: +editPackForm.costPerUnit, lastPurchaseDate: editPackForm.lastPurchaseDate || null });
       toast.success("Packaging updated."); setEditPackOpen(false); reload();
     } catch { toast.error("Failed to update packaging."); } finally { setEditPackSaving(false); }
   };
@@ -650,11 +650,18 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
                   <div><div className="text-muted-foreground">Other stock</div><div className="font-semibold tabular-nums">{(p.otherStock ?? 0).toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">LLC Udaipur</div><div className="font-semibold tabular-nums">{(p.llcUdaipurStock ?? 0).toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">Edgistify Gurgaon</div><div className="font-semibold tabular-nums">{(p.edgistifyGurgaonStock ?? 0).toLocaleString()}</div></div>
+                  <div><div className="text-muted-foreground">Unprinted stock</div><div className="font-semibold tabular-nums">{(p.unprintedStock ?? 0).toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">Total stock</div><div className="font-semibold tabular-nums">{((p.currentStock ?? 0) + (p.mfrStock ?? 0) + (p.otherStock ?? 0) + (p.llcUdaipurStock ?? 0) + (p.edgistifyGurgaonStock ?? 0)).toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">Transit</div><div className="font-semibold tabular-nums">{(p.transitStock ?? 0).toLocaleString()}</div></div>
                   <div><div className="text-muted-foreground">Cost / unit</div><div className="font-semibold tabular-nums">₹{p.costPerUnit}</div></div>
                   <div><div className="text-muted-foreground">Lead time</div><div className="font-semibold tabular-nums">{p.leadTimeDays}d</div></div>
                 </div>
+                {(p.unprintedStock ?? 0) > 0 && p.unprintedStockNote && (
+                  <div className="mt-2 rounded-md bg-muted/50 px-3 py-2 text-xs">
+                    <span className="font-medium text-muted-foreground">Unprinted note: </span>
+                    <span className="whitespace-pre-wrap">{p.unprintedStockNote}</span>
+                  </div>
+                )}
                 {p.transitStock > 0 && (
                   <div className="mt-2 rounded-md bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400 flex items-center justify-between">
                     <span className="font-medium">In transit: {p.transitStock.toLocaleString()} units</span>
@@ -1516,7 +1523,9 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
               <div className="space-y-1.5"><Label>Other Stock</Label><Input type="number" value={packForm.otherStock} onChange={setPack("otherStock")} /></div>
               <div className="space-y-1.5"><Label>LLC Udaipur Stock</Label><Input type="number" value={packForm.llcUdaipurStock} onChange={setPack("llcUdaipurStock")} /></div>
               <div className="space-y-1.5"><Label>Edgistify Gurgaon Stock</Label><Input type="number" value={packForm.edgistifyGurgaonStock} onChange={setPack("edgistifyGurgaonStock")} /></div>
+              <div className="space-y-1.5"><Label>Unprinted Stock</Label><Input type="number" value={packForm.unprintedStock} onChange={setPack("unprintedStock")} /></div>
             </div>
+            <div className="space-y-1.5"><Label>Unprinted Stock Note</Label><Textarea rows={2} placeholder="Add a note about the unprinted stock…" value={packForm.unprintedStockNote} onChange={(e) => setPackForm(f => ({ ...f, unprintedStockNote: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Transit Stock</Label><Input type="number" value={packForm.transitStock} onChange={setPack("transitStock")} /></div>
               <div className="space-y-1.5"><Label>Cost / unit (₹)</Label><Input type="number" step="0.01" value={packForm.costPerUnit} onChange={setPack("costPerUnit")} /></div>
@@ -1691,7 +1700,9 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
               <div className="space-y-1.5"><Label>Other Stock</Label><Input type="number" value={editPackForm.otherStock} onChange={setEditPack("otherStock")} /></div>
               <div className="space-y-1.5"><Label>LLC Udaipur Stock</Label><Input type="number" value={editPackForm.llcUdaipurStock} onChange={setEditPack("llcUdaipurStock")} /></div>
               <div className="space-y-1.5"><Label>Edgistify Gurgaon Stock</Label><Input type="number" value={editPackForm.edgistifyGurgaonStock} onChange={setEditPack("edgistifyGurgaonStock")} /></div>
+              <div className="space-y-1.5"><Label>Unprinted Stock</Label><Input type="number" value={editPackForm.unprintedStock} onChange={setEditPack("unprintedStock")} /></div>
             </div>
+            <div className="space-y-1.5"><Label>Unprinted Stock Note</Label><Textarea rows={2} placeholder="Add a note about the unprinted stock…" value={editPackForm.unprintedStockNote} onChange={(e) => setEditPackForm(f => ({ ...f, unprintedStockNote: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5"><Label>Transit Stock</Label><Input type="number" value={editPackForm.transitStock} onChange={setEditPack("transitStock")} /></div>
               <div className="space-y-1.5"><Label>Cost / unit (₹)</Label><Input type="number" step="0.01" value={editPackForm.costPerUnit} onChange={setEditPack("costPerUnit")} /></div>
