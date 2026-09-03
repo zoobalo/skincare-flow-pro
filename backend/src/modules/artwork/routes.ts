@@ -5,31 +5,10 @@ import {
   getAllArtwork, getArtwork, createArtwork, updateArtwork, deleteArtwork,
   createSections, updateSection, deleteSection, deleteSectionsFor,
   nextSortOrder, getSectionTeam,
+  upsertLink, deleteLink,
 } from "./queries.ts";
 
 type SectionInput = { name: string; data: string };
-
-const LINK_FIELDS = [
-  "firstDraftLink",
-  "manufacturerApprovalLink",
-  "finalPrintingLink",
-  "ndaLink",
-  "otherLink",
-] as const;
-
-/**
- * Pulls the link fields out of a payload, storing null for blanks and
- * prefixing a bare host with https:// so the Open button always resolves.
- */
-function readLinks(body: Record<string, unknown>, onlyPresent = false) {
-  const out: Record<string, string | null> = {};
-  for (const key of LINK_FIELDS) {
-    if (onlyPresent && body[key] === undefined) continue;
-    const raw = typeof body[key] === "string" ? (body[key] as string).trim() : "";
-    out[key] = raw ? (/^https?:\/\//i.test(raw) ? raw : `https://${raw}`) : null;
-  }
-  return out;
-}
 
 /** Keeps only usable section rows — a blank name means the row was left empty. */
 function readSections(raw: unknown): SectionInput[] {
@@ -41,6 +20,15 @@ function readSections(raw: unknown): SectionInput[] {
     }))
     .filter((s) => s.name.length > 0);
 }
+
+const LINK_KINDS = ["firstDraft", "manufacturerApproval", "finalPrinting", "nda", "other"] as const;
+type LinkKind = (typeof LINK_KINDS)[number];
+
+const isLinkKind = (v: string): v is LinkKind => (LINK_KINDS as readonly string[]).includes(v);
+
+/** Prefixes a bare host so the Open button always resolves. */
+const normaliseUrl = (raw: string) =>
+  /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
 
 export const artworkRoutes = new Hono()
 
@@ -99,7 +87,7 @@ export const artworkRoutes = new Hono()
 
     const id = crypto.randomUUID();
     try {
-      await createArtwork({ id, skuId, artworkType, teamId, ...readLinks(body) });
+      await createArtwork({ id, skuId, artworkType, teamId });
     } catch {
       // The only realistic failure is a skuId that is not in the catalogue.
       return c.json({ error: "That SKU no longer exists" }, 400);
@@ -126,7 +114,6 @@ export const artworkRoutes = new Hono()
       data.artworkType = body.artworkType.trim();
     }
     if (typeof body.skuId === "string" && body.skuId.trim()) data.skuId = body.skuId.trim();
-    Object.assign(data, readLinks(body, true));
     await updateArtwork(existing.id, data);
 
     if (body.sections !== undefined) {
@@ -148,6 +135,46 @@ export const artworkRoutes = new Hono()
     if (!existing) return c.json({ error: "Not found" }, 404);
     if (existing.teamId !== teamId) return c.json({ error: "Forbidden" }, 403);
     await deleteArtwork(existing.id);  // sections cascade
+    return c.json({ ok: true });
+  })
+
+  // ── Links (saved one at a time, each stamped with who and when) ───────────
+  .put("/:id/links/:kind", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "artwork");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    const artwork = await getArtwork(c.req.param("id"));
+    if (!artwork) return c.json({ error: "Not found" }, 404);
+    if (artwork.teamId !== teamId) return c.json({ error: "Forbidden" }, 403);
+
+    const kind = c.req.param("kind");
+    if (!isLinkKind(kind)) return c.json({ error: "Unknown link type" }, 400);
+
+    const body = await c.req.json();
+    const raw = typeof body.url === "string" ? body.url.trim() : "";
+    if (!raw) return c.json({ error: "Enter a link" }, 400);
+
+    const [saved] = await upsertLink({
+      id: crypto.randomUUID(),
+      artworkId: artwork.id,
+      kind,
+      url: normaliseUrl(raw),
+      updatedById: user.sub,
+      updatedByName: user.name ?? null,
+    });
+    return c.json(saved);
+  })
+  .delete("/:id/links/:kind", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "artwork");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    const artwork = await getArtwork(c.req.param("id"));
+    if (!artwork) return c.json({ error: "Not found" }, 404);
+    if (artwork.teamId !== teamId) return c.json({ error: "Forbidden" }, 403);
+
+    const kind = c.req.param("kind");
+    if (!isLinkKind(kind)) return c.json({ error: "Unknown link type" }, 400);
+    await deleteLink(artwork.id, kind);
     return c.json({ ok: true });
   })
 

@@ -1,6 +1,6 @@
 import { db } from "../../db/client.ts";
-import { artworkEntries, artworkSections } from "../../db/schema/artwork.ts";
-import { eq, max } from "drizzle-orm";
+import { artworkEntries, artworkSections, artworkLinks } from "../../db/schema/artwork.ts";
+import { and, eq, max } from "drizzle-orm";
 
 export const getAllArtwork = (teamId: string) =>
   db.query.artworkEntries.findMany({
@@ -9,6 +9,7 @@ export const getAllArtwork = (teamId: string) =>
     with: {
       sku: { columns: { id: true, name: true, code: true } },
       sections: { orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)] },
+      links: true,
     },
   });
 
@@ -18,6 +19,7 @@ export const getArtwork = (id: string) =>
     with: {
       sku: { columns: { id: true, name: true, code: true } },
       sections: { orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)] },
+      links: true,
     },
   });
 
@@ -60,3 +62,24 @@ export async function getSectionTeam(sectionId: string) {
     .limit(1);
   return row ?? null;
 }
+
+// ── Links ────────────────────────────────────────────────────────────────────
+
+/** Saves one link, replacing whatever was there and re-stamping the author. */
+export const upsertLink = (row: typeof artworkLinks.$inferInsert) =>
+  db.insert(artworkLinks).values(row)
+    .onConflictDoUpdate({
+      target: [artworkLinks.artworkId, artworkLinks.kind],
+      set: {
+        url: row.url,
+        updatedById: row.updatedById ?? null,
+        updatedByName: row.updatedByName ?? null,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+
+export const deleteLink = (artworkId: string, kind: string) =>
+  db.delete(artworkLinks)
+    .where(and(eq(artworkLinks.artworkId, artworkId), eq(artworkLinks.kind, kind)))
+    .returning();

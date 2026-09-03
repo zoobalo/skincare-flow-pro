@@ -19,17 +19,19 @@ const OTHERS = "Others";
 
 /** Artwork files, in the order they are produced. */
 const LINK_FIELDS = [
-  { key: "firstDraftLink",           label: "First Draft" },
-  { key: "manufacturerApprovalLink", label: "Manufacturer Approval" },
-  { key: "finalPrintingLink",        label: "Final Printing" },
-  { key: "ndaLink",                  label: "NDA" },
-  { key: "otherLink",                label: "Other" },
+  { kind: "firstDraft",           label: "First Draft" },
+  { kind: "manufacturerApproval", label: "Manufacturer Approval" },
+  { kind: "finalPrinting",        label: "Final Printing" },
+  { kind: "nda",                  label: "NDA" },
+  { kind: "other",                label: "Other" },
 ] as const;
 
-type LinkKey = (typeof LINK_FIELDS)[number]["key"];
-const EMPTY_LINKS: Record<LinkKey, string> = {
-  firstDraftLink: "", manufacturerApprovalLink: "", finalPrintingLink: "", ndaLink: "", otherLink: "",
-};
+/** "12 Mar 2026, 4:05 pm" */
+function fmtStamp(iso: string) {
+  return new Date(iso).toLocaleString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+}
 
 export const Route = createFileRoute("/_app/artwork/")({
   loader: async () => {
@@ -84,6 +86,146 @@ function Copyable({
         ? <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
         : <Copy className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-hover/c:opacity-60" />}
     </button>
+  );
+}
+
+/**
+ * The five artwork links, each saved on its own so updating one does not
+ * touch the rest — and each stamped with who saved it and when.
+ */
+function ArtworkLinks({
+  artwork, sharedTeamId, onChanged, copiedKey, onCopy,
+}: {
+  artwork: ApiArtworkEntry;
+  sharedTeamId?: string;
+  onChanged: () => void;
+  copiedKey: string | null;
+  onCopy: (value: string, key: string, label: string) => void;
+}) {
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const linkFor = (kind: string) => artwork.links.find((l) => l.kind === kind) ?? null;
+
+  function startEdit(kind: string) {
+    setEditing(kind);
+    setDraft(linkFor(kind)?.url ?? "");
+  }
+
+  async function save(kind: string, label: string) {
+    if (!draft.trim()) { toast.error("Enter a link, or clear it to remove."); return; }
+    setBusy(true);
+    try {
+      await api.artwork.saveLink(artwork.id, kind, draft.trim(), sharedTeamId);
+      toast.success(`${label} link saved.`);
+      setEditing(null);
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save link.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(kind: string, label: string) {
+    if (!confirm(`Remove the ${label} link?`)) return;
+    setBusy(true);
+    try {
+      await api.artwork.removeLink(artwork.id, kind, sharedTeamId);
+      toast.success(`${label} link removed.`);
+      setEditing(null);
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove link.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="divide-y border-b bg-muted/30">
+      {LINK_FIELDS.map((f) => {
+        const link = linkFor(f.kind);
+        const isEditing = editing === f.kind;
+        return (
+          <div key={f.kind} className="px-4 py-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-36 shrink-0 font-medium text-muted-foreground">{f.label}</span>
+
+              {isEditing ? (
+                <>
+                  <Input
+                    autoFocus
+                    className="h-7 flex-1 text-xs"
+                    placeholder="https://…"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") save(f.kind, f.label);
+                      if (e.key === "Escape") setEditing(null);
+                    }}
+                  />
+                  <Button size="sm" className="h-7 px-2 text-[11px]" disabled={busy} onClick={() => save(f.kind, f.label)}>
+                    {busy ? "Saving…" : "Save"}
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={() => setEditing(null)}>
+                    Cancel
+                  </Button>
+                </>
+              ) : link ? (
+                <>
+                  <span className="min-w-0 flex-1 truncate">
+                    <Copyable
+                      value={link.url}
+                      copyKey={`l-${link.id}`}
+                      label={`${f.label} link`}
+                      copied={copiedKey === `l-${link.id}`}
+                      onCopy={onCopy}
+                      className="text-xs"
+                    />
+                  </span>
+                  <Button asChild size="sm" variant="outline" className="h-6 shrink-0 gap-1 px-2 text-[11px]">
+                    <a href={link.url} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3 w-3" /> Open
+                    </a>
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 shrink-0 p-0" title="Edit link" onClick={() => startEdit(f.kind)}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 shrink-0 p-0 text-destructive hover:text-destructive"
+                    title="Remove link"
+                    onClick={() => remove(f.kind, f.label)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-[11px] text-muted-foreground"
+                  onClick={() => startEdit(f.kind)}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> Add link
+                </Button>
+              )}
+            </div>
+
+            {link && !isEditing && (
+              <p className="mt-0.5 pl-36 text-[11px] text-muted-foreground/80">
+                {link.updatedByName
+                  ? <>Updated by {link.updatedByName} · {fmtStamp(link.updatedAt)}</>
+                  : <>Updated {fmtStamp(link.updatedAt)}</>}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -145,7 +287,6 @@ function ArtworkContent({
   const [typeChoice, setTypeChoice] = useState("");
   const [customType, setCustomType] = useState("");
   const [rows, setRows] = useState<SectionRow[]>([{ ...BLANK_ROW }]);
-  const [links, setLinks] = useState<Record<LinkKey, string>>({ ...EMPTY_LINKS });
   const [saving, setSaving] = useState(false);
 
   function openAdd() {
@@ -154,7 +295,6 @@ function ArtworkContent({
     setTypeChoice("");
     setCustomType("");
     setRows([{ ...BLANK_ROW }]);
-    setLinks({ ...EMPTY_LINKS });
     setOpen(true);
   }
 
@@ -165,13 +305,6 @@ function ArtworkContent({
     setTypeChoice(known ? a.artworkType : OTHERS);
     setCustomType(known ? "" : a.artworkType);
     setRows(a.sections.length ? a.sections.map((s) => ({ name: s.name, data: s.data })) : [{ ...BLANK_ROW }]);
-    setLinks({
-      firstDraftLink: a.firstDraftLink ?? "",
-      manufacturerApprovalLink: a.manufacturerApprovalLink ?? "",
-      finalPrintingLink: a.finalPrintingLink ?? "",
-      ndaLink: a.ndaLink ?? "",
-      otherLink: a.otherLink ?? "",
-    });
     setOpen(true);
   }
 
@@ -190,10 +323,10 @@ function ArtworkContent({
     setSaving(true);
     try {
       if (editing) {
-        await api.artwork.update(editing.id, { skuId, artworkType: resolvedType, sections, ...links }, sharedTeamId);
+        await api.artwork.update(editing.id, { skuId, artworkType: resolvedType, sections }, sharedTeamId);
         toast.success("Artwork updated.");
       } else {
-        await api.artwork.create({ skuId, artworkType: resolvedType, sections, ...links }, sharedTeamId);
+        await api.artwork.create({ skuId, artworkType: resolvedType, sections }, sharedTeamId);
         toast.success("Artwork saved.");
       }
       setOpen(false);
@@ -220,7 +353,10 @@ function ArtworkContent({
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
   const artworkAsText = (a: ApiArtworkEntry) => {
-    const links = LINK_FIELDS.filter((f) => a[f.key]).map((f) => `${f.label}: ${a[f.key]}`);
+    const links = LINK_FIELDS
+      .map((f) => ({ f, l: a.links.find((x) => x.kind === f.kind) }))
+      .filter((x) => x.l)
+      .map((x) => `${x.f.label}: ${x.l!.url}`);
     return [
       `${a.sku?.name ?? ""} — ${a.artworkType}`,
       "",
@@ -332,30 +468,13 @@ function ArtworkContent({
                       </div>
                     </div>
 
-                    {LINK_FIELDS.some((f) => a[f.key]) && (
-                      <div className="space-y-1 border-b bg-muted/30 px-4 py-2">
-                        {LINK_FIELDS.filter((f) => a[f.key]).map((f) => (
-                          <div key={f.key} className="flex items-center gap-2 text-xs">
-                            <span className="w-36 shrink-0 text-muted-foreground">{f.label}</span>
-                            <span className="min-w-0 flex-1 truncate">
-                              <Copyable
-                                value={a[f.key] as string}
-                                copyKey={`l-${a.id}-${f.key}`}
-                                label={`${f.label} link`}
-                                copied={copiedKey === `l-${a.id}-${f.key}`}
-                                onCopy={copy}
-                                className="text-xs"
-                              />
-                            </span>
-                            <Button asChild size="sm" variant="outline" className="h-6 shrink-0 gap-1 px-2 text-[11px]">
-                              <a href={a[f.key] as string} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-3 w-3" /> Open
-                              </a>
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <ArtworkLinks
+                      artwork={a}
+                      sharedTeamId={sharedTeamId}
+                      onChanged={() => router.invalidate()}
+                      copiedKey={copiedKey}
+                      onCopy={copy}
+                    />
 
                     <div className="divide-y">
                       {a.sections.map((s) => (
@@ -481,22 +600,6 @@ function ArtworkContent({
               </Button>
             </div>
 
-            <div className="space-y-3 border-t pt-4">
-              <Label>Links</Label>
-              {LINK_FIELDS.map((f) => (
-                <div key={f.key} className="space-y-1.5">
-                  <Label htmlFor={f.key} className="text-xs font-normal text-muted-foreground">
-                    {f.label}
-                  </Label>
-                  <Input
-                    id={f.key}
-                    placeholder="https://…"
-                    value={links[f.key]}
-                    onChange={(e) => setLinks((l) => ({ ...l, [f.key]: e.target.value }))}
-                  />
-                </div>
-              ))}
-            </div>
           </div>
 
           <SheetFooter className="mt-6 flex gap-2">

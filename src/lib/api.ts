@@ -291,18 +291,16 @@ export type ApiArtworkSection = {
   createdAt: string; updatedAt: string;
 };
 
-export type ArtworkLinks = {
-  firstDraftLink: string | null;
-  manufacturerApprovalLink: string | null;
-  finalPrintingLink: string | null;
-  ndaLink: string | null;
-  otherLink: string | null;
+export type ApiArtworkLink = {
+  id: string; artworkId: string; kind: string; url: string;
+  updatedById: string | null; updatedByName: string | null; updatedAt: string;
 };
 
-export type ApiArtworkEntry = ArtworkLinks & {
+export type ApiArtworkEntry = {
   id: string; skuId: string; artworkType: string;
   sku: { id: string; name: string; code: string } | null;
   sections: ApiArtworkSection[];
+  links: ApiArtworkLink[];
   createdAt: string; updatedAt: string;
 };
 
@@ -696,16 +694,20 @@ export const api = {
   artwork: {
     list: (sharedTeamId?: string) => get<ApiArtworkEntry[]>(`/artwork${sharedQs(sharedTeamId)}`),
     create: (
-      data: { skuId: string; artworkType: string; sections: { name: string; data: string }[] } & Partial<ArtworkLinks>,
+      data: { skuId: string; artworkType: string; sections: { name: string; data: string }[] },
       sharedTeamId?: string,
     ) => send<ApiArtworkEntry>(`/artwork${sharedQs(sharedTeamId)}`, "POST", data),
     update: (
       id: string,
-      data: { skuId?: string; artworkType?: string; sections?: { name: string; data: string }[] } & Partial<ArtworkLinks>,
+      data: { skuId?: string; artworkType?: string; sections?: { name: string; data: string }[] },
       sharedTeamId?: string,
     ) => send<ApiArtworkEntry>(`/artwork/${id}${sharedQs(sharedTeamId)}`, "PATCH", data),
     delete: (id: string, sharedTeamId?: string) =>
       send<{ ok: true }>(`/artwork/${id}${sharedQs(sharedTeamId)}`, "DELETE"),
+    saveLink: (artworkId: string, kind: string, url: string, sharedTeamId?: string) =>
+      send<ApiArtworkLink>(`/artwork/${artworkId}/links/${kind}${sharedQs(sharedTeamId)}`, "PUT", { url }),
+    removeLink: (artworkId: string, kind: string, sharedTeamId?: string) =>
+      send<{ ok: true }>(`/artwork/${artworkId}/links/${kind}${sharedQs(sharedTeamId)}`, "DELETE"),
     addSection: (id: string, data: { name: string; data: string }, sharedTeamId?: string) =>
       send<ApiArtworkSection>(`/artwork/${id}/sections${sharedQs(sharedTeamId)}`, "POST", data),
     updateSection: (sectionId: string, data: { name: string; data: string }, sharedTeamId?: string) =>

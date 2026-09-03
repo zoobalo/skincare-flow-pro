@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, index, unique } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { skus } from "./skus.ts";
 
@@ -12,12 +12,6 @@ export const artworkEntries = pgTable("artwork_entries", {
   id:          text("id").primaryKey(),
   skuId:       text("sku_id").notNull().references(() => skus.id, { onDelete: "cascade" }),
   artworkType: text("artwork_type").notNull(),
-  // Files as the artwork moves through the process. Null until that stage.
-  firstDraftLink:          text("first_draft_link"),
-  manufacturerApprovalLink: text("manufacturer_approval_link"),
-  finalPrintingLink:       text("final_printing_link"),
-  ndaLink:                 text("nda_link"),
-  otherLink:               text("other_link"),
   teamId:      text("team_id").notNull(),
   createdAt:   timestamp("created_at").defaultNow().notNull(),
   updatedAt:   timestamp("updated_at").defaultNow().notNull(),
@@ -39,9 +33,34 @@ export const artworkSections = pgTable("artwork_sections", {
   index("artwork_section_artwork_idx").on(t.artworkId),
 ]);
 
+/**
+ * Artwork files, one row per stage. Kept apart from the entry so each link
+ * carries its own author and timestamp, and is saved on its own.
+ *
+ * `updatedByName` is null only for links migrated from the earlier columns,
+ * where the author was never recorded.
+ */
+export const artworkLinks = pgTable("artwork_links", {
+  id:            text("id").primaryKey(),
+  artworkId:     text("artwork_id").notNull().references(() => artworkEntries.id, { onDelete: "cascade" }),
+  kind:          text("kind").notNull(),
+  url:           text("url").notNull(),
+  updatedById:   text("updated_by_id"),
+  updatedByName: text("updated_by_name"),
+  updatedAt:     timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+  index("artwork_link_artwork_idx").on(t.artworkId),
+  unique("artwork_link_kind_unique").on(t.artworkId, t.kind),
+]);
+
 export const artworkEntriesRelations = relations(artworkEntries, ({ one, many }) => ({
   sku: one(skus, { fields: [artworkEntries.skuId], references: [skus.id] }),
   sections: many(artworkSections),
+  links: many(artworkLinks),
+}));
+
+export const artworkLinksRelations = relations(artworkLinks, ({ one }) => ({
+  artwork: one(artworkEntries, { fields: [artworkLinks.artworkId], references: [artworkEntries.id] }),
 }));
 
 export const artworkSectionsRelations = relations(artworkSections, ({ one }) => ({
@@ -50,3 +69,4 @@ export const artworkSectionsRelations = relations(artworkSections, ({ one }) => 
 
 export type ArtworkEntry   = typeof artworkEntries.$inferSelect;
 export type ArtworkSection = typeof artworkSections.$inferSelect;
+export type ArtworkLink    = typeof artworkLinks.$inferSelect;
