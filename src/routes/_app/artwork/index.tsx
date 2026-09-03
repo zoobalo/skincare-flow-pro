@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api, type ApiArtworkEntry, type ApiSku } from "@/lib/api";
 import { Plus, Pencil, Trash2, Copy, Check, Search, Palette, X, Files } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const ARTWORK_TYPES = ["Label", "Outer Carton", "Tray", "Insert", "Hologram", "Sticker", "Others"] as const;
 const OTHERS = "Others";
@@ -35,6 +36,41 @@ function ArtworkPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
   return <ArtworkContent {...data} />;
+}
+
+/**
+ * Click-to-copy value. Rendered as a button so it is keyboard reachable;
+ * the icon only appears on hover/focus to keep the list uncluttered.
+ */
+function Copyable({
+  value, copyKey, label, copied, onCopy, className, title,
+}: {
+  value: string;
+  copyKey: string;
+  label: string;
+  copied: boolean;
+  onCopy: (value: string, key: string, label: string) => void;
+  className?: string;
+  title?: string;
+}) {
+  if (!value) return <span className="italic text-muted-foreground">—</span>;
+  return (
+    <button
+      type="button"
+      title={title ?? `Copy ${label}`}
+      onClick={() => onCopy(value, copyKey, label)}
+      className={cn(
+        "group/c inline-flex max-w-full items-start gap-1.5 rounded text-left",
+        "hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        className,
+      )}
+    >
+      <span className="min-w-0 whitespace-pre-wrap">{value}</span>
+      {copied
+        ? <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+        : <Copy className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-hover/c:opacity-60" />}
+    </button>
+  );
 }
 
 type SectionRow = { name: string; data: string };
@@ -200,8 +236,26 @@ function ArtworkContent({
           {grouped.map((group) => (
             <div key={group.name + group.code} className="space-y-3">
               <div className="flex items-baseline gap-2 border-b pb-2">
-                <h2 className="text-base font-semibold">{group.name}</h2>
-                {group.code && <span className="text-xs text-muted-foreground">{group.code}</span>}
+                <h2 className="text-base font-semibold">
+                  <Copyable
+                    value={group.name}
+                    copyKey={`sku-${group.name}`}
+                    label="SKU name"
+                    copied={copiedKey === `sku-${group.name}`}
+                    onCopy={copy}
+                  />
+                </h2>
+                {group.code && (
+                  <span className="text-xs text-muted-foreground">
+                    <Copyable
+                      value={group.code}
+                      copyKey={`code-${group.code}`}
+                      label="SKU code"
+                      copied={copiedKey === `code-${group.code}`}
+                      onCopy={copy}
+                    />
+                  </span>
+                )}
                 <span className="ml-auto text-xs text-muted-foreground">
                   {group.artworks.length} artwork{group.artworks.length === 1 ? "" : "s"}
                 </span>
@@ -211,7 +265,15 @@ function ArtworkContent({
                 {group.artworks.map((a) => (
                   <div key={a.id} className="rounded-xl border bg-card">
                     <div className="flex items-center gap-2 border-b px-4 py-2.5">
-                      <Badge variant="secondary" className="font-medium">{a.artworkType}</Badge>
+                      <Badge variant="secondary" className="font-medium">
+                        <Copyable
+                          value={a.artworkType}
+                          copyKey={`t-${a.id}`}
+                          label="Artwork type"
+                          copied={copiedKey === `t-${a.id}`}
+                          onCopy={copy}
+                        />
+                      </Badge>
                       <span className="text-xs text-muted-foreground">
                         {a.sections.length} section{a.sections.length === 1 ? "" : "s"}
                       </span>
@@ -243,26 +305,25 @@ function ArtworkContent({
 
                     <div className="divide-y">
                       {a.sections.map((s) => (
-                        <div key={s.id} className="group flex items-start gap-3 px-4 py-2.5">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                              {s.name}
-                            </p>
-                            <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed">
-                              {s.data || <span className="italic text-muted-foreground">—</span>}
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 shrink-0 p-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                            title="Copy"
-                            onClick={() => copy(s.data, `s-${s.id}`, s.name)}
-                          >
-                            {copiedKey === `s-${s.id}`
-                              ? <Check className="h-3.5 w-3.5 text-emerald-600" />
-                              : <Copy className="h-3.5 w-3.5" />}
-                          </Button>
+                        <div key={s.id} className="px-4 py-2.5">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            <Copyable
+                              value={s.name}
+                              copyKey={`sn-${s.id}`}
+                              label="Section name"
+                              copied={copiedKey === `sn-${s.id}`}
+                              onCopy={copy}
+                            />
+                          </p>
+                          <p className="mt-0.5 text-sm leading-relaxed">
+                            <Copyable
+                              value={s.data}
+                              copyKey={`sd-${s.id}`}
+                              label={s.name}
+                              copied={copiedKey === `sd-${s.id}`}
+                              onCopy={copy}
+                            />
+                          </p>
                         </div>
                       ))}
                     </div>
