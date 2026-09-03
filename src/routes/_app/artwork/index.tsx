@@ -10,12 +10,25 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, type ApiArtworkEntry, type ApiSku } from "@/lib/api";
-import { Plus, Pencil, Trash2, Copy, Check, Search, Palette, X, Files } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, Check, Search, Palette, X, Files, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const ARTWORK_TYPES = ["Label", "Outer Carton", "Tray", "Insert", "Hologram", "Sticker", "Others"] as const;
 const OTHERS = "Others";
+
+/** Artwork files, in the order they are produced. */
+const LINK_FIELDS = [
+  { key: "firstDraftLink",           label: "First Draft" },
+  { key: "manufacturerApprovalLink", label: "Manufacturer Approval" },
+  { key: "finalPrintingLink",        label: "Final Printing" },
+  { key: "otherLink",                label: "Other" },
+] as const;
+
+type LinkKey = (typeof LINK_FIELDS)[number]["key"];
+const EMPTY_LINKS: Record<LinkKey, string> = {
+  firstDraftLink: "", manufacturerApprovalLink: "", finalPrintingLink: "", otherLink: "",
+};
 
 export const Route = createFileRoute("/_app/artwork/")({
   loader: async () => {
@@ -131,6 +144,7 @@ function ArtworkContent({
   const [typeChoice, setTypeChoice] = useState("");
   const [customType, setCustomType] = useState("");
   const [rows, setRows] = useState<SectionRow[]>([{ ...BLANK_ROW }]);
+  const [links, setLinks] = useState<Record<LinkKey, string>>({ ...EMPTY_LINKS });
   const [saving, setSaving] = useState(false);
 
   function openAdd() {
@@ -139,6 +153,7 @@ function ArtworkContent({
     setTypeChoice("");
     setCustomType("");
     setRows([{ ...BLANK_ROW }]);
+    setLinks({ ...EMPTY_LINKS });
     setOpen(true);
   }
 
@@ -149,6 +164,12 @@ function ArtworkContent({
     setTypeChoice(known ? a.artworkType : OTHERS);
     setCustomType(known ? "" : a.artworkType);
     setRows(a.sections.length ? a.sections.map((s) => ({ name: s.name, data: s.data })) : [{ ...BLANK_ROW }]);
+    setLinks({
+      firstDraftLink: a.firstDraftLink ?? "",
+      manufacturerApprovalLink: a.manufacturerApprovalLink ?? "",
+      finalPrintingLink: a.finalPrintingLink ?? "",
+      otherLink: a.otherLink ?? "",
+    });
     setOpen(true);
   }
 
@@ -167,10 +188,10 @@ function ArtworkContent({
     setSaving(true);
     try {
       if (editing) {
-        await api.artwork.update(editing.id, { skuId, artworkType: resolvedType, sections }, sharedTeamId);
+        await api.artwork.update(editing.id, { skuId, artworkType: resolvedType, sections, ...links }, sharedTeamId);
         toast.success("Artwork updated.");
       } else {
-        await api.artwork.create({ skuId, artworkType: resolvedType, sections }, sharedTeamId);
+        await api.artwork.create({ skuId, artworkType: resolvedType, sections, ...links }, sharedTeamId);
         toast.success("Artwork saved.");
       }
       setOpen(false);
@@ -196,9 +217,15 @@ function ArtworkContent({
   const setRow = (i: number, patch: Partial<SectionRow>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
-  const artworkAsText = (a: ApiArtworkEntry) =>
-    [`${a.sku?.name ?? ""} — ${a.artworkType}`, "", ...a.sections.map((s) => `${s.name}\n${s.data}`)]
-      .join("\n").trim();
+  const artworkAsText = (a: ApiArtworkEntry) => {
+    const links = LINK_FIELDS.filter((f) => a[f.key]).map((f) => `${f.label}: ${a[f.key]}`);
+    return [
+      `${a.sku?.name ?? ""} — ${a.artworkType}`,
+      "",
+      ...a.sections.map((s) => `${s.name}\n${s.data}`),
+      ...(links.length ? ["", ...links] : []),
+    ].join("\n").trim();
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -302,6 +329,31 @@ function ArtworkContent({
                         </Button>
                       </div>
                     </div>
+
+                    {LINK_FIELDS.some((f) => a[f.key]) && (
+                      <div className="space-y-1 border-b bg-muted/30 px-4 py-2">
+                        {LINK_FIELDS.filter((f) => a[f.key]).map((f) => (
+                          <div key={f.key} className="flex items-center gap-2 text-xs">
+                            <span className="w-36 shrink-0 text-muted-foreground">{f.label}</span>
+                            <span className="min-w-0 flex-1 truncate">
+                              <Copyable
+                                value={a[f.key] as string}
+                                copyKey={`l-${a.id}-${f.key}`}
+                                label={`${f.label} link`}
+                                copied={copiedKey === `l-${a.id}-${f.key}`}
+                                onCopy={copy}
+                                className="text-xs"
+                              />
+                            </span>
+                            <Button asChild size="sm" variant="outline" className="h-6 shrink-0 gap-1 px-2 text-[11px]">
+                              <a href={a[f.key] as string} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-3 w-3" /> Open
+                              </a>
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="divide-y">
                       {a.sections.map((s) => (
@@ -425,6 +477,23 @@ function ArtworkContent({
               >
                 <Plus className="mr-1.5 h-4 w-4" /> Add another section
               </Button>
+            </div>
+
+            <div className="space-y-3 border-t pt-4">
+              <Label>Links</Label>
+              {LINK_FIELDS.map((f) => (
+                <div key={f.key} className="space-y-1.5">
+                  <Label htmlFor={f.key} className="text-xs font-normal text-muted-foreground">
+                    {f.label}
+                  </Label>
+                  <Input
+                    id={f.key}
+                    placeholder="https://…"
+                    value={links[f.key]}
+                    onChange={(e) => setLinks((l) => ({ ...l, [f.key]: e.target.value }))}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 

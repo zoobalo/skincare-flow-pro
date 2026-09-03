@@ -12,6 +12,11 @@ export const artworkEntries = pgTable("artwork_entries", {
   id:          text("id").primaryKey(),
   skuId:       text("sku_id").notNull().references(() => skus.id, { onDelete: "cascade" }),
   artworkType: text("artwork_type").notNull(),
+  // Files as the artwork moves through the process. Null until that stage.
+  firstDraftLink:          text("first_draft_link"),
+  manufacturerApprovalLink: text("manufacturer_approval_link"),
+  finalPrintingLink:       text("final_printing_link"),
+  otherLink:               text("other_link"),
   teamId:      text("team_id").notNull(),
   createdAt:   timestamp("created_at").defaultNow().notNull(),
   updatedAt:   timestamp("updated_at").defaultNow().notNull(),

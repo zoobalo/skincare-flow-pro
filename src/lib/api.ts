@@ -291,7 +291,14 @@ export type ApiArtworkSection = {
   createdAt: string; updatedAt: string;
 };
 
-export type ApiArtworkEntry = {
+export type ArtworkLinks = {
+  firstDraftLink: string | null;
+  manufacturerApprovalLink: string | null;
+  finalPrintingLink: string | null;
+  otherLink: string | null;
+};
+
+export type ApiArtworkEntry = ArtworkLinks & {
   id: string; skuId: string; artworkType: string;
   sku: { id: string; name: string; code: string } | null;
   sections: ApiArtworkSection[];
@@ -688,12 +695,12 @@ export const api = {
   artwork: {
     list: (sharedTeamId?: string) => get<ApiArtworkEntry[]>(`/artwork${sharedQs(sharedTeamId)}`),
     create: (
-      data: { skuId: string; artworkType: string; sections: { name: string; data: string }[] },
+      data: { skuId: string; artworkType: string; sections: { name: string; data: string }[] } & Partial<ArtworkLinks>,
       sharedTeamId?: string,
     ) => send<ApiArtworkEntry>(`/artwork${sharedQs(sharedTeamId)}`, "POST", data),
     update: (
       id: string,
-      data: { skuId?: string; artworkType?: string; sections?: { name: string; data: string }[] },
+      data: { skuId?: string; artworkType?: string; sections?: { name: string; data: string }[] } & Partial<ArtworkLinks>,
       sharedTeamId?: string,
     ) => send<ApiArtworkEntry>(`/artwork/${id}${sharedQs(sharedTeamId)}`, "PATCH", data),
     delete: (id: string, sharedTeamId?: string) =>

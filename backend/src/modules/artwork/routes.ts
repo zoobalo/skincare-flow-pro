@@ -9,6 +9,27 @@ import {
 
 type SectionInput = { name: string; data: string };
 
+const LINK_FIELDS = [
+  "firstDraftLink",
+  "manufacturerApprovalLink",
+  "finalPrintingLink",
+  "otherLink",
+] as const;
+
+/**
+ * Pulls the link fields out of a payload, storing null for blanks and
+ * prefixing a bare host with https:// so the Open button always resolves.
+ */
+function readLinks(body: Record<string, unknown>, onlyPresent = false) {
+  const out: Record<string, string | null> = {};
+  for (const key of LINK_FIELDS) {
+    if (onlyPresent && body[key] === undefined) continue;
+    const raw = typeof body[key] === "string" ? (body[key] as string).trim() : "";
+    out[key] = raw ? (/^https?:\/\//i.test(raw) ? raw : `https://${raw}`) : null;
+  }
+  return out;
+}
+
 /** Keeps only usable section rows — a blank name means the row was left empty. */
 function readSections(raw: unknown): SectionInput[] {
   if (!Array.isArray(raw)) return [];
@@ -77,7 +98,7 @@ export const artworkRoutes = new Hono()
 
     const id = crypto.randomUUID();
     try {
-      await createArtwork({ id, skuId, artworkType, teamId });
+      await createArtwork({ id, skuId, artworkType, teamId, ...readLinks(body) });
     } catch {
       // The only realistic failure is a skuId that is not in the catalogue.
       return c.json({ error: "That SKU no longer exists" }, 400);
@@ -104,6 +125,7 @@ export const artworkRoutes = new Hono()
       data.artworkType = body.artworkType.trim();
     }
     if (typeof body.skuId === "string" && body.skuId.trim()) data.skuId = body.skuId.trim();
+    Object.assign(data, readLinks(body, true));
     await updateArtwork(existing.id, data);
 
     if (body.sections !== undefined) {
