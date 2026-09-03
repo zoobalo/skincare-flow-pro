@@ -9,6 +9,9 @@
     "start:dev": "tsx src/index.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:tunnel": "./scripts/db-tunnel.sh",
+    "db:tunnel:stop": "pkill -f '5433:localhost:5432' || true",
+    "db:studio:prod": "./scripts/db-studio.sh",
     "db:seed": "tsx src/seed.ts",
     "db:reset": "tsx src/db/reset.ts",
     "dev": "tsx watch src/index.ts"
