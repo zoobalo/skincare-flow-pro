@@ -108,8 +108,28 @@ export async function pushStockTemplate(teamId: string) {
 export type ImportResult = {
   updated: number;
   skipped: string[];
+  /** Codes shared by more than one SKU — skipped, because guessing which
+   *  product the numbers belong to would silently corrupt both. */
+  ambiguous: string[];
   weekEnding?: string;
 };
+
+/**
+ * Maps SKU code -> SKU, and separately reports codes used by more than one
+ * product. Matching is case- and whitespace-insensitive because sheet codes
+ * are typed by hand elsewhere in the system.
+ */
+function indexByCode(list: { id: string; code: string }[]) {
+  const byCode = new Map<string, { id: string; code: string }>();
+  const dupes = new Set<string>();
+  for (const s of list) {
+    const key = s.code.trim().toLowerCase();
+    if (byCode.has(key)) dupes.add(s.code.trim());
+    else byCode.set(key, s);
+  }
+  for (const d of dupes) byCode.delete(d.toLowerCase());
+  return { byCode, ambiguous: [...dupes] };
+}
 
 const num = (v: unknown) => {
   const n = parseInt(String(v ?? "0").replace(/[^0-9-]/g, ""), 10);
@@ -123,7 +143,7 @@ const num = (v: unknown) => {
 export async function pullSales(teamId: string, weekEnding: string, byName: string | null): Promise<ImportResult> {
   const json = await call("sales", { action: "pull" });
   const values = json.values ?? [];
-  if (values.length < 2) return { updated: 0, skipped: [], weekEnding };
+  if (values.length < 2) return { updated: 0, skipped: [], ambiguous: [], weekEnding };
 
   const [header, ...dataRows] = values;
   // Map each platform to its column, by header name, so column order in the
@@ -135,10 +155,10 @@ export async function pullSales(teamId: string, weekEnding: string, byName: stri
   });
 
   const list = await db.select().from(skus).where(eq(skus.teamId, teamId));
-  const byCode = new Map(list.map((s) => [s.code.trim().toLowerCase(), s]));
+  const { byCode, ambiguous } = indexByCode(list);
 
   const skipped: string[] = [];
-  const pending: (typeof skuSalesWeekly.$inferInsert)[] = [];
+  const pending = new Map<string, typeof skuSalesWeekly.$inferInsert>();
   let updated = 0;
 
   for (const row of dataRows) {
@@ -148,7 +168,9 @@ export async function pullSales(teamId: string, weekEnding: string, byName: stri
     if (!sku) { skipped.push(code); continue; }
 
     for (const [platform, idx] of colFor) {
-      pending.push({
+      // Keyed, so a repeated row in the sheet updates rather than colliding
+      // inside a single ON CONFLICT statement.
+      pending.set(`${sku.id}|${platform}`, {
         id: crypto.randomUUID(),
         skuId: sku.id, weekEnding, platform, units: num(row[idx]), teamId,
         importedByName: byName,
@@ -159,8 +181,8 @@ export async function pullSales(teamId: string, weekEnding: string, byName: stri
 
   // One statement instead of ~430 round trips, which is what made this slow
   // enough to look like a hang.
-  if (pending.length) {
-    await db.insert(skuSalesWeekly).values(pending).onConflictDoUpdate({
+  if (pending.size) {
+    await db.insert(skuSalesWeekly).values([...pending.values()]).onConflictDoUpdate({
       target: [skuSalesWeekly.skuId, skuSalesWeekly.weekEnding, skuSalesWeekly.platform],
       set: {
         units: sql`excluded.units`,
@@ -169,14 +191,14 @@ export async function pullSales(teamId: string, weekEnding: string, byName: stri
       },
     });
   }
-  return { updated, skipped, weekEnding };
+  return { updated, skipped, ambiguous, weekEnding };
 }
 
 /** Reads the stock grid into per-location quantities and recalculates totals. */
 export async function pullStock(teamId: string): Promise<ImportResult> {
   const json = await call("stock", { action: "pull" });
   const values = json.values ?? [];
-  if (values.length < 2) return { updated: 0, skipped: [] };
+  if (values.length < 2) return { updated: 0, skipped: [], ambiguous: [] };
 
   const [header, ...dataRows] = values;
   const locCols: { name: string; idx: number }[] = [];
@@ -186,7 +208,7 @@ export async function pullStock(teamId: string): Promise<ImportResult> {
   }
 
   const list = await db.select().from(skus).where(eq(skus.teamId, teamId));
-  const byCode = new Map(list.map((s) => [s.code.trim().toLowerCase(), s]));
+  const { byCode, ambiguous } = indexByCode(list);
 
   const skipped: string[] = [];
   let updated = 0;
@@ -223,5 +245,5 @@ export async function pullStock(teamId: string): Promise<ImportResult> {
       .where(eq(skus.id, sku.id));
     updated++;
   }
-  return { updated, skipped };
+  return { updated, skipped, ambiguous };
 }

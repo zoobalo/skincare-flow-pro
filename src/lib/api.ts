@@ -312,7 +312,7 @@ export type ApiForecast = {
   currentWeekEnding: string;
 };
 
-export type ApiSheetImport = { updated: number; skipped: string[]; weekEnding?: string };
+export type ApiSheetImport = { updated: number; skipped: string[]; ambiguous: string[]; weekEnding?: string };
 
 export type ApiArtworkNote = {
   id: string; artworkId: string; text: string;

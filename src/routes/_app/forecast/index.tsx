@@ -54,6 +54,13 @@ function ForecastContent({ data, sharedTeamId }: { data: ApiForecast; sharedTeam
     try {
       const res = await fn();
       toast.success(describe(res));
+      const ambiguous = (res as { ambiguous?: string[] })?.ambiguous ?? [];
+      if (ambiguous.length) {
+        toast.warning(
+          `Skipped ${ambiguous.length} code${ambiguous.length === 1 ? "" : "s"} used by more than one SKU: ${ambiguous.join(", ")}. Give each product a unique code in SKU Management, or their numbers will be mixed up.`,
+          { duration: 14000 },
+        );
+      }
       const skipped = (res as { skipped?: string[] })?.skipped ?? [];
       if (skipped.length) {
         toast.warning(
