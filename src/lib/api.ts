@@ -296,6 +296,24 @@ export type ApiArtworkLink = {
   updatedById: string | null; updatedByName: string | null; updatedAt: string;
 };
 
+export type ApiForecastRow = {
+  skuId: string; code: string; name: string;
+  currentInventory: number; leadTimeDays: number; thresholdDays: number;
+  weeklyUnits: number | null; weeksOfData: number; dailyVelocity: number | null;
+  daysOfCover: number | null; stockoutDate: string | null; startProductionBy: string | null;
+  status: "critical" | "warning" | "ok" | "no-sales-data" | "no-stock";
+  platformBreakdown: Record<string, number>;
+  lastImportedAt: string | null;
+};
+
+export type ApiForecast = {
+  rows: ApiForecastRow[];
+  platforms: string[];
+  currentWeekEnding: string;
+};
+
+export type ApiSheetImport = { updated: number; skipped: string[]; weekEnding?: string };
+
 export type ApiArtworkNote = {
   id: string; artworkId: string; text: string;
   authorId: string | null; authorName: string | null; createdAt: string;
@@ -696,6 +714,19 @@ export const api = {
       fetch(`${BASE}/mft/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
+
+  forecast: {
+    get: (sharedTeamId?: string) => get<ApiForecast>(`/forecast${sharedQs(sharedTeamId)}`),
+    salesTemplate: (weekEnding?: string, sharedTeamId?: string) =>
+      send<{ skus: number; platforms: number; weekEnding: string }>(
+        `/forecast/sales/template${sharedQs(sharedTeamId)}`, "POST", { weekEnding }),
+    salesImport: (weekEnding?: string, sharedTeamId?: string) =>
+      send<ApiSheetImport>(`/forecast/sales/import${sharedQs(sharedTeamId)}`, "POST", { weekEnding }),
+    stockTemplate: (sharedTeamId?: string) =>
+      send<{ skus: number; locations: number }>(`/forecast/stock/template${sharedQs(sharedTeamId)}`, "POST", {}),
+    stockImport: (sharedTeamId?: string) =>
+      send<ApiSheetImport>(`/forecast/stock/import${sharedQs(sharedTeamId)}`, "POST", {}),
+  },
 
   artwork: {
     list: (sharedTeamId?: string) => get<ApiArtworkEntry[]>(`/artwork${sharedQs(sharedTeamId)}`),

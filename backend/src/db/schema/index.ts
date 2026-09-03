@@ -23,3 +23,4 @@ export * from "./assigned-tasks.ts";
 export * from "./assigned-task-comments.ts";
 export * from "./vendor-comments.ts";
 export * from "./packaging-materials.ts";
+export * from "./sales.ts";

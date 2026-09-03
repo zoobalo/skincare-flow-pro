@@ -39,6 +39,7 @@ import { Route as AppManufacturersIndexRouteImport } from './routes/_app/manufac
 import { Route as AppLogisticsIndexRouteImport } from './routes/_app/logistics/index'
 import { Route as AppInventoryIndexRouteImport } from './routes/_app/inventory/index'
 import { Route as AppImpLinksIndexRouteImport } from './routes/_app/imp-links/index'
+import { Route as AppForecastIndexRouteImport } from './routes/_app/forecast/index'
 import { Route as AppFollowUpsIndexRouteImport } from './routes/_app/follow-ups/index'
 import { Route as AppDirectoryIndexRouteImport } from './routes/_app/directory/index'
 import { Route as AppCourierIndexRouteImport } from './routes/_app/courier/index'
@@ -202,6 +203,11 @@ const AppImpLinksIndexRoute = AppImpLinksIndexRouteImport.update({
   path: '/imp-links/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppForecastIndexRoute = AppForecastIndexRouteImport.update({
+  id: '/forecast/',
+  path: '/forecast/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFollowUpsIndexRoute = AppFollowUpsIndexRouteImport.update({
   id: '/follow-ups/',
   path: '/follow-ups/',
@@ -283,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/courier/': typeof AppCourierIndexRoute
   '/directory/': typeof AppDirectoryIndexRoute
   '/follow-ups/': typeof AppFollowUpsIndexRoute
+  '/forecast/': typeof AppForecastIndexRoute
   '/imp-links/': typeof AppImpLinksIndexRoute
   '/inventory/': typeof AppInventoryIndexRoute
   '/logistics/': typeof AppLogisticsIndexRoute
@@ -326,6 +333,7 @@ export interface FileRoutesByTo {
   '/courier': typeof AppCourierIndexRoute
   '/directory': typeof AppDirectoryIndexRoute
   '/follow-ups': typeof AppFollowUpsIndexRoute
+  '/forecast': typeof AppForecastIndexRoute
   '/imp-links': typeof AppImpLinksIndexRoute
   '/inventory': typeof AppInventoryIndexRoute
   '/logistics': typeof AppLogisticsIndexRoute
@@ -371,6 +379,7 @@ export interface FileRoutesById {
   '/_app/courier/': typeof AppCourierIndexRoute
   '/_app/directory/': typeof AppDirectoryIndexRoute
   '/_app/follow-ups/': typeof AppFollowUpsIndexRoute
+  '/_app/forecast/': typeof AppForecastIndexRoute
   '/_app/imp-links/': typeof AppImpLinksIndexRoute
   '/_app/inventory/': typeof AppInventoryIndexRoute
   '/_app/logistics/': typeof AppLogisticsIndexRoute
@@ -416,6 +425,7 @@ export interface FileRouteTypes {
     | '/courier/'
     | '/directory/'
     | '/follow-ups/'
+    | '/forecast/'
     | '/imp-links/'
     | '/inventory/'
     | '/logistics/'
@@ -459,6 +469,7 @@ export interface FileRouteTypes {
     | '/courier'
     | '/directory'
     | '/follow-ups'
+    | '/forecast'
     | '/imp-links'
     | '/inventory'
     | '/logistics'
@@ -503,6 +514,7 @@ export interface FileRouteTypes {
     | '/_app/courier/'
     | '/_app/directory/'
     | '/_app/follow-ups/'
+    | '/_app/forecast/'
     | '/_app/imp-links/'
     | '/_app/inventory/'
     | '/_app/logistics/'
@@ -749,6 +761,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppImpLinksIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/forecast/': {
+      id: '/_app/forecast/'
+      path: '/forecast'
+      fullPath: '/forecast/'
+      preLoaderRoute: typeof AppForecastIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/follow-ups/': {
       id: '/_app/follow-ups/'
       path: '/follow-ups'
@@ -850,6 +869,7 @@ interface AppRouteChildren {
   AppCourierIndexRoute: typeof AppCourierIndexRoute
   AppDirectoryIndexRoute: typeof AppDirectoryIndexRoute
   AppFollowUpsIndexRoute: typeof AppFollowUpsIndexRoute
+  AppForecastIndexRoute: typeof AppForecastIndexRoute
   AppImpLinksIndexRoute: typeof AppImpLinksIndexRoute
   AppInventoryIndexRoute: typeof AppInventoryIndexRoute
   AppLogisticsIndexRoute: typeof AppLogisticsIndexRoute
@@ -889,6 +909,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCourierIndexRoute: AppCourierIndexRoute,
   AppDirectoryIndexRoute: AppDirectoryIndexRoute,
   AppFollowUpsIndexRoute: AppFollowUpsIndexRoute,
+  AppForecastIndexRoute: AppForecastIndexRoute,
   AppImpLinksIndexRoute: AppImpLinksIndexRoute,
   AppInventoryIndexRoute: AppInventoryIndexRoute,
   AppLogisticsIndexRoute: AppLogisticsIndexRoute,
