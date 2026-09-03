@@ -26,6 +26,7 @@ export const PERSONAL_MODULE_KEYS = new Set([
 
 export const SHAREABLE_MODULES = [
   { key: "skus",          label: "SKU Management",    to: "/skus"          },
+  { key: "artwork",       label: "Artwork",            to: "/artwork"       },
   { key: "tasks",         label: "Task Management",   to: "/tasks"         },
   { key: "follow-ups",    label: "Follow Up",          to: "/follow-ups"    },
   { key: "imp-links",     label: "IMP Links",          to: "/imp-links"     },

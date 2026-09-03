@@ -38,6 +38,22 @@ async function get<T>(path: string): Promise<T> {
   return r.json() as Promise<T>;
 }
 
+/**
+ * Mutation helper that raises on a non-2xx so callers can toast the real
+ * message. The older modules parse the body blindly and report success even
+ * on a 400, so new code should prefer this.
+ */
+async function send<T>(path: string, method: string, body?: unknown): Promise<T> {
+  const r = await fetch(BASE + path, {
+    method,
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((data as { error?: string })?.error ?? `Request failed (${r.status})`);
+  return data as T;
+}
+
 const EMPTY_DASHBOARD: DashboardResponse = {
   kpis: { totalPOs: 0, pendingApprovals: 0, activeProduction: 0, inTransit: 0, delayedBatches: 0, lowStockSkus: 0, totalSpend: 0, totalDuePayments: 0, totalVendors: 0, totalSkus: 0 },
   charts: { procurementSpend: [], monthlyProduction: [], poStatusBreakdown: {}, vendorReliability: [], shipmentStatusBreakdown: {} },
@@ -268,6 +284,23 @@ export type ApiWarehouseQc = {
 
 export type ApiMftNote = {
   id: string; skuId: string | null; date: string; notes: string; createdAt: string;
+};
+
+export type ApiArtworkSection = {
+  id: string; skuId: string; name: string; details: string;
+  packagingTypes: string[]; sortOrder: number;
+  createdAt: string; updatedAt: string;
+};
+
+export type ApiArtworkSku = {
+  id: string; skuName: string; notes: string | null;
+  sections: ApiArtworkSection[];
+  createdAt: string; updatedAt: string;
+};
+
+export type ApiArtworkLibraryEntry = {
+  id: string; name: string; details: string;
+  packagingTypes: string[]; createdAt: string; updatedAt: string;
 };
 
 export type ApiFollowUpContact = {
@@ -656,6 +689,52 @@ export const api = {
       fetch(`${BASE}/mft/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
+
+  artwork: {
+    list: (sharedTeamId?: string) => get<ApiArtworkSku[]>(`/artwork${sharedQs(sharedTeamId)}`),
+    createSku: (
+      data: { skuName: string; notes?: string | null; copyFromSkuId?: string; libraryEntryIds?: string[] },
+      sharedTeamId?: string,
+    ) => send<ApiArtworkSku>(`/artwork${sharedQs(sharedTeamId)}`, "POST", data),
+    updateSku: (id: string, data: { skuName?: string; notes?: string | null }, sharedTeamId?: string) =>
+      send<ApiArtworkSku>(`/artwork/${id}${sharedQs(sharedTeamId)}`, "PATCH", data),
+    deleteSku: (id: string, sharedTeamId?: string) =>
+      send<{ ok: true }>(`/artwork/${id}${sharedQs(sharedTeamId)}`, "DELETE"),
+
+    addSection: (
+      skuId: string,
+      data: { name: string; details: string; packagingTypes: string[] },
+      sharedTeamId?: string,
+    ) => send<ApiArtworkSection>(`/artwork/${skuId}/sections${sharedQs(sharedTeamId)}`, "POST", data),
+    updateSection: (
+      sectionId: string,
+      data: { name: string; details: string; packagingTypes: string[]; sortOrder?: number },
+      sharedTeamId?: string,
+    ) => send<ApiArtworkSection>(`/artwork/sections/${sectionId}${sharedQs(sharedTeamId)}`, "PATCH", data),
+    deleteSection: (sectionId: string, sharedTeamId?: string) =>
+      send<{ ok: true }>(`/artwork/sections/${sectionId}${sharedQs(sharedTeamId)}`, "DELETE"),
+    sectionToLibrary: (sectionId: string, sharedTeamId?: string) =>
+      send<ApiArtworkLibraryEntry>(`/artwork/sections/${sectionId}/to-library${sharedQs(sharedTeamId)}`, "POST"),
+
+    insertFromLibrary: (skuId: string, entryIds: string[], sharedTeamId?: string) =>
+      send<ApiArtworkSku>(`/artwork/${skuId}/from-library${sharedQs(sharedTeamId)}`, "POST", { entryIds }),
+    copyFrom: (skuId: string, sourceSkuId: string, sharedTeamId?: string) =>
+      send<ApiArtworkSku>(`/artwork/${skuId}/copy-from${sharedQs(sharedTeamId)}`, "POST", { sourceSkuId }),
+
+    library: {
+      list: (sharedTeamId?: string) =>
+        get<ApiArtworkLibraryEntry[]>(`/artwork/library${sharedQs(sharedTeamId)}`),
+      create: (data: { name: string; details: string; packagingTypes: string[] }, sharedTeamId?: string) =>
+        send<ApiArtworkLibraryEntry>(`/artwork/library${sharedQs(sharedTeamId)}`, "POST", data),
+      update: (
+        id: string,
+        data: { name: string; details: string; packagingTypes: string[] },
+        sharedTeamId?: string,
+      ) => send<ApiArtworkLibraryEntry>(`/artwork/library/${id}${sharedQs(sharedTeamId)}`, "PATCH", data),
+      delete: (id: string, sharedTeamId?: string) =>
+        send<{ ok: true }>(`/artwork/library/${id}${sharedQs(sharedTeamId)}`, "DELETE"),
+    },
+  },
 
   followUps: {
     list: (sharedUserId?: string) => get<(ApiFollowUpContact & { tasks: ApiFollowUpTask[] })[]>(`/follow-ups${sharedUserQs(sharedUserId)}`),

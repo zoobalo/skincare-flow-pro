@@ -42,6 +42,7 @@ import { Route as AppImpLinksIndexRouteImport } from './routes/_app/imp-links/in
 import { Route as AppFollowUpsIndexRouteImport } from './routes/_app/follow-ups/index'
 import { Route as AppDirectoryIndexRouteImport } from './routes/_app/directory/index'
 import { Route as AppCourierIndexRouteImport } from './routes/_app/courier/index'
+import { Route as AppArtworkIndexRouteImport } from './routes/_app/artwork/index'
 import { Route as AppAnalyticsIndexRouteImport } from './routes/_app/analytics/index'
 import { Route as AppVendorsVendorIdRouteImport } from './routes/_app/vendors/$vendorId'
 import { Route as AppSkusSkuIdRouteImport } from './routes/_app/skus/$skuId'
@@ -216,6 +217,11 @@ const AppCourierIndexRoute = AppCourierIndexRouteImport.update({
   path: '/courier/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppArtworkIndexRoute = AppArtworkIndexRouteImport.update({
+  id: '/artwork/',
+  path: '/artwork/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAnalyticsIndexRoute = AppAnalyticsIndexRouteImport.update({
   id: '/analytics/',
   path: '/analytics/',
@@ -273,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/skus/$skuId': typeof AppSkusSkuIdRoute
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/analytics/': typeof AppAnalyticsIndexRoute
+  '/artwork/': typeof AppArtworkIndexRoute
   '/courier/': typeof AppCourierIndexRoute
   '/directory/': typeof AppDirectoryIndexRoute
   '/follow-ups/': typeof AppFollowUpsIndexRoute
@@ -315,6 +322,7 @@ export interface FileRoutesByTo {
   '/skus/$skuId': typeof AppSkusSkuIdRoute
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/analytics': typeof AppAnalyticsIndexRoute
+  '/artwork': typeof AppArtworkIndexRoute
   '/courier': typeof AppCourierIndexRoute
   '/directory': typeof AppDirectoryIndexRoute
   '/follow-ups': typeof AppFollowUpsIndexRoute
@@ -359,6 +367,7 @@ export interface FileRoutesById {
   '/_app/skus/$skuId': typeof AppSkusSkuIdRoute
   '/_app/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/_app/analytics/': typeof AppAnalyticsIndexRoute
+  '/_app/artwork/': typeof AppArtworkIndexRoute
   '/_app/courier/': typeof AppCourierIndexRoute
   '/_app/directory/': typeof AppDirectoryIndexRoute
   '/_app/follow-ups/': typeof AppFollowUpsIndexRoute
@@ -403,6 +412,7 @@ export interface FileRouteTypes {
     | '/skus/$skuId'
     | '/vendors/$vendorId'
     | '/analytics/'
+    | '/artwork/'
     | '/courier/'
     | '/directory/'
     | '/follow-ups/'
@@ -445,6 +455,7 @@ export interface FileRouteTypes {
     | '/skus/$skuId'
     | '/vendors/$vendorId'
     | '/analytics'
+    | '/artwork'
     | '/courier'
     | '/directory'
     | '/follow-ups'
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
     | '/_app/skus/$skuId'
     | '/_app/vendors/$vendorId'
     | '/_app/analytics/'
+    | '/_app/artwork/'
     | '/_app/courier/'
     | '/_app/directory/'
     | '/_app/follow-ups/'
@@ -758,6 +770,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCourierIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/artwork/': {
+      id: '/_app/artwork/'
+      path: '/artwork'
+      fullPath: '/artwork/'
+      preLoaderRoute: typeof AppArtworkIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/analytics/': {
       id: '/_app/analytics/'
       path: '/analytics'
@@ -827,6 +846,7 @@ interface AppRouteChildren {
   AppSkusSkuIdRoute: typeof AppSkusSkuIdRoute
   AppVendorsVendorIdRoute: typeof AppVendorsVendorIdRoute
   AppAnalyticsIndexRoute: typeof AppAnalyticsIndexRoute
+  AppArtworkIndexRoute: typeof AppArtworkIndexRoute
   AppCourierIndexRoute: typeof AppCourierIndexRoute
   AppDirectoryIndexRoute: typeof AppDirectoryIndexRoute
   AppFollowUpsIndexRoute: typeof AppFollowUpsIndexRoute
@@ -865,6 +885,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSkusSkuIdRoute: AppSkusSkuIdRoute,
   AppVendorsVendorIdRoute: AppVendorsVendorIdRoute,
   AppAnalyticsIndexRoute: AppAnalyticsIndexRoute,
+  AppArtworkIndexRoute: AppArtworkIndexRoute,
   AppCourierIndexRoute: AppCourierIndexRoute,
   AppDirectoryIndexRoute: AppDirectoryIndexRoute,
   AppFollowUpsIndexRoute: AppFollowUpsIndexRoute,
