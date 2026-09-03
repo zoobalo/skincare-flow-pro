@@ -12,7 +12,8 @@ export type ForecastRow = {
   leadTimeDays: number;
   thresholdDays: number;
   weeklyUnits: number | null;      // averaged over the weeks we have
-  weeksOfData: number;
+  weeksOfData: number;      // imports used
+  daysCovered: number;      // days those imports actually span
   dailyVelocity: number | null;
   daysOfCover: number | null;      // null when there is no usable sales data
   stockoutDate: string | null;
@@ -35,6 +36,21 @@ const addDays = (days: number) => {
  * Velocity averages the most recent weeks that actually have data, so one
  * missed import narrows the window rather than reporting zero demand.
  */
+/** Whole days between two ISO dates, at least 1. */
+function daysBetween(earlier: string, later: string) {
+  const ms = new Date(`${later}T00:00:00Z`).getTime() - new Date(`${earlier}T00:00:00Z`).getTime();
+  return Math.max(1, Math.round(ms / 86_400_000));
+}
+
+/**
+ * Days of cover per SKU: how long stock lasts at recent sales velocity, and
+ * therefore the date production must start to avoid a stockout.
+ *
+ * Imports are ad hoc, so each one is treated as covering the days since the
+ * previous import rather than a fixed week. Velocity is total units divided by
+ * the days those imports actually span — nine days of sales are not counted as
+ * a week, and neither are four.
+ */
 export async function getForecast(teamId: string): Promise<ForecastRow[]> {
   const list = await db.select().from(skus).where(eq(skus.teamId, teamId));
 
@@ -42,26 +58,35 @@ export async function getForecast(teamId: string): Promise<ForecastRow[]> {
     .where(eq(skuSalesWeekly.teamId, teamId))
     .orderBy(desc(skuSalesWeekly.weekEnding));
 
-  // group: skuId -> week -> platform totals
+  // Import dates, newest first, and how many days each one covers.
+  const allDates = [...new Set(sales.map((r) => r.weekEnding))].sort().reverse();
+  const spanOf = new Map<string, number>();
+  allDates.forEach((d, i) => {
+    const older = allDates[i + 1];
+    spanOf.set(d, older ? daysBetween(older, d) : 7); // first ever import: assume a week
+  });
+
   const bySku = new Map<string, Map<string, Record<string, number>>>();
   let lastImport: Date | null = null;
   for (const r of sales) {
     if (!bySku.has(r.skuId)) bySku.set(r.skuId, new Map());
-    const weeks = bySku.get(r.skuId)!;
-    if (!weeks.has(r.weekEnding)) weeks.set(r.weekEnding, {});
-    weeks.get(r.weekEnding)![r.platform] = r.units;
+    const periods = bySku.get(r.skuId)!;
+    if (!periods.has(r.weekEnding)) periods.set(r.weekEnding, {});
+    periods.get(r.weekEnding)![r.platform] = r.units;
     if (!lastImport || r.importedAt > lastImport) lastImport = r.importedAt;
   }
 
   return list.map((sku) => {
-    const weeks = bySku.get(sku.id);
-    const recent = weeks
-      ? [...weeks.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, VELOCITY_WEEKS)
+    const periods = bySku.get(sku.id);
+    const recent = periods
+      ? [...periods.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, VELOCITY_WEEKS)
       : [];
 
     const platformBreakdown: Record<string, number> = {};
     let total = 0;
-    for (const [, platforms] of recent) {
+    let days = 0;
+    for (const [date, platforms] of recent) {
+      days += spanOf.get(date) ?? 7;
       for (const [p, u] of Object.entries(platforms)) {
         platformBreakdown[p] = (platformBreakdown[p] ?? 0) + u;
         total += u;
@@ -69,8 +94,10 @@ export async function getForecast(teamId: string): Promise<ForecastRow[]> {
     }
 
     const weeksOfData = recent.length;
-    const weeklyUnits = weeksOfData ? total / weeksOfData : null;
-    const dailyVelocity = weeklyUnits !== null && weeklyUnits > 0 ? weeklyUnits / 7 : null;
+    const dailyVelocity = days > 0 && total > 0 ? total / days : null;
+    // Reported as a weekly figure because that is how the team thinks about it,
+    // even though it is derived from actual elapsed days.
+    const weeklyUnits = dailyVelocity !== null ? dailyVelocity * 7 : (weeksOfData ? 0 : null);
     const inventory = sku.currentInventory ?? 0;
     const leadTimeDays = sku.productionTimelineDays ?? 30;
     const thresholdDays = DEFAULT_COVER_THRESHOLD_DAYS;
@@ -78,7 +105,7 @@ export async function getForecast(teamId: string): Promise<ForecastRow[]> {
     const daysOfCover = dailyVelocity ? inventory / dailyVelocity : null;
 
     let status: ForecastRow["status"];
-    if (weeksOfData === 0 || weeklyUnits === 0) status = "no-sales-data";
+    if (weeksOfData === 0 || !dailyVelocity) status = "no-sales-data";
     else if (inventory <= 0) status = "no-stock";
     else if (daysOfCover! < leadTimeDays + CRITICAL_BUFFER_DAYS) status = "critical";
     else if (daysOfCover! < thresholdDays) status = "warning";
@@ -93,6 +120,7 @@ export async function getForecast(teamId: string): Promise<ForecastRow[]> {
       thresholdDays,
       weeklyUnits,
       weeksOfData,
+      daysCovered: days,
       dailyVelocity,
       daysOfCover,
       stockoutDate: daysOfCover !== null ? addDays(daysOfCover) : null,

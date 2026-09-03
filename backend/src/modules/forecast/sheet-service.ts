@@ -71,19 +71,12 @@ async function orderedSkus(teamId: string) {
 }
 
 /**
- * Sunday ending the week containing `d` — the canonical week key.
- *
- * Every stored week is snapped to this, so picking any day of a week files the
- * numbers under the same key. Without it, one import labelled Thursday and
- * another labelled Sunday become two "weeks" of identical data and halve the
- * apparent velocity.
+ * Today, as the default period end. Imports are ad hoc — any day, any spacing —
+ * so a period is simply "since the last import" and velocity is derived from
+ * the actual days elapsed rather than an assumed week.
  */
-export function weekEndingOf(d: Date | string = new Date()) {
-  const base = typeof d === "string" ? new Date(`${d}T00:00:00Z`) : d;
-  if (Number.isNaN(base.getTime())) return weekEndingOf(new Date());
-  const x = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate()));
-  x.setUTCDate(x.getUTCDate() + ((7 - x.getUTCDay()) % 7));
-  return x.toISOString().slice(0, 10);
+export function todayISO() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 // ── Template push ────────────────────────────────────────────────────────────
