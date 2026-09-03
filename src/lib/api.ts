@@ -270,19 +270,6 @@ export type ApiMftNote = {
   id: string; skuId: string | null; date: string; notes: string; createdAt: string;
 };
 
-export type ApiArtworkItem = {
-  id: string; skuName: string; artworkType: string;
-  imageUrl: string | null; statusRemark: string | null;
-  statusUpdatedAt: string | null; comment: string | null;
-  fileLink: string | null;
-  createdAt: string; updatedAt: string;
-};
-
-export type ApiArtworkComment = {
-  id: string; artworkId: string; text: string;
-  authorName: string; teamId: string; createdAt: string;
-};
-
 export type ApiFollowUpContact = {
   id: string; name: string; phone: string | null; email: string | null; notes: string | null; createdAt: string;
 };
@@ -669,20 +656,6 @@ export const api = {
       fetch(`${BASE}/mft/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
   },
 
-  artwork: {
-    list: (sharedTeamId?: string) => get<ApiArtworkItem[]>(`/artwork${sharedQs(sharedTeamId)}`),
-    create: (data: Partial<ApiArtworkItem>, sharedTeamId?: string) =>
-      fetch(`${BASE}/artwork${sharedQs(sharedTeamId)}`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
-    update: (id: string, data: Partial<ApiArtworkItem>) =>
-      fetch(`${BASE}/artwork/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(data) }).then((r) => r.json()),
-    delete: (id: string) =>
-      fetch(`${BASE}/artwork/${id}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
-    listComments: (id: string) => get<ApiArtworkComment[]>(`/artwork/${id}/comments`),
-    addComment: (id: string, text: string) =>
-      fetch(`${BASE}/artwork/${id}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ text }) }).then((r) => r.json()),
-    deleteComment: (artworkId: string, commentId: string) =>
-      fetch(`${BASE}/artwork/${artworkId}/comments/${commentId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
-  },
 
   followUps: {
     list: (sharedUserId?: string) => get<(ApiFollowUpContact & { tasks: ApiFollowUpTask[] })[]>(`/follow-ups${sharedUserQs(sharedUserId)}`),
