@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, type ApiArtworkEntry, type ApiSku } from "@/lib/api";
-import { Plus, Pencil, Trash2, Copy, Check, Search, Palette, X, Files, ExternalLink, MessageSquare } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, Check, Search, Palette, X, Files, ExternalLink, MessageSquare, ChevronDown, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -90,6 +91,41 @@ function Copyable({
 }
 
 /**
+ * Collapsed by default so an artwork card stays short; the header count says
+ * whether anything is inside without having to expand it.
+ */
+function CollapsibleBlock({
+  icon, title, count, subtle, children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  count?: number;
+  subtle?: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="border-t">
+      <CollapsibleTrigger className="flex w-full items-center gap-1.5 px-4 py-2 text-left hover:bg-muted/50">
+        {icon}
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</span>
+        {count !== undefined && count > 0 && (
+          <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">{count}</Badge>
+        )}
+        {subtle && <span className="text-[11px] text-muted-foreground/70">{subtle}</span>}
+        <ChevronDown
+          className={cn(
+            "ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent>{children}</CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+/**
  * The five artwork links, each saved on its own so updating one does not
  * touch the rest — and each stamped with who saved it and when.
  */
@@ -143,9 +179,17 @@ function ArtworkLinks({
     }
   }
 
+  const filled = artwork.links.length;
+
   return (
-    <div className="divide-y border-b bg-muted/30">
-      {LINK_FIELDS.map((f) => {
+    <CollapsibleBlock
+      icon={<Link2 className="h-3.5 w-3.5 text-muted-foreground" />}
+      title="Links"
+      count={filled}
+      subtle={filled ? `of ${LINK_FIELDS.length}` : "none yet"}
+    >
+      <div className="divide-y border-t bg-muted/30">
+        {LINK_FIELDS.map((f) => {
         const link = linkFor(f.kind);
         const isEditing = editing === f.kind;
         return (
@@ -225,7 +269,8 @@ function ArtworkLinks({
           </div>
         );
       })}
-    </div>
+      </div>
+    </CollapsibleBlock>
   );
 }
 
@@ -271,16 +316,13 @@ function ProductionNotes({
   }
 
   return (
+    <CollapsibleBlock
+      icon={<MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />}
+      title="Next Production Update"
+      count={notes.length}
+      subtle={notes.length ? undefined : "none yet"}
+    >
     <div className="border-t bg-amber-50/40 px-4 py-3 dark:bg-amber-950/10">
-      <div className="mb-2 flex items-center gap-1.5">
-        <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Next Production Update
-        </span>
-        {notes.length > 0 && (
-          <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">{notes.length}</Badge>
-        )}
-      </div>
 
       {notes.length > 0 && (
         <div className="mb-2 space-y-2">
@@ -322,6 +364,7 @@ function ProductionNotes({
         </Button>
       </div>
     </div>
+    </CollapsibleBlock>
   );
 }
 
