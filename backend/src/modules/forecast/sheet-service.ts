@@ -1,7 +1,7 @@
 import { db } from "../../db/client.ts";
 import { skus, skuInventoryLocations } from "../../db/schema/skus.ts";
 import { skuSalesWeekly } from "../../db/schema/sales.ts";
-import { eq, inArray, and } from "drizzle-orm";
+import { eq, inArray, and, sql } from "drizzle-orm";
 import { SALES_PLATFORMS } from "./constants.ts";
 
 type Sheet = "sales" | "stock";
@@ -17,16 +17,51 @@ function scriptUrl(sheet: Sheet) {
   return url;
 }
 
-async function call(sheet: Sheet, body: unknown) {
-  const res = await fetch(scriptUrl(sheet), {
+type ScriptResponse = { error?: string; values?: string[][] };
+
+/**
+ * Apps Script intermittently answers with an HTML interstitial instead of the
+ * script's JSON — on a cold start, or when Google briefly serves a redirect
+ * page. Parsing that blindly surfaces "Unexpected token '<'" and loses the
+ * import, so read as text, and retry once before giving a usable message.
+ */
+async function callOnce(url: string, body: unknown): Promise<ScriptResponse> {
+  const res = await fetch(url, {
     method: "POST",
     redirect: "follow",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(60_000),
   });
-  const json = (await res.json()) as { error?: string; values?: string[][] };
+
+  const text = await res.text();
+  const looksHtml = text.trimStart().startsWith("<");
+  if (looksHtml) {
+    throw new Error(
+      "Google returned a web page instead of data. This is usually temporary — try again in a few seconds. " +
+      "If it persists, redeploy the Apps Script with access set to \"Anyone\".",
+    );
+  }
+
+  let json: ScriptResponse;
+  try {
+    json = JSON.parse(text) as ScriptResponse;
+  } catch {
+    throw new Error(`Unreadable response from the sheet (${res.status}): ${text.slice(0, 120)}`);
+  }
   if (json.error) throw new Error(json.error);
   return json;
+}
+
+async function call(sheet: Sheet, body: unknown): Promise<ScriptResponse> {
+  const url = scriptUrl(sheet);
+  try {
+    return await callOnce(url, body);
+  } catch (err) {
+    // One retry covers the transient interstitial; a second failure is real.
+    await new Promise((r) => setTimeout(r, 1500));
+    return await callOnce(url, body);
+  }
 }
 
 /** SKUs in the fixed order the sheets present them: alphabetical by name. */
@@ -103,6 +138,7 @@ export async function pullSales(teamId: string, weekEnding: string, byName: stri
   const byCode = new Map(list.map((s) => [s.code.trim().toLowerCase(), s]));
 
   const skipped: string[] = [];
+  const pending: (typeof skuSalesWeekly.$inferInsert)[] = [];
   let updated = 0;
 
   for (const row of dataRows) {
@@ -112,17 +148,26 @@ export async function pullSales(teamId: string, weekEnding: string, byName: stri
     if (!sku) { skipped.push(code); continue; }
 
     for (const [platform, idx] of colFor) {
-      const units = num(row[idx]);
-      await db.insert(skuSalesWeekly).values({
+      pending.push({
         id: crypto.randomUUID(),
-        skuId: sku.id, weekEnding, platform, units, teamId,
+        skuId: sku.id, weekEnding, platform, units: num(row[idx]), teamId,
         importedByName: byName,
-      }).onConflictDoUpdate({
-        target: [skuSalesWeekly.skuId, skuSalesWeekly.weekEnding, skuSalesWeekly.platform],
-        set: { units, importedAt: new Date(), importedByName: byName },
       });
     }
     updated++;
+  }
+
+  // One statement instead of ~430 round trips, which is what made this slow
+  // enough to look like a hang.
+  if (pending.length) {
+    await db.insert(skuSalesWeekly).values(pending).onConflictDoUpdate({
+      target: [skuSalesWeekly.skuId, skuSalesWeekly.weekEnding, skuSalesWeekly.platform],
+      set: {
+        units: sql`excluded.units`,
+        importedAt: new Date(),
+        importedByName: byName,
+      },
+    });
   }
   return { updated, skipped, weekEnding };
 }
