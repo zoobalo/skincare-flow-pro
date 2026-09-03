@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, type ApiArtworkEntry, type ApiSku } from "@/lib/api";
-import { Plus, Pencil, Trash2, Copy, Check, Search, Palette, X, Files, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, Check, Search, Palette, X, Files, ExternalLink, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -225,6 +225,102 @@ function ArtworkLinks({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * Running list of changes wanted in the next production run for this artwork.
+ * Newest first; each entry keeps its author and time.
+ */
+function ProductionNotes({
+  artwork, sharedTeamId, onChanged,
+}: {
+  artwork: ApiArtworkEntry;
+  sharedTeamId?: string;
+  onChanged: () => void;
+}) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const notes = artwork.productionNotes ?? [];
+
+  async function add() {
+    if (!text.trim()) { toast.error("Write the change needed first."); return; }
+    setBusy(true);
+    try {
+      await api.artwork.addNote(artwork.id, text.trim(), sharedTeamId);
+      setText("");
+      toast.success("Update added.");
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(id: string) {
+    if (!confirm("Delete this update?")) return;
+    try {
+      await api.artwork.deleteNote(id, sharedTeamId);
+      toast.success("Update deleted.");
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete.");
+    }
+  }
+
+  return (
+    <div className="border-t bg-amber-50/40 px-4 py-3 dark:bg-amber-950/10">
+      <div className="mb-2 flex items-center gap-1.5">
+        <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Next Production Update
+        </span>
+        {notes.length > 0 && (
+          <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">{notes.length}</Badge>
+        )}
+      </div>
+
+      {notes.length > 0 && (
+        <div className="mb-2 space-y-2">
+          {notes.map((n) => (
+            <div key={n.id} className="group flex items-start gap-2 rounded-lg border bg-background p-2">
+              <div className="min-w-0 flex-1">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">{n.text}</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground/80">
+                  {n.authorName ? `${n.authorName} · ` : ""}{fmtStamp(n.createdAt)}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 shrink-0 p-0 text-destructive opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
+                title="Delete update"
+                onClick={() => remove(n.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-start gap-2">
+        <Textarea
+          rows={1}
+          className="min-h-[34px] flex-1 resize-y bg-background text-sm"
+          placeholder="What should change in the next production?"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) add();
+          }}
+        />
+        <Button size="sm" className="h-8 shrink-0" disabled={busy || !text.trim()} onClick={add}>
+          {busy ? "Adding…" : "Add"}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -500,6 +596,12 @@ function ArtworkContent({
                         </div>
                       ))}
                     </div>
+
+                    <ProductionNotes
+                      artwork={a}
+                      sharedTeamId={sharedTeamId}
+                      onChanged={() => router.invalidate()}
+                    />
                   </div>
                 ))}
               </div>

@@ -53,14 +53,34 @@ export const artworkLinks = pgTable("artwork_links", {
   unique("artwork_link_kind_unique").on(t.artworkId, t.kind),
 ]);
 
+/**
+ * Running notes of what to change in the next production run — a thread per
+ * artwork. Author is stamped from the request token, never the client.
+ */
+export const artworkProductionNotes = pgTable("artwork_production_notes", {
+  id:         text("id").primaryKey(),
+  artworkId:  text("artwork_id").notNull().references(() => artworkEntries.id, { onDelete: "cascade" }),
+  text:       text("text").notNull(),
+  authorId:   text("author_id"),
+  authorName: text("author_name"),
+  createdAt:  timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("artwork_note_artwork_idx").on(t.artworkId),
+]);
+
 export const artworkEntriesRelations = relations(artworkEntries, ({ one, many }) => ({
   sku: one(skus, { fields: [artworkEntries.skuId], references: [skus.id] }),
   sections: many(artworkSections),
   links: many(artworkLinks),
+  productionNotes: many(artworkProductionNotes),
 }));
 
 export const artworkLinksRelations = relations(artworkLinks, ({ one }) => ({
   artwork: one(artworkEntries, { fields: [artworkLinks.artworkId], references: [artworkEntries.id] }),
+}));
+
+export const artworkProductionNotesRelations = relations(artworkProductionNotes, ({ one }) => ({
+  artwork: one(artworkEntries, { fields: [artworkProductionNotes.artworkId], references: [artworkEntries.id] }),
 }));
 
 export const artworkSectionsRelations = relations(artworkSections, ({ one }) => ({
@@ -70,3 +90,4 @@ export const artworkSectionsRelations = relations(artworkSections, ({ one }) => 
 export type ArtworkEntry   = typeof artworkEntries.$inferSelect;
 export type ArtworkSection = typeof artworkSections.$inferSelect;
 export type ArtworkLink    = typeof artworkLinks.$inferSelect;
+export type ArtworkProductionNote = typeof artworkProductionNotes.$inferSelect;

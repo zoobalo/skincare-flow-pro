@@ -6,6 +6,7 @@ import {
   createSections, updateSection, deleteSection, deleteSectionsFor,
   nextSortOrder, getSectionTeam,
   upsertLink, deleteLink,
+  createNote, deleteNote, getNoteTeam,
 } from "./queries.ts";
 
 type SectionInput = { name: string; data: string };
@@ -135,6 +136,39 @@ export const artworkRoutes = new Hono()
     if (!existing) return c.json({ error: "Not found" }, 404);
     if (existing.teamId !== teamId) return c.json({ error: "Forbidden" }, 403);
     await deleteArtwork(existing.id);  // sections cascade
+    return c.json({ ok: true });
+  })
+
+  // ── Next-production notes ─────────────────────────────────────────────────
+  .post("/:id/notes", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "artwork");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    const artwork = await getArtwork(c.req.param("id"));
+    if (!artwork) return c.json({ error: "Not found" }, 404);
+    if (artwork.teamId !== teamId) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json();
+    const text = typeof body.text === "string" ? body.text.trim() : "";
+    if (!text) return c.json({ error: "Write something first" }, 400);
+
+    const [created] = await createNote({
+      id: crypto.randomUUID(),
+      artworkId: artwork.id,
+      text,
+      authorId: user.sub,
+      authorName: user.name ?? null,
+    });
+    return c.json(created, 201);
+  })
+  .delete("/notes/:noteId", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const teamId = await resolveTeamId(c, user, "artwork");
+    if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    const owner = await getNoteTeam(c.req.param("noteId"));
+    if (!owner) return c.json({ error: "Not found" }, 404);
+    if (owner.teamId !== teamId) return c.json({ error: "Forbidden" }, 403);
+    await deleteNote(c.req.param("noteId"));
     return c.json({ ok: true });
   })
 

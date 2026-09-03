@@ -296,11 +296,17 @@ export type ApiArtworkLink = {
   updatedById: string | null; updatedByName: string | null; updatedAt: string;
 };
 
+export type ApiArtworkNote = {
+  id: string; artworkId: string; text: string;
+  authorId: string | null; authorName: string | null; createdAt: string;
+};
+
 export type ApiArtworkEntry = {
   id: string; skuId: string; artworkType: string;
   sku: { id: string; name: string; code: string } | null;
   sections: ApiArtworkSection[];
   links: ApiArtworkLink[];
+  productionNotes: ApiArtworkNote[];
   createdAt: string; updatedAt: string;
 };
 
@@ -704,6 +710,10 @@ export const api = {
     ) => send<ApiArtworkEntry>(`/artwork/${id}${sharedQs(sharedTeamId)}`, "PATCH", data),
     delete: (id: string, sharedTeamId?: string) =>
       send<{ ok: true }>(`/artwork/${id}${sharedQs(sharedTeamId)}`, "DELETE"),
+    addNote: (artworkId: string, text: string, sharedTeamId?: string) =>
+      send<ApiArtworkNote>(`/artwork/${artworkId}/notes${sharedQs(sharedTeamId)}`, "POST", { text }),
+    deleteNote: (noteId: string, sharedTeamId?: string) =>
+      send<{ ok: true }>(`/artwork/notes/${noteId}${sharedQs(sharedTeamId)}`, "DELETE"),
     saveLink: (artworkId: string, kind: string, url: string, sharedTeamId?: string) =>
       send<ApiArtworkLink>(`/artwork/${artworkId}/links/${kind}${sharedQs(sharedTeamId)}`, "PUT", { url }),
     removeLink: (artworkId: string, kind: string, sharedTeamId?: string) =>

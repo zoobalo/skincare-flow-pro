@@ -1,5 +1,5 @@
 import { db } from "../../db/client.ts";
-import { artworkEntries, artworkSections, artworkLinks } from "../../db/schema/artwork.ts";
+import { artworkEntries, artworkSections, artworkLinks, artworkProductionNotes } from "../../db/schema/artwork.ts";
 import { and, eq, max } from "drizzle-orm";
 
 export const getAllArtwork = (teamId: string) =>
@@ -10,6 +10,7 @@ export const getAllArtwork = (teamId: string) =>
       sku: { columns: { id: true, name: true, code: true } },
       sections: { orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)] },
       links: true,
+      productionNotes: { orderBy: (n, { desc }) => [desc(n.createdAt)] },
     },
   });
 
@@ -20,6 +21,7 @@ export const getArtwork = (id: string) =>
       sku: { columns: { id: true, name: true, code: true } },
       sections: { orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)] },
       links: true,
+      productionNotes: { orderBy: (n, { desc }) => [desc(n.createdAt)] },
     },
   });
 
@@ -83,3 +85,22 @@ export const deleteLink = (artworkId: string, kind: string) =>
   db.delete(artworkLinks)
     .where(and(eq(artworkLinks.artworkId, artworkId), eq(artworkLinks.kind, kind)))
     .returning();
+
+// ── Next-production notes ────────────────────────────────────────────────────
+
+export const createNote = (row: typeof artworkProductionNotes.$inferInsert) =>
+  db.insert(artworkProductionNotes).values(row).returning();
+
+export const deleteNote = (id: string) =>
+  db.delete(artworkProductionNotes).where(eq(artworkProductionNotes.id, id)).returning();
+
+/** Owning team of a note, so deletes authorise against the parent artwork. */
+export async function getNoteTeam(noteId: string) {
+  const [row] = await db
+    .select({ teamId: artworkEntries.teamId })
+    .from(artworkProductionNotes)
+    .innerJoin(artworkEntries, eq(artworkProductionNotes.artworkId, artworkEntries.id))
+    .where(eq(artworkProductionNotes.id, noteId))
+    .limit(1);
+  return row ?? null;
+}
