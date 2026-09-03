@@ -70,10 +70,19 @@ async function orderedSkus(teamId: string) {
   return rows.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Sunday ending the week containing `d` — the canonical week key. */
-export function weekEndingOf(d = new Date()) {
-  const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  x.setUTCDate(x.getUTCDate() + (7 - x.getUTCDay()) % 7);
+/**
+ * Sunday ending the week containing `d` — the canonical week key.
+ *
+ * Every stored week is snapped to this, so picking any day of a week files the
+ * numbers under the same key. Without it, one import labelled Thursday and
+ * another labelled Sunday become two "weeks" of identical data and halve the
+ * apparent velocity.
+ */
+export function weekEndingOf(d: Date | string = new Date()) {
+  const base = typeof d === "string" ? new Date(`${d}T00:00:00Z`) : d;
+  if (Number.isNaN(base.getTime())) return weekEndingOf(new Date());
+  const x = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate()));
+  x.setUTCDate(x.getUTCDate() + ((7 - x.getUTCDay()) % 7));
   return x.toISOString().slice(0, 10);
 }
 

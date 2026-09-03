@@ -106,16 +106,19 @@ function ForecastContent({ data, sharedTeamId }: { data: ApiForecast; sharedTeam
         <div className="rounded-xl border bg-card p-4">
           <p className="text-sm font-semibold">Weekly sales sheet</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Send the SKU list across, then pull the numbers back in.
+            Send the SKU list across, then pull the numbers back in. Any date is
+            filed under the Sunday its week ends on.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Input
-              type="date"
-              value={week}
-              onChange={(e) => setWeek(e.target.value)}
-              className="h-8 w-40 text-xs"
-              title="Week ending"
-            />
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              Week ending
+              <Input
+                type="date"
+                value={week}
+                onChange={(e) => setWeek(e.target.value)}
+                className="h-8 w-36 text-xs"
+              />
+            </label>
             <Button
               size="sm" variant="outline" className="h-8"
               disabled={busy !== null}

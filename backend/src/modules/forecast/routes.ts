@@ -29,8 +29,9 @@ export const forecastRoutes = new Hono()
     const teamId = await resolveTeamId(c, user, "forecast");
     if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const body = await c.req.json().catch(() => ({}));
-    const weekEnding = typeof body.weekEnding === "string" && body.weekEnding
-      ? body.weekEnding : weekEndingOf();
+    const weekEnding = weekEndingOf(
+      typeof body.weekEnding === "string" && body.weekEnding ? body.weekEnding : new Date(),
+    );
     try {
       return c.json(await pushSalesTemplate(teamId, weekEnding));
     } catch (err) {
@@ -42,8 +43,9 @@ export const forecastRoutes = new Hono()
     const teamId = await resolveTeamId(c, user, "forecast");
     if (!teamId) return c.json({ error: "Forbidden" }, 403);
     const body = await c.req.json().catch(() => ({}));
-    const weekEnding = typeof body.weekEnding === "string" && body.weekEnding
-      ? body.weekEnding : weekEndingOf();
+    const weekEnding = weekEndingOf(
+      typeof body.weekEnding === "string" && body.weekEnding ? body.weekEnding : new Date(),
+    );
     try {
       return c.json(await pullSales(teamId, weekEnding, user.name ?? null));
     } catch (err) {
