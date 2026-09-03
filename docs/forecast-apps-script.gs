@@ -46,13 +46,23 @@ function writeTemplate(req) {
   var headers = req.headers || [];
   var rows = req.rows || [];
 
+  var prevTitle = String(sh.getRange(1, 1).getValue() || '').trim();
+  var newTitle = String(req.title || '').trim();
+  // Numbers carry over only within the same period. A new week starts blank,
+  // so nobody submits last week's figures by mistake.
+  var samePeriod = prevTitle !== '' && prevTitle === newTitle;
+
   var existing = {};
   var last = sh.getLastRow();
   if (last >= 3) {
+    var oldHeader = sh.getRange(2, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0];
     var old = sh.getRange(3, 1, last - 2, Math.max(sh.getLastColumn(), 1)).getValues();
-    for (var i = 0; i < old.length; i++) {
-      var code = String(old[i][0] || '').trim();
-      if (code) existing[code] = old[i];
+    archive_(sh, oldHeader, old, prevTitle);   // snapshot before we clear
+    if (samePeriod) {
+      for (var i = 0; i < old.length; i++) {
+        var code = String(old[i][0] || '').trim();
+        if (code) existing[code] = old[i];
+      }
     }
   }
 
@@ -80,29 +90,30 @@ function writeTemplate(req) {
   return { rows: rows.length, columns: headers.length };
 }
 
-/** Returns [headerRow, ...dataRows] and archives a dated copy of the grid. */
+/**
+ * Returns [headerRow, ...dataRows]. Deliberately does no writing — reading is
+ * on the critical path of the IN button, and creating an archive tab here made
+ * the call take up to a minute and time out.
+ */
 function readGrid() {
   var sh = sheet_();
   var last = sh.getLastRow();
   var cols = sh.getLastColumn();
   if (last < 3) return [];
-
-  var header = sh.getRange(2, 1, 1, cols).getValues()[0];
-  var data = sh.getRange(3, 1, last - 2, cols).getValues();
-
-  archive_(sh, header, data);
-  return [header].concat(data);
+  return [sh.getRange(2, 1, 1, cols).getValues()[0]]
+    .concat(sh.getRange(3, 1, last - 2, cols).getValues());
 }
 
 /**
- * Keeps a dated snapshot so a week is never lost if the next template sync
- * happens before anyone notices the import was missed.
+ * Snapshot taken just before the grid is overwritten, so a week's entry is
+ * never lost if the template is re-synced before anyone pressed IN.
  */
-function archive_(sh, header, data) {
+function archive_(sh, header, data, title) {
   try {
+    if (!data || !data.length) return;
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var title = String(sh.getRange(1, 1).getValue() || '').replace(/[^\w\s-]/g, '').trim();
-    var name = ('Archive ' + title).substring(0, 90) || 'Archive';
+    var clean = String(title || '').replace(/[^\w\s-]/g, '').trim();
+    var name = ('Archive ' + clean).substring(0, 90) || 'Archive';
     var old = ss.getSheetByName(name);
     if (old) ss.deleteSheet(old);
     var tab = ss.insertSheet(name, ss.getNumSheets());
