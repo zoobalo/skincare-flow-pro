@@ -22,12 +22,13 @@ const LINK_FIELDS = [
   { key: "firstDraftLink",           label: "First Draft" },
   { key: "manufacturerApprovalLink", label: "Manufacturer Approval" },
   { key: "finalPrintingLink",        label: "Final Printing" },
+  { key: "ndaLink",                  label: "NDA" },
   { key: "otherLink",                label: "Other" },
 ] as const;
 
 type LinkKey = (typeof LINK_FIELDS)[number]["key"];
 const EMPTY_LINKS: Record<LinkKey, string> = {
-  firstDraftLink: "", manufacturerApprovalLink: "", finalPrintingLink: "", otherLink: "",
+  firstDraftLink: "", manufacturerApprovalLink: "", finalPrintingLink: "", ndaLink: "", otherLink: "",
 };
 
 export const Route = createFileRoute("/_app/artwork/")({
@@ -168,6 +169,7 @@ function ArtworkContent({
       firstDraftLink: a.firstDraftLink ?? "",
       manufacturerApprovalLink: a.manufacturerApprovalLink ?? "",
       finalPrintingLink: a.finalPrintingLink ?? "",
+      ndaLink: a.ndaLink ?? "",
       otherLink: a.otherLink ?? "",
     });
     setOpen(true);

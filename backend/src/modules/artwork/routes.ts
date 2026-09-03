@@ -13,6 +13,7 @@ const LINK_FIELDS = [
   "firstDraftLink",
   "manufacturerApprovalLink",
   "finalPrintingLink",
+  "ndaLink",
   "otherLink",
 ] as const;
 

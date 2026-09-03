@@ -295,6 +295,7 @@ export type ArtworkLinks = {
   firstDraftLink: string | null;
   manufacturerApprovalLink: string | null;
   finalPrintingLink: string | null;
+  ndaLink: string | null;
   otherLink: string | null;
 };
 

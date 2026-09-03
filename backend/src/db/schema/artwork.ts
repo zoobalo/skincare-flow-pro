@@ -16,6 +16,7 @@ export const artworkEntries = pgTable("artwork_entries", {
   firstDraftLink:          text("first_draft_link"),
   manufacturerApprovalLink: text("manufacturer_approval_link"),
   finalPrintingLink:       text("final_printing_link"),
+  ndaLink:                 text("nda_link"),
   otherLink:               text("other_link"),
   teamId:      text("team_id").notNull(),
   createdAt:   timestamp("created_at").defaultNow().notNull(),
