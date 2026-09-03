@@ -287,20 +287,15 @@ export type ApiMftNote = {
 };
 
 export type ApiArtworkSection = {
-  id: string; skuId: string; name: string; details: string;
-  packagingTypes: string[]; sortOrder: number;
+  id: string; artworkId: string; name: string; data: string; sortOrder: number;
   createdAt: string; updatedAt: string;
 };
 
-export type ApiArtworkSku = {
-  id: string; skuName: string; notes: string | null;
+export type ApiArtworkEntry = {
+  id: string; skuId: string; artworkType: string;
+  sku: { id: string; name: string; code: string } | null;
   sections: ApiArtworkSection[];
   createdAt: string; updatedAt: string;
-};
-
-export type ApiArtworkLibraryEntry = {
-  id: string; name: string; details: string;
-  packagingTypes: string[]; createdAt: string; updatedAt: string;
 };
 
 export type ApiFollowUpContact = {
@@ -691,49 +686,24 @@ export const api = {
 
 
   artwork: {
-    list: (sharedTeamId?: string) => get<ApiArtworkSku[]>(`/artwork${sharedQs(sharedTeamId)}`),
-    createSku: (
-      data: { skuName: string; notes?: string | null; copyFromSkuId?: string; libraryEntryIds?: string[] },
+    list: (sharedTeamId?: string) => get<ApiArtworkEntry[]>(`/artwork${sharedQs(sharedTeamId)}`),
+    create: (
+      data: { skuId: string; artworkType: string; sections: { name: string; data: string }[] },
       sharedTeamId?: string,
-    ) => send<ApiArtworkSku>(`/artwork${sharedQs(sharedTeamId)}`, "POST", data),
-    updateSku: (id: string, data: { skuName?: string; notes?: string | null }, sharedTeamId?: string) =>
-      send<ApiArtworkSku>(`/artwork/${id}${sharedQs(sharedTeamId)}`, "PATCH", data),
-    deleteSku: (id: string, sharedTeamId?: string) =>
+    ) => send<ApiArtworkEntry>(`/artwork${sharedQs(sharedTeamId)}`, "POST", data),
+    update: (
+      id: string,
+      data: { skuId?: string; artworkType?: string; sections?: { name: string; data: string }[] },
+      sharedTeamId?: string,
+    ) => send<ApiArtworkEntry>(`/artwork/${id}${sharedQs(sharedTeamId)}`, "PATCH", data),
+    delete: (id: string, sharedTeamId?: string) =>
       send<{ ok: true }>(`/artwork/${id}${sharedQs(sharedTeamId)}`, "DELETE"),
-
-    addSection: (
-      skuId: string,
-      data: { name: string; details: string; packagingTypes: string[] },
-      sharedTeamId?: string,
-    ) => send<ApiArtworkSection>(`/artwork/${skuId}/sections${sharedQs(sharedTeamId)}`, "POST", data),
-    updateSection: (
-      sectionId: string,
-      data: { name: string; details: string; packagingTypes: string[]; sortOrder?: number },
-      sharedTeamId?: string,
-    ) => send<ApiArtworkSection>(`/artwork/sections/${sectionId}${sharedQs(sharedTeamId)}`, "PATCH", data),
+    addSection: (id: string, data: { name: string; data: string }, sharedTeamId?: string) =>
+      send<ApiArtworkSection>(`/artwork/${id}/sections${sharedQs(sharedTeamId)}`, "POST", data),
+    updateSection: (sectionId: string, data: { name: string; data: string }, sharedTeamId?: string) =>
+      send<ApiArtworkSection>(`/artwork/sections/${sectionId}${sharedQs(sharedTeamId)}`, "PATCH", data),
     deleteSection: (sectionId: string, sharedTeamId?: string) =>
       send<{ ok: true }>(`/artwork/sections/${sectionId}${sharedQs(sharedTeamId)}`, "DELETE"),
-    sectionToLibrary: (sectionId: string, sharedTeamId?: string) =>
-      send<ApiArtworkLibraryEntry>(`/artwork/sections/${sectionId}/to-library${sharedQs(sharedTeamId)}`, "POST"),
-
-    insertFromLibrary: (skuId: string, entryIds: string[], sharedTeamId?: string) =>
-      send<ApiArtworkSku>(`/artwork/${skuId}/from-library${sharedQs(sharedTeamId)}`, "POST", { entryIds }),
-    copyFrom: (skuId: string, sourceSkuId: string, sharedTeamId?: string) =>
-      send<ApiArtworkSku>(`/artwork/${skuId}/copy-from${sharedQs(sharedTeamId)}`, "POST", { sourceSkuId }),
-
-    library: {
-      list: (sharedTeamId?: string) =>
-        get<ApiArtworkLibraryEntry[]>(`/artwork/library${sharedQs(sharedTeamId)}`),
-      create: (data: { name: string; details: string; packagingTypes: string[] }, sharedTeamId?: string) =>
-        send<ApiArtworkLibraryEntry>(`/artwork/library${sharedQs(sharedTeamId)}`, "POST", data),
-      update: (
-        id: string,
-        data: { name: string; details: string; packagingTypes: string[] },
-        sharedTeamId?: string,
-      ) => send<ApiArtworkLibraryEntry>(`/artwork/library/${id}${sharedQs(sharedTeamId)}`, "PATCH", data),
-      delete: (id: string, sharedTeamId?: string) =>
-        send<{ ok: true }>(`/artwork/library/${id}${sharedQs(sharedTeamId)}`, "DELETE"),
-    },
   },
 
   followUps: {
