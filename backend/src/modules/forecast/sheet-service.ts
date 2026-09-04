@@ -1,8 +1,8 @@
 import { db } from "../../db/client.ts";
 import { skus, skuInventoryLocations } from "../../db/schema/skus.ts";
 import { skuSalesWeekly } from "../../db/schema/sales.ts";
-import { eq, inArray, and, sql } from "drizzle-orm";
-import { SALES_PLATFORMS } from "./constants.ts";
+import { eq, and, sql } from "drizzle-orm";
+import { SALES_PLATFORMS, STOCK_LOCATIONS } from "./constants.ts";
 
 type Sheet = "sales" | "stock";
 
@@ -92,17 +92,14 @@ export async function pushSalesTemplate(teamId: string, weekEnding: string) {
 
 export async function pushStockTemplate(teamId: string) {
   const list = await orderedSkus(teamId);
-  const locations = await db.select().from(skuInventoryLocations)
-    .where(inArray(skuInventoryLocations.skuId, list.map((s) => s.id)));
-  const locNames = [...new Set(locations.map((l) => l.name))].sort();
-  const headers = ["SKU Code", "SKU Name", ...locNames];
-  const rows = list.map((s) => [s.code, s.name, ...locNames.map(() => "")]);
+  const headers = ["SKU Code", "SKU Name", ...STOCK_LOCATIONS];
+  const rows = list.map((s) => [s.code, s.name, ...STOCK_LOCATIONS.map(() => "")]);
   await call("stock", {
     action: "template",
     title: `As of: ${new Date().toISOString().slice(0, 10)}`,
     headers, rows,
   });
-  return { skus: rows.length, locations: locNames.length };
+  return { skus: rows.length, locations: STOCK_LOCATIONS.length };
 }
 
 // ── IN (pull) ────────────────────────────────────────────────────────────────

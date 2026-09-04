@@ -3,10 +3,14 @@
  * muscle memory forms around this order, so append new ones at the end rather
  * than reordering.
  */
-export const SALES_PLATFORMS = [
-  "Shiprocket", "LLC", "Amazon", "Flipkart", "Nykaa", "Broadway",
-  "Export", "Blinkit", "Zepto", "Myntra", "PharmEasy", "Other",
-] as const;
+export const SALES_PLATFORMS = ["D2C", "Amazon", "Nykaa", "Blinkit", "Zepto"] as const;
+
+/**
+ * Stock locations the inventory sheet collects. Fixed rather than derived from
+ * whatever names exist in the database, so ad-hoc entries cannot reappear as
+ * columns.
+ */
+export const STOCK_LOCATIONS = ["LLC"] as const;
 
 /** Weeks averaged for velocity — smooths a single promo week. */
 export const VELOCITY_WEEKS = 4;
