@@ -107,7 +107,7 @@ function ForecastContent({ data, sharedTeamId }: { data: ApiForecast; sharedTeam
           <p className="text-sm font-semibold">Weekly sales sheet</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Send the SKU list across, then pull the numbers back in. Import any
-            day — sales are measured over the days since your last import.
+            day — each import counts as one week of sales.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -226,7 +226,7 @@ function ForecastContent({ data, sharedTeamId }: { data: ApiForecast; sharedTeam
                       {fmtNum(r.weeklyUnits)}
                       {r.weeksOfData > 0 && (
                         <span className="ml-1 text-[11px] text-muted-foreground">
-                          ({r.daysCovered}d of data)
+({r.weeksOfData} week{r.weeksOfData === 1 ? "" : "s"})
                         </span>
                       )}
                     </td>
@@ -252,9 +252,8 @@ function ForecastContent({ data, sharedTeamId }: { data: ApiForecast; sharedTeam
       )}
 
       <p className="text-xs text-muted-foreground">
-        Velocity uses the last 4 imports, divided by the days they actually span — so importing every 5 days or
-        every 12 gives a true rate either way. A SKU turns red when cover falls below its production lead time
-        plus 30 days, amber below {data.rows[0]?.thresholdDays ?? 90} days.
+        Weekly sales is the average of the last 4 imports, each counted as one week. A SKU turns red when cover
+        falls below its production lead time plus 30 days, amber below {data.rows[0]?.thresholdDays ?? 90} days.
       </p>
     </div>
   );
