@@ -178,6 +178,18 @@ export async function pullSales(teamId: string, weekEnding: string, byName: stri
     updated++;
   }
 
+  // An import totalling zero across every SKU is a cleared sheet, not a week
+  // with no sales. Storing it would count as a zero week and halve the
+  // velocity average, so refuse it and say why.
+  const totalUnits = [...pending.values()].reduce((t, r) => t + (r.units ?? 0), 0);
+  if (pending.size && totalUnits === 0) {
+    throw new Error(
+      "Every number in the sheet is zero, so nothing was imported. If you meant " +
+      "to clear the sheet, just clear it — importing zeros would record a week " +
+      "of no sales and distort the forecast.",
+    );
+  }
+
   // One statement instead of ~430 round trips, which is what made this slow
   // enough to look like a hang.
   if (pending.size) {
