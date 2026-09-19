@@ -239,14 +239,23 @@ function ForecastContent({ data, sharedTeamId }: { data: ApiForecast; sharedTeam
                       <p className="text-xs text-muted-foreground">{r.code}</p>
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.currentInventory.toLocaleString("en-IN")}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {fmtNum(r.weeklyUnits)}
-                      {r.weeksOfData > 0 && (
-                        <span className="ml-1 text-[11px] text-muted-foreground">
-({r.weeksOfData} week{r.weeksOfData === 1 ? "" : "s"})
+                    {Array.from({ length: 4 }, (_, i) => {
+                      const v = r.weeks[i];
+                      return (
+                        <td key={i} className="px-2 py-2 text-right tabular-nums text-muted-foreground">
+                          {v === null || v === undefined ? "—" : v.toLocaleString("en-IN")}
+                        </td>
+                      );
+                    })}
+                    <td className="border-l px-3 py-2 text-right font-medium tabular-nums">
+                      {r.monthlyUnits === null ? "—" : r.monthlyUnits.toLocaleString("en-IN")}
+                      {r.weeksOfData > 0 && r.weeksOfData < 4 && (
+                        <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+                          ({r.weeksOfData}w)
                         </span>
                       )}
                     </td>
+                    <td className="px-3 py-2 text-right tabular-nums">{fmtNum(r.weeklyUnits)}</td>
                     <td className={cn("px-3 py-2 text-right font-semibold tabular-nums", alarming && "text-red-600 dark:text-red-400")}>
                       {r.daysOfCover === null ? "—" : Math.round(r.daysOfCover)}
                     </td>
