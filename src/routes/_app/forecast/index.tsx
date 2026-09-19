@@ -40,6 +40,9 @@ const STATUS: Record<ApiForecastRow["status"], {
 };
 
 const fmtNum = (n: number | null) => (n === null ? "—" : Math.round(n).toLocaleString("en-IN"));
+const fmtShort = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
@@ -199,12 +202,26 @@ function ForecastContent({ data, sharedTeamId }: { data: ApiForecast; sharedTeam
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full min-w-[900px] text-sm">
+          <table className="w-full min-w-[1180px] text-sm">
             <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 text-left font-semibold">SKU</th>
                 <th className="px-3 py-2 text-right font-semibold">In stock</th>
-                <th className="px-3 py-2 text-right font-semibold">Weekly sales</th>
+                {Array.from({ length: 4 }, (_, i) => (
+                  <th key={i} className="whitespace-nowrap px-2 py-2 text-right font-semibold">
+                    Week {i + 1}
+                    <span className="block text-[10px] font-normal normal-case text-muted-foreground/70">
+                      {data.recentWeeks[i] ? fmtShort(data.recentWeeks[i]) : "—"}
+                    </span>
+                  </th>
+                ))}
+                <th className="whitespace-nowrap border-l px-3 py-2 text-right font-semibold">
+                  Monthly
+                  <span className="block text-[10px] font-normal normal-case text-muted-foreground/70">
+                    4 weeks
+                  </span>
+                </th>
+                <th className="whitespace-nowrap px-3 py-2 text-right font-semibold">Weekly avg</th>
                 <th className="px-3 py-2 text-right font-semibold">Days of cover</th>
                 <th className="px-3 py-2 text-left font-semibold">Stockout</th>
                 <th className="px-3 py-2 text-left font-semibold">Start production by</th>
@@ -252,8 +269,9 @@ function ForecastContent({ data, sharedTeamId }: { data: ApiForecast; sharedTeam
       )}
 
       <p className="text-xs text-muted-foreground">
-        Weekly sales is the average of the last 4 imports, each counted as one week. A SKU turns red when cover
-        falls below its production lead time plus 30 days, amber below {data.rows[0]?.thresholdDays ?? 90} days.
+        Week 1 is the most recent import, counting back. Monthly is those four weeks added up, and Weekly avg is
+        their average — the figure days of cover is calculated from. A SKU turns red when cover falls below its
+        production lead time plus 30 days, amber below {data.rows[0]?.thresholdDays ?? 90} days.
       </p>
     </div>
   );

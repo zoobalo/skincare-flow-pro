@@ -299,7 +299,8 @@ export type ApiArtworkLink = {
 export type ApiForecastRow = {
   skuId: string; code: string; name: string;
   currentInventory: number; leadTimeDays: number; thresholdDays: number;
-  weeklyUnits: number | null; weeksOfData: number; daysCovered: number; dailyVelocity: number | null;
+  weeklyUnits: number | null; weeks: (number | null)[]; monthlyUnits: number | null;
+  weeksOfData: number; dailyVelocity: number | null;
   daysOfCover: number | null; stockoutDate: string | null; startProductionBy: string | null;
   status: "critical" | "warning" | "ok" | "no-sales-data" | "no-stock";
   platformBreakdown: Record<string, number>;
@@ -308,6 +309,7 @@ export type ApiForecastRow = {
 
 export type ApiForecast = {
   rows: ApiForecastRow[];
+  recentWeeks: string[];
   platforms: string[];
   currentWeekEnding: string;
 };

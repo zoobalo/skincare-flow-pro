@@ -11,9 +11,11 @@ export type ForecastRow = {
   currentInventory: number;
   leadTimeDays: number;
   thresholdDays: number;
-  weeklyUnits: number | null;      // averaged over the weeks we have
-  weeksOfData: number;      // imports used
-  daysCovered: number;      // days those imports actually span
+  weeklyUnits: number | null;      // average across the imports we have
+  /** Units per week, aligned to Forecast.recentWeeks. null = no import that week. */
+  weeks: (number | null)[];
+  monthlyUnits: number | null;     // sum of the weeks shown
+  weeksOfData: number;             // imports actually used
   dailyVelocity: number | null;
   daysOfCover: number | null;      // null when there is no usable sales data
   stockoutDate: string | null;
@@ -30,13 +32,6 @@ const addDays = (days: number) => {
 };
 
 /**
- * Days of cover per SKU: how long current stock lasts at recent sales velocity,
- * and therefore the date production must start to avoid a stockout.
- *
- * Velocity averages the most recent weeks that actually have data, so one
- * missed import narrows the window rather than reporting zero demand.
- */
-/**
  * Days of cover per SKU: how long stock lasts at recent sales velocity, and
  * therefore the date production must start to avoid a stockout.
  *
@@ -45,12 +40,25 @@ const addDays = (days: number) => {
  * rate derived from the gap between them. Dividing by elapsed days made two
  * imports a day apart read as a week of sales in a single day.
  */
-export async function getForecast(teamId: string): Promise<ForecastRow[]> {
+export type Forecast = {
+  rows: ForecastRow[];
+  /** Import dates behind the week columns, most recent first. */
+  recentWeeks: string[];
+};
+
+export async function getForecast(teamId: string): Promise<Forecast> {
   const list = await db.select().from(skus).where(eq(skus.teamId, teamId));
 
   const sales = await db.select().from(skuSalesWeekly)
     .where(eq(skuSalesWeekly.teamId, teamId))
     .orderBy(desc(skuSalesWeekly.weekEnding));
+
+  // Week columns come from the imports that exist overall, not per SKU, so a
+  // SKU with no sales in week 3 still lines up under the right heading.
+  const recentWeeks = [...new Set(sales.map((r) => r.weekEnding))]
+    .sort()
+    .reverse()
+    .slice(0, VELOCITY_WEEKS);
 
   const bySku = new Map<string, Map<string, Record<string, number>>>();
   let lastImport: Date | null = null;
@@ -62,22 +70,25 @@ export async function getForecast(teamId: string): Promise<ForecastRow[]> {
     if (!lastImport || r.importedAt > lastImport) lastImport = r.importedAt;
   }
 
-  return list.map((sku) => {
-    const weeks = bySku.get(sku.id);
-    const recent = weeks
-      ? [...weeks.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, VELOCITY_WEEKS)
-      : [];
+  const rows = list.map((sku) => {
+    const weeksForSku = bySku.get(sku.id);
 
     const platformBreakdown: Record<string, number> = {};
     let total = 0;
-    for (const [, platforms] of recent) {
+    let weeksOfData = 0;
+
+    const weekUnits = recentWeeks.map((weekEnding) => {
+      const platforms = weeksForSku?.get(weekEnding);
+      if (!platforms) return null;
+      let weekTotal = 0;
       for (const [p, u] of Object.entries(platforms)) {
         platformBreakdown[p] = (platformBreakdown[p] ?? 0) + u;
-        total += u;
+        weekTotal += u;
       }
-    }
-
-    const weeksOfData = recent.length;
+      total += weekTotal;
+      weeksOfData++;
+      return weekTotal;
+    });
     const weeklyUnits = weeksOfData ? total / weeksOfData : null;
     const dailyVelocity = weeklyUnits && weeklyUnits > 0 ? weeklyUnits / 7 : null;
     const inventory = sku.currentInventory ?? 0;
@@ -101,8 +112,9 @@ export async function getForecast(teamId: string): Promise<ForecastRow[]> {
       leadTimeDays,
       thresholdDays,
       weeklyUnits,
+      weeks: weekUnits,
+      monthlyUnits: weeksOfData ? total : null,
       weeksOfData,
-      daysCovered: weeksOfData * 7,
       dailyVelocity,
       daysOfCover,
       stockoutDate: daysOfCover !== null ? addDays(daysOfCover) : null,
@@ -116,4 +128,6 @@ export async function getForecast(teamId: string): Promise<ForecastRow[]> {
     if (rank[a.status] !== rank[b.status]) return rank[a.status] - rank[b.status];
     return (a.daysOfCover ?? 1e9) - (b.daysOfCover ?? 1e9);
   });
+
+  return { rows, recentWeeks };
 }

@@ -16,8 +16,10 @@ export const forecastRoutes = new Hono()
     const user = c.get("user" as never) as JWTPayload;
     const teamId = await resolveTeamId(c, user, "forecast");
     if (!teamId) return c.json({ error: "Forbidden" }, 403);
+    const { rows, recentWeeks } = await getForecast(teamId);
     return c.json({
-      rows: await getForecast(teamId),
+      rows,
+      recentWeeks,
       platforms: SALES_PLATFORMS,
       currentWeekEnding: todayISO(),
     });
