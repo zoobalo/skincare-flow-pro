@@ -11,7 +11,9 @@ services:
     runtime: node
     plan: free
     rootDir: backend
-    buildCommand: npm ci && npm run build
+    # --include=dev because NODE_ENV=production below makes npm skip
+    # devDependencies, and esbuild (the build tool) is one of them.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start
     healthCheckPath: /api/health
     envVars:
