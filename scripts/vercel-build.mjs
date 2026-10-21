@@ -27,6 +27,13 @@ renameSync(
   ".vercel/output/functions/__server.func/worker-entry.js",
 );
 
+// The function directory is isolated on Vercel, with no package.json above it,
+// so Node would treat these ESM files as CommonJS and fail to parse `import`.
+writeFileSync(
+  ".vercel/output/functions/__server.func/package.json",
+  JSON.stringify({ type: "module" }, null, 2),
+);
+
 writeFileSync(
   ".vercel/output/functions/__server.func/index.js",
   `import worker from "./worker-entry.js";
