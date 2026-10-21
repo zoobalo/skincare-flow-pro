@@ -1,0 +1,38 @@
+# Render blueprint for the Zoobalo API.
+#
+# The backend lives in ./backend, so rootDir points there; Render runs the
+# build and start scripts from that directory.
+#
+# Secrets are deliberately marked sync:false — they are set in the Render
+# dashboard, never committed. This repository is public.
+services:
+  - type: web
+    name: zoobalo-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Supabase session pooler (port 5432) — a long-lived process with a pg
+      # Pool, so session mode rather than the transaction pooler.
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://www.zoobalo.com,https://zoobalo.com
+      # Google Apps Script bridges for the forecast sheets
+      - key: GOOGLE_SCRIPT_URL
+        sync: false
+      - key: SALES_SHEET_SCRIPT_URL
+        sync: false
+      - key: STOCK_SHEET_SCRIPT_URL
+        sync: false
