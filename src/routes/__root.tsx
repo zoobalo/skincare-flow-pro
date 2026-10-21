@@ -33,8 +33,10 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+// TanStack Router types `error` as unknown, since a thrown value need not
+// be an Error. Narrow it rather than asserting.
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
+  console.error(error instanceof Error ? error : new Error(String(error)));
   const router = useRouter();
 
   return (
