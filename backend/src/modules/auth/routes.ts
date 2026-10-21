@@ -19,7 +19,7 @@ export const authRoutes = new Hono()
     if (password.length < 8)
       return c.json({ error: "Password must be at least 8 characters" }, 400);
 
-    const existing = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+    const existing = await db.select().from(users).where(eq(users.email, email.trim().toLowerCase())).limit(1);
     if (existing.length > 0)
       return c.json({ error: "An account with this email already exists" }, 409);
 
@@ -65,7 +65,7 @@ export const authRoutes = new Hono()
     if (!email || !password)
       return c.json({ error: "Email and password are required" }, 400);
 
-    const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+    const [user] = await db.select().from(users).where(eq(users.email, email.trim().toLowerCase())).limit(1);
     if (!user)
       return c.json({ error: "Invalid email or password" }, 401);
 

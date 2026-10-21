@@ -1,5 +1,4 @@
 import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -36,7 +35,7 @@ import { requireAuth } from "./modules/auth/middleware.ts";
 
 const root = new Hono();
 
-root.use("/uploads/*", serveStatic({ root: "./public" }));
+// Uploads are served by Supabase Storage, not from local disk.
 
 const app = root.basePath("/api");
 
