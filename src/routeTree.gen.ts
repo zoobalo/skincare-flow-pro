@@ -9,63 +9,57 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
-import { Route as AppWarehouseIndexRouteImport } from './routes/_app/warehouse/index'
-import { Route as AppWarehouseQcIndexRouteImport } from './routes/_app/warehouse-qc/index'
-import { Route as AppVendorsIndexRouteImport } from './routes/_app/vendors/index'
-import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
-import { Route as AppTasksIndexRouteImport } from './routes/_app/tasks/index'
-import { Route as AppSkusIndexRouteImport } from './routes/_app/skus/index'
-import { Route as AppSkuActivityIndexRouteImport } from './routes/_app/sku-activity/index'
-import { Route as AppSharingIndexRouteImport } from './routes/_app/sharing/index'
-import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
-import { Route as AppSampleIndexRouteImport } from './routes/_app/sample/index'
-import { Route as AppReportsIndexRouteImport } from './routes/_app/reports/index'
-import { Route as AppReimburseIndexRouteImport } from './routes/_app/reimburse/index'
-import { Route as AppPurchaseOrdersIndexRouteImport } from './routes/_app/purchase-orders/index'
-import { Route as AppProductionIndexRouteImport } from './routes/_app/production/index'
-import { Route as AppProductionRemarksIndexRouteImport } from './routes/_app/production-remarks/index'
-import { Route as AppProcurementIndexRouteImport } from './routes/_app/procurement/index'
-import { Route as AppPmIndexRouteImport } from './routes/_app/pm/index'
-import { Route as AppNpdIndexRouteImport } from './routes/_app/npd/index'
-import { Route as AppMftIndexRouteImport } from './routes/_app/mft/index'
-import { Route as AppManufacturersIndexRouteImport } from './routes/_app/manufacturers/index'
-import { Route as AppLogisticsIndexRouteImport } from './routes/_app/logistics/index'
-import { Route as AppInventoryIndexRouteImport } from './routes/_app/inventory/index'
-import { Route as AppImpLinksIndexRouteImport } from './routes/_app/imp-links/index'
-import { Route as AppForecastIndexRouteImport } from './routes/_app/forecast/index'
-import { Route as AppFollowUpsIndexRouteImport } from './routes/_app/follow-ups/index'
-import { Route as AppDirectoryIndexRouteImport } from './routes/_app/directory/index'
-import { Route as AppCourierIndexRouteImport } from './routes/_app/courier/index'
-import { Route as AppArtworkIndexRouteImport } from './routes/_app/artwork/index'
 import { Route as AppAnalyticsIndexRouteImport } from './routes/_app/analytics/index'
-import { Route as AppVendorsVendorIdRouteImport } from './routes/_app/vendors/$vendorId'
-import { Route as AppSkusSkuIdRouteImport } from './routes/_app/skus/$skuId'
-import { Route as AppPurchaseOrdersNewRouteImport } from './routes/_app/purchase-orders/new'
-import { Route as AppPurchaseOrdersPoIdRouteImport } from './routes/_app/purchase-orders/$poId'
-import { Route as AppPmPmIdRouteImport } from './routes/_app/pm/$pmId'
-import { Route as AppInventoryRawMaterialsRouteImport } from './routes/_app/inventory/raw-materials'
+import { Route as AppArtworkIndexRouteImport } from './routes/_app/artwork/index'
+import { Route as AppCourierIndexRouteImport } from './routes/_app/courier/index'
+import { Route as AppDirectoryIndexRouteImport } from './routes/_app/directory/index'
+import { Route as AppFollowUpsIndexRouteImport } from './routes/_app/follow-ups/index'
+import { Route as AppForecastIndexRouteImport } from './routes/_app/forecast/index'
+import { Route as AppImpLinksIndexRouteImport } from './routes/_app/imp-links/index'
+import { Route as AppInventoryIndexRouteImport } from './routes/_app/inventory/index'
 import { Route as AppInventoryPackagingRouteImport } from './routes/_app/inventory/packaging'
+import { Route as AppInventoryRawMaterialsRouteImport } from './routes/_app/inventory/raw-materials'
+import { Route as AppLogisticsIndexRouteImport } from './routes/_app/logistics/index'
+import { Route as AppManufacturersIndexRouteImport } from './routes/_app/manufacturers/index'
+import { Route as AppMftIndexRouteImport } from './routes/_app/mft/index'
+import { Route as AppNpdIndexRouteImport } from './routes/_app/npd/index'
+import { Route as AppPmIndexRouteImport } from './routes/_app/pm/index'
+import { Route as AppPmPmIdRouteImport } from './routes/_app/pm/$pmId'
+import { Route as AppProcurementIndexRouteImport } from './routes/_app/procurement/index'
+import { Route as AppProductionRemarksIndexRouteImport } from './routes/_app/production-remarks/index'
+import { Route as AppProductionIndexRouteImport } from './routes/_app/production/index'
+import { Route as AppPurchaseOrdersIndexRouteImport } from './routes/_app/purchase-orders/index'
+import { Route as AppPurchaseOrdersPoIdRouteImport } from './routes/_app/purchase-orders/$poId'
+import { Route as AppPurchaseOrdersNewRouteImport } from './routes/_app/purchase-orders/new'
+import { Route as AppReimburseIndexRouteImport } from './routes/_app/reimburse/index'
+import { Route as AppReportsIndexRouteImport } from './routes/_app/reports/index'
+import { Route as AppSampleIndexRouteImport } from './routes/_app/sample/index'
+import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
+import { Route as AppSharingIndexRouteImport } from './routes/_app/sharing/index'
+import { Route as AppSkuActivityIndexRouteImport } from './routes/_app/sku-activity/index'
+import { Route as AppSkusIndexRouteImport } from './routes/_app/skus/index'
+import { Route as AppSkusSkuIdRouteImport } from './routes/_app/skus/$skuId'
+import { Route as AppTasksIndexRouteImport } from './routes/_app/tasks/index'
+import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
+import { Route as AppVendorsIndexRouteImport } from './routes/_app/vendors/index'
+import { Route as AppVendorsVendorIdRouteImport } from './routes/_app/vendors/$vendorId'
+import { Route as AppWarehouseQcIndexRouteImport } from './routes/_app/warehouse-qc/index'
+import { Route as AppWarehouseIndexRouteImport } from './routes/_app/warehouse/index'
 
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -73,13 +67,19 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -87,140 +87,9 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
-const AppWarehouseIndexRoute = AppWarehouseIndexRouteImport.update({
-  id: '/warehouse/',
-  path: '/warehouse/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppWarehouseQcIndexRoute = AppWarehouseQcIndexRouteImport.update({
-  id: '/warehouse-qc/',
-  path: '/warehouse-qc/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppVendorsIndexRoute = AppVendorsIndexRouteImport.update({
-  id: '/vendors/',
-  path: '/vendors/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
-  id: '/users/',
-  path: '/users/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppTasksIndexRoute = AppTasksIndexRouteImport.update({
-  id: '/tasks/',
-  path: '/tasks/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSkusIndexRoute = AppSkusIndexRouteImport.update({
-  id: '/skus/',
-  path: '/skus/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSkuActivityIndexRoute = AppSkuActivityIndexRouteImport.update({
-  id: '/sku-activity/',
-  path: '/sku-activity/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSharingIndexRoute = AppSharingIndexRouteImport.update({
-  id: '/sharing/',
-  path: '/sharing/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
-  id: '/settings/',
-  path: '/settings/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSampleIndexRoute = AppSampleIndexRouteImport.update({
-  id: '/sample/',
-  path: '/sample/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReportsIndexRoute = AppReportsIndexRouteImport.update({
-  id: '/reports/',
-  path: '/reports/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReimburseIndexRoute = AppReimburseIndexRouteImport.update({
-  id: '/reimburse/',
-  path: '/reimburse/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPurchaseOrdersIndexRoute = AppPurchaseOrdersIndexRouteImport.update({
-  id: '/purchase-orders/',
-  path: '/purchase-orders/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppProductionIndexRoute = AppProductionIndexRouteImport.update({
-  id: '/production/',
-  path: '/production/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppProductionRemarksIndexRoute =
-  AppProductionRemarksIndexRouteImport.update({
-    id: '/production-remarks/',
-    path: '/production-remarks/',
-    getParentRoute: () => AppRoute,
-  } as any)
-const AppProcurementIndexRoute = AppProcurementIndexRouteImport.update({
-  id: '/procurement/',
-  path: '/procurement/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPmIndexRoute = AppPmIndexRouteImport.update({
-  id: '/pm/',
-  path: '/pm/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppNpdIndexRoute = AppNpdIndexRouteImport.update({
-  id: '/npd/',
-  path: '/npd/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppMftIndexRoute = AppMftIndexRouteImport.update({
-  id: '/mft/',
-  path: '/mft/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppManufacturersIndexRoute = AppManufacturersIndexRouteImport.update({
-  id: '/manufacturers/',
-  path: '/manufacturers/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppLogisticsIndexRoute = AppLogisticsIndexRouteImport.update({
-  id: '/logistics/',
-  path: '/logistics/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppInventoryIndexRoute = AppInventoryIndexRouteImport.update({
-  id: '/inventory/',
-  path: '/inventory/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppImpLinksIndexRoute = AppImpLinksIndexRouteImport.update({
-  id: '/imp-links/',
-  path: '/imp-links/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppForecastIndexRoute = AppForecastIndexRouteImport.update({
-  id: '/forecast/',
-  path: '/forecast/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppFollowUpsIndexRoute = AppFollowUpsIndexRouteImport.update({
-  id: '/follow-ups/',
-  path: '/follow-ups/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDirectoryIndexRoute = AppDirectoryIndexRouteImport.update({
-  id: '/directory/',
-  path: '/directory/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCourierIndexRoute = AppCourierIndexRouteImport.update({
-  id: '/courier/',
-  path: '/courier/',
+const AppAnalyticsIndexRoute = AppAnalyticsIndexRouteImport.update({
+  id: '/analytics/',
+  path: '/analytics/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppArtworkIndexRoute = AppArtworkIndexRouteImport.update({
@@ -228,34 +97,39 @@ const AppArtworkIndexRoute = AppArtworkIndexRouteImport.update({
   path: '/artwork/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAnalyticsIndexRoute = AppAnalyticsIndexRouteImport.update({
-  id: '/analytics/',
-  path: '/analytics/',
+const AppCourierIndexRoute = AppCourierIndexRouteImport.update({
+  id: '/courier/',
+  path: '/courier/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppVendorsVendorIdRoute = AppVendorsVendorIdRouteImport.update({
-  id: '/vendors/$vendorId',
-  path: '/vendors/$vendorId',
+const AppDirectoryIndexRoute = AppDirectoryIndexRouteImport.update({
+  id: '/directory/',
+  path: '/directory/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppSkusSkuIdRoute = AppSkusSkuIdRouteImport.update({
-  id: '/skus/$skuId',
-  path: '/skus/$skuId',
+const AppFollowUpsIndexRoute = AppFollowUpsIndexRouteImport.update({
+  id: '/follow-ups/',
+  path: '/follow-ups/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppPurchaseOrdersNewRoute = AppPurchaseOrdersNewRouteImport.update({
-  id: '/purchase-orders/new',
-  path: '/purchase-orders/new',
+const AppForecastIndexRoute = AppForecastIndexRouteImport.update({
+  id: '/forecast/',
+  path: '/forecast/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppPurchaseOrdersPoIdRoute = AppPurchaseOrdersPoIdRouteImport.update({
-  id: '/purchase-orders/$poId',
-  path: '/purchase-orders/$poId',
+const AppImpLinksIndexRoute = AppImpLinksIndexRouteImport.update({
+  id: '/imp-links/',
+  path: '/imp-links/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppPmPmIdRoute = AppPmPmIdRouteImport.update({
-  id: '/pm/$pmId',
-  path: '/pm/$pmId',
+const AppInventoryIndexRoute = AppInventoryIndexRouteImport.update({
+  id: '/inventory/',
+  path: '/inventory/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInventoryPackagingRoute = AppInventoryPackagingRouteImport.update({
+  id: '/inventory/packaging',
+  path: '/inventory/packaging',
   getParentRoute: () => AppRoute,
 } as any)
 const AppInventoryRawMaterialsRoute =
@@ -264,9 +138,135 @@ const AppInventoryRawMaterialsRoute =
     path: '/inventory/raw-materials',
     getParentRoute: () => AppRoute,
   } as any)
-const AppInventoryPackagingRoute = AppInventoryPackagingRouteImport.update({
-  id: '/inventory/packaging',
-  path: '/inventory/packaging',
+const AppLogisticsIndexRoute = AppLogisticsIndexRouteImport.update({
+  id: '/logistics/',
+  path: '/logistics/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppManufacturersIndexRoute = AppManufacturersIndexRouteImport.update({
+  id: '/manufacturers/',
+  path: '/manufacturers/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMftIndexRoute = AppMftIndexRouteImport.update({
+  id: '/mft/',
+  path: '/mft/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNpdIndexRoute = AppNpdIndexRouteImport.update({
+  id: '/npd/',
+  path: '/npd/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPmIndexRoute = AppPmIndexRouteImport.update({
+  id: '/pm/',
+  path: '/pm/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPmPmIdRoute = AppPmPmIdRouteImport.update({
+  id: '/pm/$pmId',
+  path: '/pm/$pmId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProcurementIndexRoute = AppProcurementIndexRouteImport.update({
+  id: '/procurement/',
+  path: '/procurement/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProductionRemarksIndexRoute =
+  AppProductionRemarksIndexRouteImport.update({
+    id: '/production-remarks/',
+    path: '/production-remarks/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppProductionIndexRoute = AppProductionIndexRouteImport.update({
+  id: '/production/',
+  path: '/production/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPurchaseOrdersIndexRoute = AppPurchaseOrdersIndexRouteImport.update({
+  id: '/purchase-orders/',
+  path: '/purchase-orders/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPurchaseOrdersPoIdRoute = AppPurchaseOrdersPoIdRouteImport.update({
+  id: '/purchase-orders/$poId',
+  path: '/purchase-orders/$poId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPurchaseOrdersNewRoute = AppPurchaseOrdersNewRouteImport.update({
+  id: '/purchase-orders/new',
+  path: '/purchase-orders/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReimburseIndexRoute = AppReimburseIndexRouteImport.update({
+  id: '/reimburse/',
+  path: '/reimburse/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsIndexRoute = AppReportsIndexRouteImport.update({
+  id: '/reports/',
+  path: '/reports/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSampleIndexRoute = AppSampleIndexRouteImport.update({
+  id: '/sample/',
+  path: '/sample/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSharingIndexRoute = AppSharingIndexRouteImport.update({
+  id: '/sharing/',
+  path: '/sharing/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSkuActivityIndexRoute = AppSkuActivityIndexRouteImport.update({
+  id: '/sku-activity/',
+  path: '/sku-activity/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSkusIndexRoute = AppSkusIndexRouteImport.update({
+  id: '/skus/',
+  path: '/skus/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSkusSkuIdRoute = AppSkusSkuIdRouteImport.update({
+  id: '/skus/$skuId',
+  path: '/skus/$skuId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTasksIndexRoute = AppTasksIndexRouteImport.update({
+  id: '/tasks/',
+  path: '/tasks/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVendorsIndexRoute = AppVendorsIndexRouteImport.update({
+  id: '/vendors/',
+  path: '/vendors/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVendorsVendorIdRoute = AppVendorsVendorIdRouteImport.update({
+  id: '/vendors/$vendorId',
+  path: '/vendors/$vendorId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWarehouseQcIndexRoute = AppWarehouseQcIndexRouteImport.update({
+  id: '/warehouse-qc/',
+  path: '/warehouse-qc/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWarehouseIndexRoute = AppWarehouseIndexRouteImport.update({
+  id: '/warehouse/',
+  path: '/warehouse/',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -551,32 +551,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -586,11 +565,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/dashboard': {
@@ -600,193 +600,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/warehouse/': {
-      id: '/_app/warehouse/'
-      path: '/warehouse'
-      fullPath: '/warehouse/'
-      preLoaderRoute: typeof AppWarehouseIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/warehouse-qc/': {
-      id: '/_app/warehouse-qc/'
-      path: '/warehouse-qc'
-      fullPath: '/warehouse-qc/'
-      preLoaderRoute: typeof AppWarehouseQcIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/vendors/': {
-      id: '/_app/vendors/'
-      path: '/vendors'
-      fullPath: '/vendors/'
-      preLoaderRoute: typeof AppVendorsIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/users/': {
-      id: '/_app/users/'
-      path: '/users'
-      fullPath: '/users/'
-      preLoaderRoute: typeof AppUsersIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/tasks/': {
-      id: '/_app/tasks/'
-      path: '/tasks'
-      fullPath: '/tasks/'
-      preLoaderRoute: typeof AppTasksIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/skus/': {
-      id: '/_app/skus/'
-      path: '/skus'
-      fullPath: '/skus/'
-      preLoaderRoute: typeof AppSkusIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/sku-activity/': {
-      id: '/_app/sku-activity/'
-      path: '/sku-activity'
-      fullPath: '/sku-activity/'
-      preLoaderRoute: typeof AppSkuActivityIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/sharing/': {
-      id: '/_app/sharing/'
-      path: '/sharing'
-      fullPath: '/sharing/'
-      preLoaderRoute: typeof AppSharingIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/settings/': {
-      id: '/_app/settings/'
-      path: '/settings'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof AppSettingsIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/sample/': {
-      id: '/_app/sample/'
-      path: '/sample'
-      fullPath: '/sample/'
-      preLoaderRoute: typeof AppSampleIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/reports/': {
-      id: '/_app/reports/'
-      path: '/reports'
-      fullPath: '/reports/'
-      preLoaderRoute: typeof AppReportsIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/reimburse/': {
-      id: '/_app/reimburse/'
-      path: '/reimburse'
-      fullPath: '/reimburse/'
-      preLoaderRoute: typeof AppReimburseIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/purchase-orders/': {
-      id: '/_app/purchase-orders/'
-      path: '/purchase-orders'
-      fullPath: '/purchase-orders/'
-      preLoaderRoute: typeof AppPurchaseOrdersIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/production/': {
-      id: '/_app/production/'
-      path: '/production'
-      fullPath: '/production/'
-      preLoaderRoute: typeof AppProductionIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/production-remarks/': {
-      id: '/_app/production-remarks/'
-      path: '/production-remarks'
-      fullPath: '/production-remarks/'
-      preLoaderRoute: typeof AppProductionRemarksIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/procurement/': {
-      id: '/_app/procurement/'
-      path: '/procurement'
-      fullPath: '/procurement/'
-      preLoaderRoute: typeof AppProcurementIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/pm/': {
-      id: '/_app/pm/'
-      path: '/pm'
-      fullPath: '/pm/'
-      preLoaderRoute: typeof AppPmIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/npd/': {
-      id: '/_app/npd/'
-      path: '/npd'
-      fullPath: '/npd/'
-      preLoaderRoute: typeof AppNpdIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/mft/': {
-      id: '/_app/mft/'
-      path: '/mft'
-      fullPath: '/mft/'
-      preLoaderRoute: typeof AppMftIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/manufacturers/': {
-      id: '/_app/manufacturers/'
-      path: '/manufacturers'
-      fullPath: '/manufacturers/'
-      preLoaderRoute: typeof AppManufacturersIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/logistics/': {
-      id: '/_app/logistics/'
-      path: '/logistics'
-      fullPath: '/logistics/'
-      preLoaderRoute: typeof AppLogisticsIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/inventory/': {
-      id: '/_app/inventory/'
-      path: '/inventory'
-      fullPath: '/inventory/'
-      preLoaderRoute: typeof AppInventoryIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/imp-links/': {
-      id: '/_app/imp-links/'
-      path: '/imp-links'
-      fullPath: '/imp-links/'
-      preLoaderRoute: typeof AppImpLinksIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/forecast/': {
-      id: '/_app/forecast/'
-      path: '/forecast'
-      fullPath: '/forecast/'
-      preLoaderRoute: typeof AppForecastIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/follow-ups/': {
-      id: '/_app/follow-ups/'
-      path: '/follow-ups'
-      fullPath: '/follow-ups/'
-      preLoaderRoute: typeof AppFollowUpsIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/directory/': {
-      id: '/_app/directory/'
-      path: '/directory'
-      fullPath: '/directory/'
-      preLoaderRoute: typeof AppDirectoryIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/courier/': {
-      id: '/_app/courier/'
-      path: '/courier'
-      fullPath: '/courier/'
-      preLoaderRoute: typeof AppCourierIndexRouteImport
+    '/_app/analytics/': {
+      id: '/_app/analytics/'
+      path: '/analytics'
+      fullPath: '/analytics/'
+      preLoaderRoute: typeof AppAnalyticsIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/artwork/': {
@@ -796,46 +614,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppArtworkIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/analytics/': {
-      id: '/_app/analytics/'
-      path: '/analytics'
-      fullPath: '/analytics/'
-      preLoaderRoute: typeof AppAnalyticsIndexRouteImport
+    '/_app/courier/': {
+      id: '/_app/courier/'
+      path: '/courier'
+      fullPath: '/courier/'
+      preLoaderRoute: typeof AppCourierIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/vendors/$vendorId': {
-      id: '/_app/vendors/$vendorId'
-      path: '/vendors/$vendorId'
-      fullPath: '/vendors/$vendorId'
-      preLoaderRoute: typeof AppVendorsVendorIdRouteImport
+    '/_app/directory/': {
+      id: '/_app/directory/'
+      path: '/directory'
+      fullPath: '/directory/'
+      preLoaderRoute: typeof AppDirectoryIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/skus/$skuId': {
-      id: '/_app/skus/$skuId'
-      path: '/skus/$skuId'
-      fullPath: '/skus/$skuId'
-      preLoaderRoute: typeof AppSkusSkuIdRouteImport
+    '/_app/follow-ups/': {
+      id: '/_app/follow-ups/'
+      path: '/follow-ups'
+      fullPath: '/follow-ups/'
+      preLoaderRoute: typeof AppFollowUpsIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/purchase-orders/new': {
-      id: '/_app/purchase-orders/new'
-      path: '/purchase-orders/new'
-      fullPath: '/purchase-orders/new'
-      preLoaderRoute: typeof AppPurchaseOrdersNewRouteImport
+    '/_app/forecast/': {
+      id: '/_app/forecast/'
+      path: '/forecast'
+      fullPath: '/forecast/'
+      preLoaderRoute: typeof AppForecastIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/purchase-orders/$poId': {
-      id: '/_app/purchase-orders/$poId'
-      path: '/purchase-orders/$poId'
-      fullPath: '/purchase-orders/$poId'
-      preLoaderRoute: typeof AppPurchaseOrdersPoIdRouteImport
+    '/_app/imp-links/': {
+      id: '/_app/imp-links/'
+      path: '/imp-links'
+      fullPath: '/imp-links/'
+      preLoaderRoute: typeof AppImpLinksIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/pm/$pmId': {
-      id: '/_app/pm/$pmId'
-      path: '/pm/$pmId'
-      fullPath: '/pm/$pmId'
-      preLoaderRoute: typeof AppPmPmIdRouteImport
+    '/_app/inventory/': {
+      id: '/_app/inventory/'
+      path: '/inventory'
+      fullPath: '/inventory/'
+      preLoaderRoute: typeof AppInventoryIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/inventory/packaging': {
+      id: '/_app/inventory/packaging'
+      path: '/inventory/packaging'
+      fullPath: '/inventory/packaging'
+      preLoaderRoute: typeof AppInventoryPackagingRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/inventory/raw-materials': {
@@ -845,11 +670,186 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInventoryRawMaterialsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/inventory/packaging': {
-      id: '/_app/inventory/packaging'
-      path: '/inventory/packaging'
-      fullPath: '/inventory/packaging'
-      preLoaderRoute: typeof AppInventoryPackagingRouteImport
+    '/_app/logistics/': {
+      id: '/_app/logistics/'
+      path: '/logistics'
+      fullPath: '/logistics/'
+      preLoaderRoute: typeof AppLogisticsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/manufacturers/': {
+      id: '/_app/manufacturers/'
+      path: '/manufacturers'
+      fullPath: '/manufacturers/'
+      preLoaderRoute: typeof AppManufacturersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/mft/': {
+      id: '/_app/mft/'
+      path: '/mft'
+      fullPath: '/mft/'
+      preLoaderRoute: typeof AppMftIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/npd/': {
+      id: '/_app/npd/'
+      path: '/npd'
+      fullPath: '/npd/'
+      preLoaderRoute: typeof AppNpdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pm/': {
+      id: '/_app/pm/'
+      path: '/pm'
+      fullPath: '/pm/'
+      preLoaderRoute: typeof AppPmIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pm/$pmId': {
+      id: '/_app/pm/$pmId'
+      path: '/pm/$pmId'
+      fullPath: '/pm/$pmId'
+      preLoaderRoute: typeof AppPmPmIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/procurement/': {
+      id: '/_app/procurement/'
+      path: '/procurement'
+      fullPath: '/procurement/'
+      preLoaderRoute: typeof AppProcurementIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/production-remarks/': {
+      id: '/_app/production-remarks/'
+      path: '/production-remarks'
+      fullPath: '/production-remarks/'
+      preLoaderRoute: typeof AppProductionRemarksIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/production/': {
+      id: '/_app/production/'
+      path: '/production'
+      fullPath: '/production/'
+      preLoaderRoute: typeof AppProductionIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/purchase-orders/': {
+      id: '/_app/purchase-orders/'
+      path: '/purchase-orders'
+      fullPath: '/purchase-orders/'
+      preLoaderRoute: typeof AppPurchaseOrdersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/purchase-orders/$poId': {
+      id: '/_app/purchase-orders/$poId'
+      path: '/purchase-orders/$poId'
+      fullPath: '/purchase-orders/$poId'
+      preLoaderRoute: typeof AppPurchaseOrdersPoIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/purchase-orders/new': {
+      id: '/_app/purchase-orders/new'
+      path: '/purchase-orders/new'
+      fullPath: '/purchase-orders/new'
+      preLoaderRoute: typeof AppPurchaseOrdersNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reimburse/': {
+      id: '/_app/reimburse/'
+      path: '/reimburse'
+      fullPath: '/reimburse/'
+      preLoaderRoute: typeof AppReimburseIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reports/': {
+      id: '/_app/reports/'
+      path: '/reports'
+      fullPath: '/reports/'
+      preLoaderRoute: typeof AppReportsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sample/': {
+      id: '/_app/sample/'
+      path: '/sample'
+      fullPath: '/sample/'
+      preLoaderRoute: typeof AppSampleIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/': {
+      id: '/_app/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AppSettingsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sharing/': {
+      id: '/_app/sharing/'
+      path: '/sharing'
+      fullPath: '/sharing/'
+      preLoaderRoute: typeof AppSharingIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sku-activity/': {
+      id: '/_app/sku-activity/'
+      path: '/sku-activity'
+      fullPath: '/sku-activity/'
+      preLoaderRoute: typeof AppSkuActivityIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/skus/': {
+      id: '/_app/skus/'
+      path: '/skus'
+      fullPath: '/skus/'
+      preLoaderRoute: typeof AppSkusIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/skus/$skuId': {
+      id: '/_app/skus/$skuId'
+      path: '/skus/$skuId'
+      fullPath: '/skus/$skuId'
+      preLoaderRoute: typeof AppSkusSkuIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tasks/': {
+      id: '/_app/tasks/'
+      path: '/tasks'
+      fullPath: '/tasks/'
+      preLoaderRoute: typeof AppTasksIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/users/': {
+      id: '/_app/users/'
+      path: '/users'
+      fullPath: '/users/'
+      preLoaderRoute: typeof AppUsersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/vendors/': {
+      id: '/_app/vendors/'
+      path: '/vendors'
+      fullPath: '/vendors/'
+      preLoaderRoute: typeof AppVendorsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/vendors/$vendorId': {
+      id: '/_app/vendors/$vendorId'
+      path: '/vendors/$vendorId'
+      fullPath: '/vendors/$vendorId'
+      preLoaderRoute: typeof AppVendorsVendorIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/warehouse-qc/': {
+      id: '/_app/warehouse-qc/'
+      path: '/warehouse-qc'
+      fullPath: '/warehouse-qc/'
+      preLoaderRoute: typeof AppWarehouseQcIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/warehouse/': {
+      id: '/_app/warehouse/'
+      path: '/warehouse'
+      fullPath: '/warehouse/'
+      preLoaderRoute: typeof AppWarehouseIndexRouteImport
       parentRoute: typeof AppRoute
     }
   }
