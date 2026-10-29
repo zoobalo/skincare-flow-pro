@@ -43,26 +43,37 @@ export const exportRoutes = new Hono()
     // Collected first, so every image can be fetched in one pass before the
     // workbooks are written.
     const sections: {
-      name: string;
+      file: string;
+      sheet: string;
       rows: Record<string, unknown>[];
       columns: Column[];
       imagesOf?: (row: Record<string, unknown>) => string[];
     }[] = [];
 
+    /**
+     * `name` is the workbook, or "workbook/tab" to put a table alongside a
+     * related one — the vendor quotations belong with the NPD records, not in
+     * a file of their own that is easy to miss.
+     */
     const add = (
       name: string,
       rows: Record<string, unknown>[],
       columns: string[],
       imagesOf?: (row: Record<string, unknown>) => string[],
     ) => {
+      const [file, sheet = file] = name.split("/");
       sections.push({
-        name,
+        file,
+        sheet,
         rows,
         columns: columns.map((k) => ({ key: k, header: label(k) })),
         imagesOf,
       });
       rows.forEach((r) => collectUrls(r, urls));
-      manifest.push(`${name}.xlsx — ${rows.length} row${rows.length === 1 ? "" : "s"}`);
+      manifest.push(
+        `${file}.xlsx${sheet === file ? "" : ` · “${sheet}” tab`}` +
+        ` — ${rows.length} row${rows.length === 1 ? "" : "s"}`,
+      );
     };
 
     // ── SKU management ──────────────────────────────────────────────────────
@@ -139,7 +150,7 @@ export const exportRoutes = new Hono()
     const KIND = { RM: "Raw Material", PM: "Packaging Material" } as const;
 
     // What vendors sent back, one row per submission.
-    add("npd-vendor-quotations",
+    add("new-product-development/vendor-quotations",
       quotes
         .map((q) => {
           const r = requestById.get(q.requestId);
@@ -164,7 +175,7 @@ export const exportRoutes = new Hono()
       (r) => (Array.isArray(r.images) ? r.images.filter((u): u is string => typeof u === "string") : []));
 
     // The requests themselves, so a closed or unanswered one still leaves a trace.
-    add("npd-quotation-requests",
+    add("new-product-development/quotation-requests",
       requests.map((r) => ({
         npdName: npdName.get(r.npdId) ?? "",
         material: KIND[r.kind as "RM" | "PM"] ?? r.kind,
@@ -210,13 +221,22 @@ export const exportRoutes = new Hono()
     // ── Images ──────────────────────────────────────────────────────────────
     const cache = withImages ? await fetchImages(urls) : new Map();
 
+    const byFile = new Map<string, typeof sections>();
     for (const sec of sections) {
+      const group = byFile.get(sec.file) ?? [];
+      group.push(sec);
+      byFile.set(sec.file, group);
+    }
+
+    for (const [file, group] of byFile) {
       const wb = new ExcelJS.Workbook();
       wb.creator = "Zoobalo";
       wb.created = new Date();
-      addSheet(wb, sec.name, sec.rows, sec.columns,
-        sec.imagesOf && withImages ? { imagesOf: sec.imagesOf, cache } : {});
-      zip.file(`${sec.name}.xlsx`, await wb.xlsx.writeBuffer());
+      for (const sec of group) {
+        addSheet(wb, sec.sheet, sec.rows, sec.columns,
+          sec.imagesOf && withImages ? { imagesOf: sec.imagesOf, cache } : {});
+      }
+      zip.file(`${file}.xlsx`, await wb.xlsx.writeBuffer());
     }
 
     let saved = 0;
@@ -241,8 +261,10 @@ export const exportRoutes = new Hono()
         ? `  images/ — ${saved} file${saved === 1 ? "" : "s"}${failed > 0 ? ` (${failed} could not be fetched)` : ""}`
         : `  images/ — skipped (exported without images)`,
       ``,
-      `Each .xlsx opens in Excel. Where a record has pictures they are embedded`,
-      `in the Picture column beside the row; the same files are also in images/.`,
+      `Each .xlsx opens in Excel. Some hold more than one tab — what vendors`,
+      `quoted sits beside the NPD records, on the tabs along the bottom edge.`,
+      `Where a record has pictures they are embedded in the Picture column`,
+      `beside the row; the same files are also in images/.`,
       `Follow ups are personal to each user; this file holds ${user.email ?? "this account"}'s only.`,
     ].join("\n"));
 
