@@ -16,6 +16,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as QuoteTokenRouteImport } from './routes/quote.$token'
 import { Route as AppAnalyticsIndexRouteImport } from './routes/_app/analytics/index'
 import { Route as AppArtworkIndexRouteImport } from './routes/_app/artwork/index'
 import { Route as AppCourierIndexRouteImport } from './routes/_app/courier/index'
@@ -86,6 +87,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AppRoute,
+} as any)
+const QuoteTokenRoute = QuoteTokenRouteImport.update({
+  id: '/quote/$token',
+  path: '/quote/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppAnalyticsIndexRoute = AppAnalyticsIndexRouteImport.update({
   id: '/analytics/',
@@ -277,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AppDashboardRoute
+  '/quote/$token': typeof QuoteTokenRoute
   '/inventory/packaging': typeof AppInventoryPackagingRoute
   '/inventory/raw-materials': typeof AppInventoryRawMaterialsRoute
   '/pm/$pmId': typeof AppPmPmIdRoute
@@ -321,6 +328,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AppDashboardRoute
+  '/quote/$token': typeof QuoteTokenRoute
   '/inventory/packaging': typeof AppInventoryPackagingRoute
   '/inventory/raw-materials': typeof AppInventoryRawMaterialsRoute
   '/pm/$pmId': typeof AppPmPmIdRoute
@@ -367,6 +375,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/quote/$token': typeof QuoteTokenRoute
   '/_app/inventory/packaging': typeof AppInventoryPackagingRoute
   '/_app/inventory/raw-materials': typeof AppInventoryRawMaterialsRoute
   '/_app/pm/$pmId': typeof AppPmPmIdRoute
@@ -413,6 +422,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard'
+    | '/quote/$token'
     | '/inventory/packaging'
     | '/inventory/raw-materials'
     | '/pm/$pmId'
@@ -457,6 +467,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard'
+    | '/quote/$token'
     | '/inventory/packaging'
     | '/inventory/raw-materials'
     | '/pm/$pmId'
@@ -502,6 +513,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/_app/dashboard'
+    | '/quote/$token'
     | '/_app/inventory/packaging'
     | '/_app/inventory/raw-materials'
     | '/_app/pm/$pmId'
@@ -547,6 +559,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  QuoteTokenRoute: typeof QuoteTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -599,6 +612,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/quote/$token': {
+      id: '/quote/$token'
+      path: '/quote/$token'
+      fullPath: '/quote/$token'
+      preLoaderRoute: typeof QuoteTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/analytics/': {
       id: '/_app/analytics/'
@@ -944,6 +964,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  QuoteTokenRoute: QuoteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

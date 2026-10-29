@@ -316,6 +316,22 @@ export type ApiForecast = {
 
 export type ApiSheetImport = { updated: number; skipped: string[]; ambiguous: string[]; weekEnding?: string };
 
+export type ApiNpdQuote = {
+  id: string; requestId: string; partyName: string; leadTime: string;
+  cost: string | null; description: string; images: string[]; submittedAt: string;
+};
+
+export type ApiNpdQuoteRequest = {
+  id: string; npdId: string; kind: "RM" | "PM"; token: string;
+  brief: string; status: "open" | "closed";
+  quotes: ApiNpdQuote[]; createdAt: string; updatedAt: string;
+};
+
+/** What a vendor sees on the public link — deliberately minimal. */
+export type ApiPublicQuoteRequest = {
+  npdName: string; kind: "RM" | "PM"; brief: string; status: "open" | "closed";
+};
+
 export type ApiArtworkNote = {
   id: string; artworkId: string; text: string;
   authorId: string | null; authorName: string | null; createdAt: string;
@@ -728,6 +744,31 @@ export const api = {
       send<{ skus: number; locations: number }>(`/forecast/stock/template${sharedQs(sharedTeamId)}`, "POST", {}),
     stockImport: (sharedTeamId?: string) =>
       send<ApiSheetImport>(`/forecast/stock/import${sharedQs(sharedTeamId)}`, "POST", {}),
+  },
+
+  npdQuotes: {
+    list: (sharedTeamId?: string) =>
+      get<ApiNpdQuoteRequest[]>(`/npd/quote-requests${sharedQs(sharedTeamId)}`),
+    open: (npdId: string, kind: "RM" | "PM", brief: string, sharedTeamId?: string) =>
+      send<ApiNpdQuoteRequest>(`/npd/${npdId}/quote-requests${sharedQs(sharedTeamId)}`, "POST", { kind, brief }),
+    update: (
+      requestId: string,
+      data: { brief?: string; status?: "open" | "closed"; rotateToken?: boolean },
+      sharedTeamId?: string,
+    ) => send<ApiNpdQuoteRequest>(`/npd/quote-requests/${requestId}${sharedQs(sharedTeamId)}`, "PATCH", data),
+    remove: (requestId: string, sharedTeamId?: string) =>
+      send<{ ok: true }>(`/npd/quote-requests/${requestId}${sharedQs(sharedTeamId)}`, "DELETE"),
+    removeQuote: (quoteId: string, sharedTeamId?: string) =>
+      send<{ ok: true }>(`/npd/quotes/${quoteId}${sharedQs(sharedTeamId)}`, "DELETE"),
+  },
+
+  /** Unauthenticated — used only by the public vendor page. */
+  publicQuote: {
+    get: (token: string) => get<ApiPublicQuoteRequest>(`/public/quotes/${token}`),
+    submit: (token: string, data: {
+      partyName: string; leadTime: string; cost: string; description: string; images: string[];
+    }) => send<{ ok: true; submittedAt: string }>(`/public/quotes/${token}`, "POST", data),
+    uploadUrl: (token: string) => `${BASE}/public/quotes/${token}/upload`,
   },
 
   artwork: {

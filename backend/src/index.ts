@@ -17,6 +17,8 @@ import { procurementRoutes } from "./modules/procurement/routes.ts";
 import { uploadRoutes } from "./modules/upload/routes.ts";
 import { taskRoutes } from "./modules/tasks/routes.ts";
 import { npdRoutes } from "./modules/npd/routes.ts";
+import { npdQuoteRoutes } from "./modules/npd/quote-routes.ts";
+import { publicQuoteRoutes } from "./modules/public-quotes/routes.ts";
 import { productionRemarkRoutes } from "./modules/production-remarks/routes.ts";
 import { directoryRoutes } from "./modules/directory/routes.ts";
 import { followUpRoutes } from "./modules/follow-ups/routes.ts";
@@ -58,10 +60,14 @@ app.get("/health", (c) => c.json({ ok: true, timestamp: new Date().toISOString()
 
 // Public routes (no token required)
 app.route("/auth",   authRoutes);
-app.route("/upload", uploadRoutes);
+// Vendor quotation links: no login, the URL token is the credential.
+app.route("/public/quotes", publicQuoteRoutes);
 
 // All other routes require a valid JWT
 app.use("*", requireAuth);
+
+// Uploads require a session. Vendors use the token-scoped route above.
+app.route("/upload", uploadRoutes);
 
 app.route("/vendors",            vendorRoutes);
 app.route("/manufacturers",      manufacturerRoutes);
@@ -75,6 +81,7 @@ app.route("/dashboard",          dashboardRoutes);
 app.route("/users",              userRoutes);
 app.route("/procurement",        procurementRoutes);
 app.route("/tasks",              taskRoutes);
+app.route("/npd",                npdQuoteRoutes);
 app.route("/npd",                npdRoutes);
 app.route("/production-remarks", productionRemarkRoutes);
 app.route("/directory",          directoryRoutes);

@@ -1,7 +1,8 @@
 import { PageSkeleton } from "@/components/page-skeleton";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
-import { api, type ApiNpd, type ApiNpdImageGroup } from "@/lib/api";
+import { NpdQuotations } from "@/components/npd-quotations";
+import { api, type ApiNpdQuoteRequest, type ApiNpd, type ApiNpdImageGroup } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +17,11 @@ export const Route = createFileRoute("/_app/npd/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
     const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
-    return { items: await api.npd.list(sharedTeamId), sharedTeamId };
+    const [items, quoteRequests] = await Promise.all([
+      api.npd.list(sharedTeamId),
+      api.npdQuotes.list(sharedTeamId).catch(() => []),
+    ]);
+    return { items, quoteRequests, sharedTeamId };
   },
   pendingComponent: PageSkeleton,
   component: NpdPage,
@@ -197,10 +202,12 @@ function Lightbox({ lightbox, onClose, onPrev, onNext }: {
 function NpdPage() {
   const loaderData = Route.useLoaderData();
   if (!loaderData) return <PageSkeleton />;
-  return <NpdContent rawItems={loaderData.items} sharedTeamId={loaderData.sharedTeamId} />;
+  return <NpdContent rawItems={loaderData.items} quoteRequests={loaderData.quoteRequests} sharedTeamId={loaderData.sharedTeamId} />;
 }
 
-function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeamId?: string }) {
+function NpdContent({ rawItems, quoteRequests, sharedTeamId }: {
+  rawItems: ApiNpd[]; quoteRequests: ApiNpdQuoteRequest[]; sharedTeamId?: string;
+}) {
   const [search, setSearch] = useState("");
   const allItems = rawItems.map((item) => ({ ...item, images: normalizeImageGroups(item.images) }));
   const items = allItems.filter((item) => {
@@ -395,7 +402,8 @@ function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeam
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
-            <div key={item.id} className="rounded-xl border bg-card p-4 flex gap-6 items-start">
+            <div key={item.id} className="rounded-xl border bg-card p-4">
+              <div className="flex gap-6 items-start">
 
               {/* Col 1 — Name + launch + actions */}
               <div className="w-52 shrink-0 space-y-1">
@@ -489,7 +497,14 @@ function NpdContent({ rawItems, sharedTeamId }: { rawItems: ApiNpd[]; sharedTeam
                   <span className="text-muted-foreground">—</span>
                 )}
               </div>
+              </div>
 
+              <NpdQuotations
+                npdId={item.id}
+                requests={quoteRequests.filter((r) => r.npdId === item.id)}
+                sharedTeamId={sharedTeamId}
+                onChanged={reload}
+              />
             </div>
           ))}
         </div>

@@ -7,6 +7,7 @@ export * from "./shipments.ts";
 export * from "./users.ts";
 export * from "./tasks.ts";
 export * from "./npd.ts";
+export * from "./npd-quotes.ts";
 export * from "./production-remarks.ts";
 export * from "./artwork.ts";
 export * from "./directory.ts";
