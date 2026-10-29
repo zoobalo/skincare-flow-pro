@@ -173,6 +173,25 @@ function QuoteForm({ request, token }: { request: ApiPublicQuoteRequest; token: 
         ) : (
           <p className="mt-3 text-sm italic text-muted-foreground">No further details provided.</p>
         )}
+
+        {request.images.length > 0 && (
+          <div className="mt-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Reference image{request.images.length === 1 ? "" : "s"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {request.images.map((src) => (
+                <a key={src} href={src} target="_blank" rel="noopener noreferrer" title="Open full size">
+                  <img
+                    src={src}
+                    alt="Reference"
+                    className="h-24 w-24 rounded-lg border object-cover transition-opacity hover:opacity-80"
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Their quotation */}

@@ -167,7 +167,7 @@ function NewPOWizardInner({ skus, vendors, manufacturers, remarks, pos }: Loader
         });
         const body = await res.json();
         if (!res.ok) throw new Error(body.error ?? "Upload failed");
-        return `${API_BASE}${body.url}` as string;
+        return body.url as string;
       }));
       setImages(prev => [...prev, ...urls]);
     } catch {

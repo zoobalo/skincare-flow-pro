@@ -52,7 +52,7 @@ function MultiImageUpload({ images, onChange }: { images: string[]; onChange: (u
         const res  = await fetch(`${API_BASE}/api/upload`, { method: "POST", body: fd });
         const body = await res.json();
         if (!res.ok) { toast.error(body.error ?? "Upload failed"); continue; }
-        newUrls.push(`${API_BASE}${body.url}`);
+        newUrls.push(body.url);
       }
       if (newUrls.length) onChange([...images, ...newUrls]);
     } finally {

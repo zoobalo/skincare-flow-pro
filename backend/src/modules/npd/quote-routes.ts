@@ -37,14 +37,17 @@ export const npdQuoteRoutes = new Hono()
     const kind = String(body.kind ?? "");
     if (!isQuoteKind(kind)) return c.json({ error: "kind must be RM or PM" }, 400);
     const brief = typeof body.brief === "string" ? body.brief : "";
+    const images = Array.isArray(body.images)
+      ? body.images.filter((x: unknown): x is string => typeof x === "string").slice(0, 8)
+      : [];
 
     const existing = await findRequest(parent.id, kind);
     if (existing) {
-      const [updated] = await updateRequest(existing.id, { brief });
+      const [updated] = await updateRequest(existing.id, { brief, images });
       return c.json({ ...updated, quotes: existing.quotes });
     }
     const [created] = await createRequest({
-      id: crypto.randomUUID(), npdId: parent.id, kind, token: newToken(), brief, teamId,
+      id: crypto.randomUUID(), npdId: parent.id, kind, token: newToken(), brief, images, teamId,
     });
     return c.json({ ...created, quotes: [] }, 201);
   })
@@ -64,6 +67,9 @@ export const npdQuoteRoutes = new Hono()
     const body = await c.req.json();
     const data: Record<string, unknown> = {};
     if (typeof body.brief === "string") data.brief = body.brief;
+    if (Array.isArray(body.images)) {
+      data.images = body.images.filter((x: unknown): x is string => typeof x === "string").slice(0, 8);
+    }
     if (body.status === "open" || body.status === "closed") data.status = body.status;
     // Rotating the token kills links already sent — only on explicit request.
     if (body.rotateToken === true) data.token = newToken();

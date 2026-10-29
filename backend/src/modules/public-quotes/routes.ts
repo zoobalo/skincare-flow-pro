@@ -38,6 +38,7 @@ export const publicQuoteRoutes = new Hono()
       npdName: req.npdName,
       kind: req.kind,
       brief: req.brief,
+      images: req.images,
       status: req.status,
     });
   })

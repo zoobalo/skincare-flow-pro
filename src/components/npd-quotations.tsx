@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { api, type ApiNpdQuoteRequest } from "@/lib/api";
 import {
-  Link2, Copy, Check, ChevronDown, Trash2, Lock, Unlock, Send, Loader2,
+  Link2, Copy, Check, ChevronDown, Trash2, Lock, Unlock, Send, Loader2, ImagePlus, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const KIND_LABEL = { RM: "Raw Material", PM: "Packaging Material" } as const;
+const MAX_REF_IMAGES = 8;
+const API_BASE = `${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}`;
 
 const fmtCost = (c: string | null) =>
   c === null || c === "" ? "—" : Number(c).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -72,7 +74,9 @@ function KindPanel({
   onChanged: () => void;
 }) {
   const [brief, setBrief] = useState(request?.brief ?? "");
+  const [images, setImages] = useState<string[]>(request?.images ?? []);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const link = request ? `${window.location.origin}/quote/${request.token}` : "";
@@ -81,12 +85,39 @@ function KindPanel({
     if (!brief.trim()) { toast.error("Describe what you need before sharing a link."); return; }
     setBusy(true);
     try {
-      await api.npdQuotes.open(npdId, kind, brief.trim(), sharedTeamId);
+      await api.npdQuotes.open(npdId, kind, brief.trim(), images, sharedTeamId);
       toast.success(request ? "Requirement updated." : "Link created — share it with your vendors.");
       onChanged();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save.");
     } finally { setBusy(false); }
+  }
+
+  async function addImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+    if (images.length + files.length > MAX_REF_IMAGES) {
+      toast.error(`Up to ${MAX_REF_IMAGES} reference images.`);
+      return;
+    }
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("zoobalo_token");
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch(`${API_BASE}/api/upload`, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) { toast.error(json?.error ?? "Upload failed."); continue; }
+        setImages((prev) => [...prev, json.url]);
+      }
+      toast.message("Image added — press Update to save it to the requirement.");
+    } finally { setUploading(false); }
   }
 
   async function copyLink() {
@@ -153,8 +184,33 @@ function KindPanel({
         onChange={(e) => setBrief(e.target.value)}
       />
 
+      {images.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {images.map((src) => (
+            <div key={src} className="relative">
+              <img src={src} alt="" className="h-14 w-14 rounded border object-cover" />
+              <button
+                type="button"
+                onClick={() => setImages((p) => p.filter((x) => x !== src))}
+                className="absolute -right-1.5 -top-1.5 rounded-full border bg-background p-0.5 shadow-sm"
+                aria-label="Remove reference image"
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <Button size="sm" className="h-7 text-xs" onClick={save} disabled={busy}>
+        {images.length < MAX_REF_IMAGES && (
+          <label className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border px-2 text-xs hover:bg-muted">
+            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
+            {uploading ? "Uploading…" : "Reference image"}
+            <input type="file" accept="image/*" multiple className="hidden" onChange={addImages} disabled={uploading} />
+          </label>
+        )}
+        <Button size="sm" className="h-7 text-xs" onClick={save} disabled={busy || uploading}>
           {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Link2 className="mr-1 h-3 w-3" />}
           {request ? "Update" : "Create link"}
         </Button>

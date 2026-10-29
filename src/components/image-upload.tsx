@@ -42,7 +42,7 @@ export function ImageUpload({ value, onChange }: Props) {
       });
       const body = await res.json();
       if (!res.ok) { setError(body.error ?? "Upload failed."); return; }
-      onChange(`${API_BASE}${body.url}`);
+      onChange(body.url);
     } catch {
       setError("Upload failed. Please try again.");
     } finally {

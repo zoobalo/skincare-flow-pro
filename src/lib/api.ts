@@ -323,13 +323,13 @@ export type ApiNpdQuote = {
 
 export type ApiNpdQuoteRequest = {
   id: string; npdId: string; kind: "RM" | "PM"; token: string;
-  brief: string; status: "open" | "closed";
+  brief: string; images: string[]; status: "open" | "closed";
   quotes: ApiNpdQuote[]; createdAt: string; updatedAt: string;
 };
 
 /** What a vendor sees on the public link — deliberately minimal. */
 export type ApiPublicQuoteRequest = {
-  npdName: string; kind: "RM" | "PM"; brief: string; status: "open" | "closed";
+  npdName: string; kind: "RM" | "PM"; brief: string; images: string[]; status: "open" | "closed";
 };
 
 export type ApiArtworkNote = {
@@ -749,11 +749,11 @@ export const api = {
   npdQuotes: {
     list: (sharedTeamId?: string) =>
       get<ApiNpdQuoteRequest[]>(`/npd/quote-requests${sharedQs(sharedTeamId)}`),
-    open: (npdId: string, kind: "RM" | "PM", brief: string, sharedTeamId?: string) =>
-      send<ApiNpdQuoteRequest>(`/npd/${npdId}/quote-requests${sharedQs(sharedTeamId)}`, "POST", { kind, brief }),
+    open: (npdId: string, kind: "RM" | "PM", brief: string, images: string[], sharedTeamId?: string) =>
+      send<ApiNpdQuoteRequest>(`/npd/${npdId}/quote-requests${sharedQs(sharedTeamId)}`, "POST", { kind, brief, images }),
     update: (
       requestId: string,
-      data: { brief?: string; status?: "open" | "closed"; rotateToken?: boolean },
+      data: { brief?: string; images?: string[]; status?: "open" | "closed"; rotateToken?: boolean },
       sharedTeamId?: string,
     ) => send<ApiNpdQuoteRequest>(`/npd/quote-requests/${requestId}${sharedQs(sharedTeamId)}`, "PATCH", data),
     remove: (requestId: string, sharedTeamId?: string) =>

@@ -17,6 +17,8 @@ export const npdQuoteRequests = pgTable("npd_quote_requests", {
   token:     text("token").notNull().unique(),
   brief:     text("brief").notNull().default(""),    // our requirements, shown to vendors
   status:    text("status").notNull().default("open"), // 'open' | 'closed'
+  // Reference images shown to vendors alongside the brief.
+  images:    text("images").array().notNull().default(sql`ARRAY[]::text[]`),
   teamId:    text("team_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

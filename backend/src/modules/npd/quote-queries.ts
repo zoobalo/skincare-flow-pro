@@ -46,6 +46,7 @@ export async function getByToken(token: string) {
       id: npdQuoteRequests.id,
       kind: npdQuoteRequests.kind,
       brief: npdQuoteRequests.brief,
+      images: npdQuoteRequests.images,
       status: npdQuoteRequests.status,
       npdName: npd.name,
     })
