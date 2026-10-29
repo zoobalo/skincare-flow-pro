@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,14 +9,9 @@ import { CheckCircle2, Upload, X, Loader2, FileQuestion } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/quote/$token")({
-  loader: async ({ params }) => {
-    if (typeof window === "undefined") return null;
-    try {
-      return { request: await api.publicQuote.get(params.token), token: params.token };
-    } catch {
-      return { request: null, token: params.token };
-    }
-  },
+  // No loader on purpose. A loader that returns null during server rendering
+  // is reused on hydration rather than re-run, which left this page stuck on
+  // "Loading" for anyone opening the link cold — which is every vendor.
   component: QuotePage,
   head: () => ({ meta: [{ title: "Submit a quotation — Zoobalo" }] }),
 });
@@ -24,12 +19,23 @@ export const Route = createFileRoute("/quote/$token")({
 const MAX_IMAGES = 6;
 
 function QuotePage() {
-  const data = Route.useLoaderData();
-  // Server render has no data (the API client is browser-only), so show a
-  // placeholder rather than a blank page — this link goes to outsiders.
-  if (!data) return <Loading />;
-  if (!data.request) return <Invalid />;
-  return <QuoteForm request={data.request} token={data.token} />;
+  const { token } = Route.useParams();
+  const [state, setState] = useState<
+    { status: "loading" } | { status: "invalid" } | { status: "ready"; request: ApiPublicQuoteRequest }
+  >({ status: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+    api.publicQuote
+      .get(token)
+      .then((request) => { if (!cancelled) setState({ status: "ready", request }); })
+      .catch(() => { if (!cancelled) setState({ status: "invalid" }); });
+    return () => { cancelled = true; };
+  }, [token]);
+
+  if (state.status === "loading") return <Loading />;
+  if (state.status === "invalid") return <Invalid />;
+  return <QuoteForm request={state.request} token={token} />;
 }
 
 function Loading() {
