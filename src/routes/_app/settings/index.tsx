@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
+import { DataExport } from "@/components/data-export";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +24,11 @@ function SettingsPage() {
           <TabsTrigger value="company">Company</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsTrigger value="backup">Backup</TabsTrigger>
         </TabsList>
+        <TabsContent value="backup" className="mt-4">
+          <DataExport />
+        </TabsContent>
         <TabsContent value="profile" className="mt-4">
           <div className="grid max-w-xl gap-4 rounded-xl border bg-card p-5">
             <div className="grid grid-cols-2 gap-3">
