@@ -58,8 +58,8 @@ export function DataExport() {
       <div>
         <h3 className="text-sm font-semibold">Download a copy of your data</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          A zip of CSV files you can open in Excel, so a copy of your records lives somewhere
-          other than this platform.
+          A zip of Excel workbooks, one per section, with product pictures embedded beside the
+          rows they belong to — so a copy of your records lives somewhere other than this platform.
         </p>
       </div>
 
@@ -77,13 +77,13 @@ export function DataExport() {
         </Button>
         <Button variant="outline" onClick={() => download(false)} disabled={busy !== null}>
           {busy === "csv" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <FileText className="mr-1.5 h-4 w-4" />}
-          {busy === "csv" ? "Preparing…" : "CSVs only"}
+          {busy === "csv" ? "Preparing…" : "Without images"}
         </Button>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        With images is the full backup and takes a minute or two. CSVs only is quick, but the
-        image columns will hold links rather than the pictures themselves.
+        With images embeds the pictures in each workbook and includes the image files too.
+        Without images is quicker, and the image columns still hold their links.
         Follow ups are personal to each account, so yours are the ones exported.
       </p>
     </div>

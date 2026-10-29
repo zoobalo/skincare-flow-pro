@@ -3,7 +3,9 @@ import JSZip from "jszip";
 import { db } from "../../db/client.ts";
 import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
-import { toCsv, collectUrls } from "./csv.ts";
+import ExcelJS from "exceljs";
+import { collectUrls } from "./csv.ts";
+import { addSheet, fetchImages, type Column } from "./workbook.ts";
 import { skus, skuDispatches, skuInventoryLocations } from "../../db/schema/skus.ts";
 import { skuComments } from "../../db/schema/sku-comments.ts";
 import { vendors } from "../../db/schema/vendors.ts";
@@ -14,6 +16,10 @@ import { npd } from "../../db/schema/npd.ts";
 import { followUpContacts, followUpTasks } from "../../db/schema/follow-ups.ts";
 import { skuSalesWeekly } from "../../db/schema/sales.ts";
 import { eq, inArray } from "drizzle-orm";
+
+/** "contactPerson" -> "Contact Person" */
+const label = (k: string) =>
+  k.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (m) => m.toUpperCase());
 
 const stamp = () => new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
 
@@ -33,10 +39,29 @@ export const exportRoutes = new Hono()
     const urls = new Set<string>();
     const manifest: string[] = [];
 
-    const add = (name: string, rows: Record<string, unknown>[], columns: string[]) => {
-      zip.file(`${name}.csv`, toCsv(rows, columns));
+    // Collected first, so every image can be fetched in one pass before the
+    // workbooks are written.
+    const sections: {
+      name: string;
+      rows: Record<string, unknown>[];
+      columns: Column[];
+      imagesOf?: (row: Record<string, unknown>) => string[];
+    }[] = [];
+
+    const add = (
+      name: string,
+      rows: Record<string, unknown>[],
+      columns: string[],
+      imagesOf?: (row: Record<string, unknown>) => string[],
+    ) => {
+      sections.push({
+        name,
+        rows,
+        columns: columns.map((k) => ({ key: k, header: label(k) })),
+        imagesOf,
+      });
       rows.forEach((r) => collectUrls(r, urls));
-      manifest.push(`${name}.csv — ${rows.length} row${rows.length === 1 ? "" : "s"}`);
+      manifest.push(`${name}.xlsx — ${rows.length} row${rows.length === 1 ? "" : "s"}`);
     };
 
     // ── SKU management ──────────────────────────────────────────────────────
@@ -45,7 +70,7 @@ export const exportRoutes = new Hono()
       "code", "name", "category", "type", "description", "image", "manufacturerId",
       "currentInventory", "minThreshold", "productionTimelineDays", "mrp", "usp",
       "importantLinks", "createdAt", "updatedAt",
-    ]);
+    ], (r) => (typeof r.image === "string" && r.image.startsWith("http") ? [r.image] : []));
     const skuIds = skuRows.map((s) => s.id);
     const skuName = new Map(skuRows.map((s) => [s.id, s.name]));
 
@@ -88,7 +113,16 @@ export const exportRoutes = new Hono()
 
     // ── New product development ─────────────────────────────────────────────
     add("new-product-development", await db.select().from(npd).where(eq(npd.teamId, teamId)),
-      ["name", "launchMonth", "rmStatus", "pmStatus", "images", "comments", "createdAt", "updatedAt"]);
+      ["name", "launchMonth", "rmStatus", "pmStatus", "images", "comments", "createdAt", "updatedAt"],
+      (r) => {
+        const out: string[] = [];
+        collectUrls(r.images, new Set()); // keeps the shape explicit
+        const groups = Array.isArray(r.images) ? r.images : [];
+        for (const g of groups) {
+          for (const u of (g?.images ?? [])) if (typeof u === "string") out.push(u);
+        }
+        return out;
+      });
 
     // ── Follow ups (personal to the signed-in user) ─────────────────────────
     const contacts = await db.select().from(followUpContacts).where(eq(followUpContacts.ownerUserId, user.sub));
@@ -118,20 +152,27 @@ export const exportRoutes = new Hono()
       ["skuName", "name", "quantity", "updatedAt"]);
 
     // ── Images ──────────────────────────────────────────────────────────────
-    let saved = 0, failed = 0;
+    const cache = withImages ? await fetchImages(urls) : new Map();
+
+    for (const sec of sections) {
+      const wb = new ExcelJS.Workbook();
+      wb.creator = "Zoobalo";
+      wb.created = new Date();
+      addSheet(wb, sec.name, sec.rows, sec.columns,
+        sec.imagesOf && withImages ? { imagesOf: sec.imagesOf, cache } : {});
+      zip.file(`${sec.name}.xlsx`, await wb.xlsx.writeBuffer());
+    }
+
+    let saved = 0;
     if (withImages) {
-      const list = [...urls].filter((u) => /\.(jpe?g|png|webp|gif)(\?|$)/i.test(u));
-      for (const url of list) {
-        try {
-          const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
-          if (!res.ok) { failed++; continue; }
-          const name = decodeURIComponent(url.split("/").pop()?.split("?")[0] ?? "");
-          if (!name) { failed++; continue; }
-          zip.file(`images/${name}`, new Uint8Array(await res.arrayBuffer()));
-          saved++;
-        } catch { failed++; }
+      for (const [url, img] of cache) {
+        const name = decodeURIComponent(url.split("/").pop()?.split("?")[0] ?? "");
+        if (!name) continue;
+        zip.file(`images/${name}`, img.buffer);
+        saved++;
       }
     }
+    const failed = withImages ? [...urls].filter((u) => /\.(jpe?g|png|webp|gif)(\?|$)/i.test(u)).length - saved : 0;
 
     zip.file("README.txt", [
       `Zoobalo data export`,
@@ -141,10 +182,11 @@ export const exportRoutes = new Hono()
       `Files:`,
       ...manifest.map((m) => `  ${m}`),
       withImages
-        ? `  images/ — ${saved} file${saved === 1 ? "" : "s"}${failed ? ` (${failed} could not be fetched)` : ""}`
-        : `  images/ — skipped (requested without images)`,
+        ? `  images/ — ${saved} file${saved === 1 ? "" : "s"}${failed > 0 ? ` (${failed} could not be fetched)` : ""}`
+        : `  images/ — skipped (exported without images)`,
       ``,
-      `CSVs are UTF-8 with a byte-order mark, so Excel opens them correctly.`,
+      `Each .xlsx opens in Excel. Where a record has pictures they are embedded`,
+      `in the Picture column beside the row; the same files are also in images/.`,
       `Follow ups are personal to each user; this file holds ${user.email ?? "this account"}'s only.`,
     ].join("\n"));
 
