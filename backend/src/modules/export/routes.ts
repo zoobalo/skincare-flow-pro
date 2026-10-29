@@ -13,6 +13,7 @@ import { manufacturers } from "../../db/schema/manufacturers.ts";
 import { directory } from "../../db/schema/directory.ts";
 import { impLinks } from "../../db/schema/imp-links.ts";
 import { npd } from "../../db/schema/npd.ts";
+import { npdQuoteRequests, npdQuotes } from "../../db/schema/npd-quotes.ts";
 import { followUpContacts, followUpTasks } from "../../db/schema/follow-ups.ts";
 import { skuSalesWeekly } from "../../db/schema/sales.ts";
 import { eq, inArray } from "drizzle-orm";
@@ -123,6 +124,61 @@ export const exportRoutes = new Hono()
         }
         return out;
       });
+
+    // ── NPD vendor quotations ───────────────────────────────────────────────
+    const requests = await db.select().from(npdQuoteRequests).where(eq(npdQuoteRequests.teamId, teamId));
+    const npdName = new Map(
+      (await db.select({ id: npd.id, name: npd.name }).from(npd).where(eq(npd.teamId, teamId)))
+        .map((n) => [n.id, n.name]),
+    );
+    const requestById = new Map(requests.map((r) => [r.id, r]));
+    const quotes = requests.length
+      ? await db.select().from(npdQuotes).where(inArray(npdQuotes.requestId, requests.map((r) => r.id)))
+      : [];
+
+    const KIND = { RM: "Raw Material", PM: "Packaging Material" } as const;
+
+    // What vendors sent back, one row per submission.
+    add("npd-vendor-quotations",
+      quotes
+        .map((q) => {
+          const r = requestById.get(q.requestId);
+          return {
+            npdName: r ? npdName.get(r.npdId) ?? "" : "",
+            material: r ? KIND[r.kind as "RM" | "PM"] ?? r.kind : "",
+            requirement: r?.brief ?? "",
+            partyName: q.partyName,
+            cost: q.cost,
+            leadTime: q.leadTime,
+            description: q.description,
+            submittedAt: q.submittedAt,
+            images: q.images,
+          };
+        })
+        .sort((a, b) =>
+          a.npdName.localeCompare(b.npdName) ||
+          a.material.localeCompare(b.material) ||
+          Number(a.cost ?? Infinity) - Number(b.cost ?? Infinity)),
+      ["npdName", "material", "requirement", "partyName", "cost", "leadTime",
+       "description", "submittedAt", "images"],
+      (r) => (Array.isArray(r.images) ? r.images.filter((u): u is string => typeof u === "string") : []));
+
+    // The requests themselves, so a closed or unanswered one still leaves a trace.
+    add("npd-quotation-requests",
+      requests.map((r) => ({
+        npdName: npdName.get(r.npdId) ?? "",
+        material: KIND[r.kind as "RM" | "PM"] ?? r.kind,
+        requirement: r.brief,
+        status: r.status,
+        quotesReceived: quotes.filter((q) => q.requestId === r.id).length,
+        vendorLink: `/quote/${r.token}`,
+        images: r.images,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      })),
+      ["npdName", "material", "requirement", "status", "quotesReceived", "vendorLink",
+       "images", "createdAt", "updatedAt"],
+      (r) => (Array.isArray(r.images) ? r.images.filter((u): u is string => typeof u === "string") : []));
 
     // ── Follow ups (personal to the signed-in user) ─────────────────────────
     const contacts = await db.select().from(followUpContacts).where(eq(followUpContacts.ownerUserId, user.sub));
