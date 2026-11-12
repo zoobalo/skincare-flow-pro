@@ -3,6 +3,7 @@ import { db } from "../../db/client.ts";
 import { receivings } from "../../db/schema/receivings.ts";
 import { eq, desc } from "drizzle-orm";
 import type { JWTPayload } from "../auth/jwt.ts";
+import { exportReceivings } from "./export.ts";
 
 /** Numeric columns arrive as strings or blanks; keep "" out of the database. */
 const num = (v: unknown) =>
@@ -39,6 +40,16 @@ export const receivingRoutes = new Hono()
       skuNames:   uniq(rows.map((r) => r.skuName)),
       partyNames: uniq(rows.map((r) => r.partyName)),
     });
+  })
+
+  // Push to the backup spreadsheet; rows already there are left alone.
+  .post("/export", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    try {
+      return c.json(await exportReceivings(user.teamId));
+    } catch (err) {
+      return c.json({ error: err instanceof Error ? err.message : "Export failed" }, 502);
+    }
   })
 
   .post("/", async (c) => {

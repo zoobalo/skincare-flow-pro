@@ -983,6 +983,9 @@ export const receivingsApi = {
   update: (id: string, data: Partial<ApiReceivingInput>) =>
     send<ApiReceiving>(`/receivings/${id}`, "PATCH", data),
   delete: (id: string) => send<{ ok: true }>(`/receivings/${id}`, "DELETE"),
+  exportToSheet: () =>
+    send<{ sent: number; appended: number; skipped: number; total: number }>(
+      "/receivings/export", "POST"),
 };
 
 export const complaintsApi = {

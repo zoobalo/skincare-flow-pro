@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Plus, Trash2, Edit2, Search, PackageCheck } from "lucide-react";
+import { Plus, Trash2, Edit2, Search, PackageCheck, Upload, Loader2 } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -192,6 +192,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
   const [editing, setEditing] = useState<ApiReceiving | null>(null);
   const [form, setForm] = useState<Form>({ ...EMPTY });
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // A status set from the row shows immediately and is reconciled when the
   // list comes back, so the table does not blink on every change.
@@ -245,6 +246,24 @@ function ReceivingsContent({ rows, suggestions, skus }: {
   const pageRows = useMemo(
     () => visible.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE),
     [visible, current]);
+
+  // Everything is sent every time; the sheet keeps what it already holds.
+  const exportToSheet = async () => {
+    setExporting(true);
+    const note = toast.loading("Sending to the backup spreadsheet…");
+    try {
+      const r = await receivingsApi.exportToSheet();
+      toast.success(
+        r.appended === 0
+          ? `Already up to date — all ${r.sent} receipts are in the sheet.`
+          : `Added ${r.appended} receipt${r.appended === 1 ? "" : "s"}` +
+            `${r.skipped ? `, skipped ${r.skipped} already there` : ""}. The sheet now holds ${r.total}.`,
+        { id: note },
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export failed.", { id: note });
+    } finally { setExporting(false); }
+  };
 
   const resetPage = () => setPage(0);
 
@@ -314,7 +333,17 @@ function ReceivingsContent({ rows, suggestions, skus }: {
           ` · ${visible.length} receipt${visible.length !== 1 ? "s" : ""}` +
           ` · ${totalReceived.toLocaleString("en-IN")} units received`
         }
-        actions={<Button onClick={openCreate}><Plus className="mr-1.5 h-4 w-4" />Record Receiving</Button>}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={exportToSheet} disabled={exporting}>
+              {exporting
+                ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                : <Upload className="mr-1.5 h-4 w-4" />}
+              {exporting ? "Exporting…" : "Export Data"}
+            </Button>
+            <Button onClick={openCreate}><Plus className="mr-1.5 h-4 w-4" />Record Receiving</Button>
+          </div>
+        }
       />
 
       <div className="flex flex-wrap items-center gap-2">
