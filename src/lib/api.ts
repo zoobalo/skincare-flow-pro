@@ -275,6 +275,31 @@ export type ApiAssignedTaskComment = {
   id: string; taskId: string; authorId: string; authorName: string; text: string; createdAt: string;
 };
 
+export type ApiPaymentParty = {
+  partyId: string; partyName: string; partyType: "Vendor" | "Manufacturer";
+  creditDays: number | null;
+};
+
+export type ApiPaymentInvoice = {
+  id: string; teamId: string;
+  partyId: string; partyType: "Vendor" | "Manufacturer"; partyName: string;
+  invoiceNumber: string; invoiceDate: string | null; dueDays: number;
+  internalQc: "Done" | "Pending";
+  externalQc: "Done" | "Pending";
+  finalStatus: "Go" | "Stop";
+  paymentStatus: "Pending" | "Conveyed to accounts team" | "Completed";
+  comments: string;
+  createdById: string; createdByName: string;
+  createdAt: string; updatedAt: string;
+};
+
+export type ApiPaymentInvoiceInput = {
+  partyId: string; partyType: string; invoiceNumber: string;
+  invoiceDate: string | null; dueDays: number;
+  internalQc?: string; externalQc?: string; finalStatus?: string;
+  paymentStatus?: string; comments?: string;
+};
+
 export type ApiReceiving = {
   id: string; teamId: string;
   skuName: string; partyName: string; batchNo: string;
@@ -974,6 +999,17 @@ export const assignedTasksApi = {
     fetch(`${BASE}/assigned-tasks/${taskId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ text }) }).then((r) => r.json()),
   deleteComment: (taskId: string, commentId: string) =>
     fetch(`${BASE}/assigned-tasks/${taskId}/comments/${commentId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+};
+
+export const paymentsApi = {
+  list:  () => get<ApiPaymentInvoice[]>("/payments"),
+  terms: () => get<ApiPaymentParty[]>("/payments/terms"),
+  setCreditDays: (partyId: string, partyType: string, creditDays: number) =>
+    send<unknown>("/payments/terms", "PUT", { partyId, partyType, creditDays }),
+  create: (data: ApiPaymentInvoiceInput) => send<ApiPaymentInvoice>("/payments", "POST", data),
+  update: (id: string, data: Partial<ApiPaymentInvoiceInput>) =>
+    send<ApiPaymentInvoice>(`/payments/${id}`, "PATCH", data),
+  delete: (id: string) => send<{ ok: true }>(`/payments/${id}`, "DELETE"),
 };
 
 export const receivingsApi = {

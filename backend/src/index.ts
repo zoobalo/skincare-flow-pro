@@ -34,6 +34,7 @@ import { warehouseQcRoutes } from "./modules/warehouse-qc/routes.ts";
 import { assignedTaskRoutes } from "./modules/assigned-tasks/routes.ts";
 import { complaintRoutes } from "./modules/complaints/routes.ts";
 import { receivingRoutes } from "./modules/receivings/routes.ts";
+import { paymentRoutes } from "./modules/payments/routes.ts";
 import { pmRoutes } from "./modules/pm/routes.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
 import { requireAuth } from "./modules/auth/middleware.ts";
@@ -101,6 +102,7 @@ app.route("/warehouse-qc",      warehouseQcRoutes);
 app.route("/assigned-tasks",    assignedTaskRoutes);
 app.route("/complaints",        complaintRoutes);
 app.route("/receivings",        receivingRoutes);
+app.route("/payments",          paymentRoutes);
 app.route("/pm",                pmRoutes);
 
 serve({ fetch: root.fetch, port: env.PORT }, () => {

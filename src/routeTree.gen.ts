@@ -32,6 +32,7 @@ import { Route as AppLogisticsIndexRouteImport } from './routes/_app/logistics/i
 import { Route as AppManufacturersIndexRouteImport } from './routes/_app/manufacturers/index'
 import { Route as AppMftIndexRouteImport } from './routes/_app/mft/index'
 import { Route as AppNpdIndexRouteImport } from './routes/_app/npd/index'
+import { Route as AppPaymentsIndexRouteImport } from './routes/_app/payments/index'
 import { Route as AppPmIndexRouteImport } from './routes/_app/pm/index'
 import { Route as AppPmPmIdRouteImport } from './routes/_app/pm/$pmId'
 import { Route as AppProcurementIndexRouteImport } from './routes/_app/procurement/index'
@@ -169,6 +170,11 @@ const AppMftIndexRoute = AppMftIndexRouteImport.update({
 const AppNpdIndexRoute = AppNpdIndexRouteImport.update({
   id: '/npd/',
   path: '/npd/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPaymentsIndexRoute = AppPaymentsIndexRouteImport.update({
+  id: '/payments/',
+  path: '/payments/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPmIndexRoute = AppPmIndexRouteImport.update({
@@ -316,6 +322,7 @@ export interface FileRoutesByFullPath {
   '/manufacturers/': typeof AppManufacturersIndexRoute
   '/mft/': typeof AppMftIndexRoute
   '/npd/': typeof AppNpdIndexRoute
+  '/payments/': typeof AppPaymentsIndexRoute
   '/pm/': typeof AppPmIndexRoute
   '/procurement/': typeof AppProcurementIndexRoute
   '/production-remarks/': typeof AppProductionRemarksIndexRoute
@@ -363,6 +370,7 @@ export interface FileRoutesByTo {
   '/manufacturers': typeof AppManufacturersIndexRoute
   '/mft': typeof AppMftIndexRoute
   '/npd': typeof AppNpdIndexRoute
+  '/payments': typeof AppPaymentsIndexRoute
   '/pm': typeof AppPmIndexRoute
   '/procurement': typeof AppProcurementIndexRoute
   '/production-remarks': typeof AppProductionRemarksIndexRoute
@@ -412,6 +420,7 @@ export interface FileRoutesById {
   '/_app/manufacturers/': typeof AppManufacturersIndexRoute
   '/_app/mft/': typeof AppMftIndexRoute
   '/_app/npd/': typeof AppNpdIndexRoute
+  '/_app/payments/': typeof AppPaymentsIndexRoute
   '/_app/pm/': typeof AppPmIndexRoute
   '/_app/procurement/': typeof AppProcurementIndexRoute
   '/_app/production-remarks/': typeof AppProductionRemarksIndexRoute
@@ -461,6 +470,7 @@ export interface FileRouteTypes {
     | '/manufacturers/'
     | '/mft/'
     | '/npd/'
+    | '/payments/'
     | '/pm/'
     | '/procurement/'
     | '/production-remarks/'
@@ -508,6 +518,7 @@ export interface FileRouteTypes {
     | '/manufacturers'
     | '/mft'
     | '/npd'
+    | '/payments'
     | '/pm'
     | '/procurement'
     | '/production-remarks'
@@ -556,6 +567,7 @@ export interface FileRouteTypes {
     | '/_app/manufacturers/'
     | '/_app/mft/'
     | '/_app/npd/'
+    | '/_app/payments/'
     | '/_app/pm/'
     | '/_app/procurement/'
     | '/_app/production-remarks/'
@@ -749,6 +761,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNpdIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/payments/': {
+      id: '/_app/payments/'
+      path: '/payments'
+      fullPath: '/payments/'
+      preLoaderRoute: typeof AppPaymentsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/pm/': {
       id: '/_app/pm/'
       path: '/pm'
@@ -935,6 +954,7 @@ interface AppRouteChildren {
   AppManufacturersIndexRoute: typeof AppManufacturersIndexRoute
   AppMftIndexRoute: typeof AppMftIndexRoute
   AppNpdIndexRoute: typeof AppNpdIndexRoute
+  AppPaymentsIndexRoute: typeof AppPaymentsIndexRoute
   AppPmIndexRoute: typeof AppPmIndexRoute
   AppProcurementIndexRoute: typeof AppProcurementIndexRoute
   AppProductionRemarksIndexRoute: typeof AppProductionRemarksIndexRoute
@@ -977,6 +997,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppManufacturersIndexRoute: AppManufacturersIndexRoute,
   AppMftIndexRoute: AppMftIndexRoute,
   AppNpdIndexRoute: AppNpdIndexRoute,
+  AppPaymentsIndexRoute: AppPaymentsIndexRoute,
   AppPmIndexRoute: AppPmIndexRoute,
   AppProcurementIndexRoute: AppProcurementIndexRoute,
   AppProductionRemarksIndexRoute: AppProductionRemarksIndexRoute,

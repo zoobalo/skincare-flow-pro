@@ -27,3 +27,4 @@ export * from "./packaging-materials.ts";
 export * from "./sales.ts";
 export * from "./complaints.ts";
 export * from "./receivings.ts";
+export * from "./payments.ts";
