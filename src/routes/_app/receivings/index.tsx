@@ -25,19 +25,27 @@ export const Route = createFileRoute("/_app/receivings/")({
   head: () => ({ meta: [{ title: "Receivings — Zoobalo" }] }),
 });
 
-const COA_STATUSES     = ["Pending", "Received", "Not Required"] as const;
-const GRN_STATUSES     = ["Pending", "Created", "Not Required"] as const;
-const INVOICE_STATUSES = ["Pending", "Received", "Booked", "Paid"] as const;
-const QC_STATUSES    = ["Pending", "Pass", "Fail", "On Hold"] as const;
-const FINAL_STATUSES   = ["Pending", "Accepted", "Short Received", "Rejected"] as const;
+// COA, GRN and the invoice all travel the same road: not here, here, put away.
+const ARRIVAL_STATUSES = ["Not Received", "Received", "Stored"] as const;
+const DONE_STATUSES    = ["Pending", "Done"] as const;
+
+/** Red for outstanding, orange for in hand, green for finished. */
+const STATUS_COLOUR: Record<string, string> = {
+  "Not Received": "text-red-600 dark:text-red-400",
+  "Pending":      "text-red-600 dark:text-red-400",
+  "Received":     "text-orange-600 dark:text-orange-400",
+  "Stored":       "text-green-700 dark:text-green-400",
+  "Done":         "text-green-700 dark:text-green-400",
+};
+
 
 /** The five status columns, editable straight from the row. */
 const STATUS_COLUMNS = {
-  coaStatus:     COA_STATUSES,
-  grnStatus:     GRN_STATUSES,
-  invoiceStatus: INVOICE_STATUSES,
-  qc:            QC_STATUSES,
-  finalStatus:   FINAL_STATUSES,
+  coaStatus:     ARRIVAL_STATUSES,
+  grnStatus:     ARRIVAL_STATUSES,
+  invoiceStatus: ARRIVAL_STATUSES,
+  qc:            DONE_STATUSES,
+  finalStatus:   DONE_STATUSES,
 } as const;
 type StatusKey = keyof typeof STATUS_COLUMNS;
 
@@ -47,7 +55,7 @@ const EMPTY = {
   poNumber: "", poDate: "", poQty: "",
   invoiceNumber: "", invoiceDate: "", invoiceQty: "",
   mfgDate: "", expDate: "", mrp: "",
-  coaStatus: "Pending", grnStatus: "Pending", invoiceStatus: "Pending",
+  coaStatus: "Not Received", grnStatus: "Not Received", invoiceStatus: "Not Received",
   qc: "Pending", finalStatus: "Pending", comments: "",
 };
 type Form = typeof EMPTY;
@@ -68,14 +76,19 @@ const fmtQty = (v: string | null) =>
 function StatusCell({ field, value, onChange }: {
   field: StatusKey; value: string; onChange: (v: string) => void;
 }) {
-  const muted = value === "Pending";
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="h-7 w-full border-0 bg-transparent p-0 text-xs shadow-none focus:ring-0 [&>svg]:opacity-40">
-        <span className={muted ? "text-muted-foreground" : "font-medium"}>{value}</span>
+        <span className={`font-medium ${STATUS_COLOUR[value] ?? "text-muted-foreground"}`}>
+          {value}
+        </span>
       </SelectTrigger>
       <SelectContent>
-        {STATUS_COLUMNS[field].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+        {STATUS_COLUMNS[field].map((s) => (
+          <SelectItem key={s} value={s}>
+            <span className={`font-medium ${STATUS_COLOUR[s] ?? ""}`}>{s}</span>
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );
@@ -204,7 +217,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
           <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="All statuses" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All statuses</SelectItem>
-            {FINAL_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            {DONE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
 
@@ -393,7 +406,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
                 <Select value={form.coaStatus} onValueChange={set("coaStatus")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {COA_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {ARRIVAL_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -402,7 +415,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
                 <Select value={form.grnStatus} onValueChange={set("grnStatus")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {GRN_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {ARRIVAL_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -411,7 +424,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
                 <Select value={form.invoiceStatus} onValueChange={set("invoiceStatus")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {INVOICE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {ARRIVAL_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -420,7 +433,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
                 <Select value={form.qc} onValueChange={set("qc")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {QC_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {DONE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -429,7 +442,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
                 <Select value={form.finalStatus} onValueChange={set("finalStatus")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {FINAL_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {DONE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
