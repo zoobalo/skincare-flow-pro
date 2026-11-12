@@ -29,7 +29,17 @@ const COA_STATUSES     = ["Pending", "Received", "Not Required"] as const;
 const GRN_STATUSES     = ["Pending", "Created", "Not Required"] as const;
 const INVOICE_STATUSES = ["Pending", "Received", "Booked", "Paid"] as const;
 const QC_STATUSES    = ["Pending", "Pass", "Fail", "On Hold"] as const;
-const FINAL_STATUSES = ["Pending", "Accepted", "Short Received", "Rejected"] as const;
+const FINAL_STATUSES   = ["Pending", "Accepted", "Short Received", "Rejected"] as const;
+
+/** The five status columns, editable straight from the row. */
+const STATUS_COLUMNS = {
+  coaStatus:     COA_STATUSES,
+  grnStatus:     GRN_STATUSES,
+  invoiceStatus: INVOICE_STATUSES,
+  qc:            QC_STATUSES,
+  finalStatus:   FINAL_STATUSES,
+} as const;
+type StatusKey = keyof typeof STATUS_COLUMNS;
 
 const EMPTY = {
   skuName: "", partyName: "", batchNo: "",
@@ -51,6 +61,26 @@ const fmtDate = (d: string | null) => {
 const fmtQty = (v: string | null) =>
   v === null || v === "" ? "—" : Number(v).toLocaleString("en-IN");
 
+/**
+ * A status, changed where it is read. Chrome is stripped from the trigger so
+ * a row of five of these still reads as a table rather than a row of controls.
+ */
+function StatusCell({ field, value, onChange }: {
+  field: StatusKey; value: string; onChange: (v: string) => void;
+}) {
+  const muted = value === "Pending";
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-7 w-full border-0 bg-transparent p-0 text-xs shadow-none focus:ring-0 [&>svg]:opacity-40">
+        <span className={muted ? "text-muted-foreground" : "font-medium"}>{value}</span>
+      </SelectTrigger>
+      <SelectContent>
+        {STATUS_COLUMNS[field].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  );
+}
+
 function ReceivingsPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
@@ -70,6 +100,9 @@ function ReceivingsContent({ rows, suggestions, skus }: {
   const [form, setForm] = useState<Form>({ ...EMPTY });
   const [saving, setSaving] = useState(false);
 
+  // A status set from the row shows immediately and is reconciled when the
+  // list comes back, so the table does not blink on every change.
+  const [pending, setPending] = useState<Record<string, Partial<ApiReceiving>>>({});
   const [q, setQ] = useState("");
   const [party, setParty] = useState("__all__");
   const [status, setStatus] = useState("__all__");
@@ -81,7 +114,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
   const parties = [...new Set(rows.map((r) => r.partyName).filter(Boolean))].sort();
 
   const needle = q.trim().toLowerCase();
-  const visible = rows.filter((r) => {
+  const visible = rows.map((r) => ({ ...r, ...pending[r.id] })).filter((r) => {
     if (party !== "__all__" && r.partyName !== party) return false;
     if (status !== "__all__" && r.finalStatus !== status) return false;
     if (!needle) return true;
@@ -118,6 +151,18 @@ function ReceivingsContent({ rows, suggestions, skus }: {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save.");
     } finally { setSaving(false); }
+  };
+
+  const changeStatus = async (r: ApiReceiving, key: StatusKey, value: string) => {
+    setPending((p) => ({ ...p, [r.id]: { ...p[r.id], [key]: value } }));
+    try {
+      await receivingsApi.update(r.id, { [key]: value });
+      await reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update the status.");
+    } finally {
+      setPending((p) => { const next = { ...p }; delete next[r.id]; return next; });
+    }
   };
 
   const remove = async (r: ApiReceiving) => {
@@ -235,11 +280,11 @@ function ReceivingsContent({ rows, suggestions, skus }: {
                     <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{r.mfgDate || "—"}</td>
                     <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{r.expDate || "—"}</td>
                     <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmtQty(r.mrp)}</td>
-                    <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.coaStatus}</td>
-                    <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.grnStatus}</td>
-                    <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.invoiceStatus}</td>
-                    <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.qc}</td>
-                    <td className="px-3 py-2.5 text-xs">{r.finalStatus}</td>
+                    {(Object.keys(STATUS_COLUMNS) as StatusKey[]).map((key) => (
+                      <td key={key} className="px-3 py-2">
+                        <StatusCell field={key} value={r[key]} onChange={(v) => changeStatus(r, key, v)} />
+                      </td>
+                    ))}
                     <td className="px-3 py-2.5 max-w-[14rem] whitespace-pre-wrap text-xs text-muted-foreground">
                       {r.comments || "—"}
                     </td>
