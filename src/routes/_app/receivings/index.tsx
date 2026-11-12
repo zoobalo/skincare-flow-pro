@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Plus, Trash2, Edit2, Search, PackageCheck } from "lucide-react";
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/receivings/")({
@@ -28,6 +28,10 @@ export const Route = createFileRoute("/_app/receivings/")({
 // COA, GRN and the invoice all travel the same road: not here, here, put away.
 const ARRIVAL_STATUSES = ["Not Received", "Received", "Stored"] as const;
 const DONE_STATUSES    = ["Pending", "Done"] as const;
+
+/** Rows kept in the DOM at once. Nineteen columns each; more than this and
+ *  scrolling starts to cost more than paging does. */
+const PAGE_SIZE = 50;
 
 /** Red for outstanding, orange for in hand, green for finished. */
 const STATUS_COLOUR: Record<string, string> = {
@@ -70,30 +74,82 @@ const fmtQty = (v: string | null) =>
   v === null || v === "" ? "—" : Number(v).toLocaleString("en-IN");
 
 /**
- * A status, changed where it is read. Chrome is stripped from the trigger so
- * a row of five of these still reads as a table rather than a row of controls.
+ * A status, changed where it is read.
+ *
+ * Deliberately the browser's own select. A page of receipts carries five of
+ * these per row, and a few hundred rich popovers cost more to mount than the
+ * whole rest of the table; the native control opens instantly and costs
+ * almost nothing until it does.
  */
-function StatusCell({ field, value, onChange }: {
+const StatusCell = memo(function StatusCell({ field, value, onChange }: {
   field: StatusKey; value: string; onChange: (v: string) => void;
 }) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-7 w-full border-0 bg-transparent p-0 text-xs shadow-none focus:ring-0 [&>svg]:opacity-40">
-        <span className={`font-medium ${STATUS_COLOUR[value] ?? "text-muted-foreground"}`}>
-          {/* Rows carried over from the sheet have no status recorded yet. */}
-          {value || "—"}
-        </span>
-      </SelectTrigger>
-      <SelectContent>
-        {STATUS_COLUMNS[field].map((s) => (
-          <SelectItem key={s} value={s}>
-            <span className={`font-medium ${STATUS_COLOUR[s] ?? ""}`}>{s}</span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`w-full cursor-pointer appearance-none bg-transparent text-xs font-medium outline-none transition-opacity hover:opacity-60 focus:ring-0 ${
+        STATUS_COLOUR[value] ?? "text-muted-foreground"
+      }`}
+    >
+      {/* Rows carried over from the sheet have no status recorded yet. */}
+      {!value && <option value="">—</option>}
+      {STATUS_COLUMNS[field].map((s) => <option key={s} value={s}>{s}</option>)}
+    </select>
   );
-}
+});
+
+/** One row, re-rendering only when its own data changes. */
+const ReceivingRow = memo(function ReceivingRow({ r, onStatus, onEdit, onDelete }: {
+  r: ApiReceiving;
+  onStatus: (r: ApiReceiving, key: StatusKey, value: string) => void;
+  onEdit: (r: ApiReceiving) => void;
+  onDelete: (r: ApiReceiving) => void;
+}) {
+  // Both numbers are kept so a short delivery is visible; say so.
+  const short = r.invoiceQty && r.receivedQty && Number(r.receivedQty) < Number(r.invoiceQty);
+  return (
+    <tr className="align-top">
+      <td className="px-3 py-2.5 font-medium">{r.skuName}</td>
+      <td className="px-3 py-2.5 text-muted-foreground">{r.partyName}</td>
+      <td className="px-3 py-2.5 text-muted-foreground">{r.batchNo || "—"}</td>
+      <td className="px-3 py-2.5 text-right tabular-nums">
+        {fmtQty(r.receivedQty)}
+        {short && <span className="ml-1 text-[10px] text-amber-700">short</span>}
+      </td>
+      <td className="px-3 py-2.5 whitespace-nowrap">{fmtDate(r.receivedDate)}</td>
+      <td className="px-3 py-2.5 text-muted-foreground">{r.poNumber || "—"}</td>
+      <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{fmtDate(r.poDate)}</td>
+      <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmtQty(r.poQty)}</td>
+      <td className="px-3 py-2.5">{r.invoiceNumber || "—"}</td>
+      <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{fmtDate(r.invoiceDate)}</td>
+      <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmtQty(r.invoiceQty)}</td>
+      <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{r.mfgDate || "—"}</td>
+      <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{r.expDate || "—"}</td>
+      <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmtQty(r.mrp)}</td>
+      {(Object.keys(STATUS_COLUMNS) as StatusKey[]).map((key) => (
+        <td key={key} className="px-3 py-2">
+          <StatusCell field={key} value={r[key]} onChange={(v) => onStatus(r, key, v)} />
+        </td>
+      ))}
+      <td className="px-3 py-2.5 max-w-[14rem] whitespace-pre-wrap text-xs text-muted-foreground">
+        {r.comments || "—"}
+      </td>
+      <td className="px-3 py-2.5 text-right">
+        <div className="flex items-center justify-end gap-0.5">
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => onEdit(r)}>
+            <Edit2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="ghost"
+            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+            onClick={() => onDelete(r)}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+});
 
 function ReceivingsPage() {
   const data = Route.useLoaderData();
@@ -123,20 +179,39 @@ function ReceivingsContent({ rows, suggestions, skus }: {
 
   // The catalogue seeds the suggestions; what has been received before fills
   // in everything the catalogue does not carry — packaging, refills, couriers.
-  const skuOptions = [...new Set([...skus.map((s) => s.name), ...suggestions.skuNames])].sort();
-  const partyOptions = [...new Set(suggestions.partyNames)].sort();
-  const parties = [...new Set(rows.map((r) => r.partyName).filter(Boolean))].sort();
+  const skuOptions = useMemo(
+    () => [...new Set([...skus.map((s) => s.name), ...suggestions.skuNames])].sort(),
+    [skus, suggestions]);
+  const partyOptions = useMemo(() => [...suggestions.partyNames].sort(), [suggestions]);
+  const parties = useMemo(
+    () => [...new Set(rows.map((r) => r.partyName).filter(Boolean))].sort(), [rows]);
 
-  const needle = q.trim().toLowerCase();
-  const visible = rows.map((r) => ({ ...r, ...pending[r.id] })).filter((r) => {
-    if (party !== "__all__" && r.partyName !== party) return false;
-    if (status !== "__all__" && r.finalStatus !== status) return false;
-    if (!needle) return true;
-    return [r.skuName, r.partyName, r.batchNo, r.invoiceNumber, r.poNumber]
-      .some((v) => v?.toLowerCase().includes(needle));
-  });
+  const merged = useMemo(
+    () => rows.map((r) => (pending[r.id] ? { ...r, ...pending[r.id] } : r)), [rows, pending]);
 
-  const totalReceived = visible.reduce((sum, r) => sum + Number(r.receivedQty ?? 0), 0);
+  const visible = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return merged.filter((r) => {
+      if (party !== "__all__" && r.partyName !== party) return false;
+      if (status !== "__all__" && r.finalStatus !== status) return false;
+      if (!needle) return true;
+      return [r.skuName, r.partyName, r.batchNo, r.invoiceNumber, r.poNumber]
+        .some((v) => v?.toLowerCase().includes(needle));
+    });
+  }, [merged, q, party, status]);
+
+  const totalReceived = useMemo(
+    () => visible.reduce((sum, r) => sum + Number(r.receivedQty ?? 0), 0), [visible]);
+
+  // ── 4. only a page of rows is in the DOM at a time ──
+  const [page, setPage] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const current = Math.min(page, pageCount - 1);
+  const pageRows = useMemo(
+    () => visible.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE),
+    [visible, current]);
+
+  const resetPage = () => setPage(0);
 
   const openCreate = () => { setForm({ ...EMPTY }); setEditing(null); setSheetOpen(true); };
   const openEdit = (r: ApiReceiving) => {
@@ -158,8 +233,14 @@ function ReceivingsContent({ rows, suggestions, skus }: {
     if (!form.partyName.trim()) { toast.error("Party name is required."); return; }
     setSaving(true);
     try {
-      if (editing) { await receivingsApi.update(editing.id, form); toast.success("Receiving updated."); }
-      else         { await receivingsApi.create(form);             toast.success("Receiving recorded."); }
+      if (editing) {
+        await receivingsApi.update(editing.id, form);
+        setPending((p) => { const next = { ...p }; delete next[editing.id]; return next; });
+        toast.success("Receiving updated.");
+      } else {
+        await receivingsApi.create(form);
+        toast.success("Receiving recorded.");
+      }
       setSheetOpen(false);
       await reload();
     } catch (e) {
@@ -167,17 +248,19 @@ function ReceivingsContent({ rows, suggestions, skus }: {
     } finally { setSaving(false); }
   };
 
-  const changeStatus = async (r: ApiReceiving, key: StatusKey, value: string) => {
+  // The new value is already on screen and already saved; refetching the list,
+  // the suggestions and the SKU catalogue to learn one word we just wrote was
+  // what made each change feel slow. On failure the row goes back.
+  const changeStatus = useCallback(async (r: ApiReceiving, key: StatusKey, value: string) => {
+    const previous = r[key];
     setPending((p) => ({ ...p, [r.id]: { ...p[r.id], [key]: value } }));
     try {
       await receivingsApi.update(r.id, { [key]: value });
-      await reload();
     } catch (e) {
+      setPending((p) => ({ ...p, [r.id]: { ...p[r.id], [key]: previous } }));
       toast.error(e instanceof Error ? e.message : "Could not update the status.");
-    } finally {
-      setPending((p) => { const next = { ...p }; delete next[r.id]; return next; });
     }
-  };
+  }, []);
 
   const remove = async (r: ApiReceiving) => {
     if (!confirm(`Delete the ${r.skuName} receiving from ${r.partyName}?`)) return;
@@ -202,11 +285,11 @@ function ReceivingsContent({ rows, suggestions, skus }: {
             className="h-8 w-60 pl-8 text-xs"
             placeholder="SKU, party, batch, invoice, PO…"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => { setQ(e.target.value); resetPage(); }}
           />
         </div>
 
-        <Select value={party} onValueChange={setParty}>
+        <Select value={party} onValueChange={(v) => { setParty(v); resetPage(); }}>
           <SelectTrigger className="h-8 w-52 text-xs"><SelectValue placeholder="All parties" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All parties</SelectItem>
@@ -214,7 +297,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
           </SelectContent>
         </Select>
 
-        <Select value={status} onValueChange={setStatus}>
+        <Select value={status} onValueChange={(v) => { setStatus(v); resetPage(); }}>
           <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="All statuses" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All statuses</SelectItem>
@@ -224,7 +307,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
 
         {(q || party !== "__all__" || status !== "__all__") && (
           <Button size="sm" variant="ghost" className="h-8 text-xs"
-            onClick={() => { setQ(""); setParty("__all__"); setStatus("__all__"); }}>
+            onClick={() => { setQ(""); setParty("__all__"); setStatus("__all__"); resetPage(); }}>
             Clear
           </Button>
         )}
@@ -271,54 +354,36 @@ function ReceivingsContent({ rows, suggestions, skus }: {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {visible.map((r) => {
-                // Both numbers are kept so a short delivery is visible; say so.
-                const short = r.invoiceQty && r.receivedQty
-                  && Number(r.receivedQty) < Number(r.invoiceQty);
-                return (
-                  <tr key={r.id} className="align-top">
-                    <td className="px-3 py-2.5 font-medium">{r.skuName}</td>
-                    <td className="px-3 py-2.5 text-muted-foreground">{r.partyName}</td>
-                    <td className="px-3 py-2.5 text-muted-foreground">{r.batchNo || "—"}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">
-                      {fmtQty(r.receivedQty)}
-                      {short && <span className="ml-1 text-[10px] text-amber-700">short</span>}
-                    </td>
-                    <td className="px-3 py-2.5 whitespace-nowrap">{fmtDate(r.receivedDate)}</td>
-                    <td className="px-3 py-2.5 text-muted-foreground">{r.poNumber || "—"}</td>
-                    <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{fmtDate(r.poDate)}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmtQty(r.poQty)}</td>
-                    <td className="px-3 py-2.5">{r.invoiceNumber || "—"}</td>
-                    <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{fmtDate(r.invoiceDate)}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmtQty(r.invoiceQty)}</td>
-                    <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{r.mfgDate || "—"}</td>
-                    <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{r.expDate || "—"}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmtQty(r.mrp)}</td>
-                    {(Object.keys(STATUS_COLUMNS) as StatusKey[]).map((key) => (
-                      <td key={key} className="px-3 py-2">
-                        <StatusCell field={key} value={r[key]} onChange={(v) => changeStatus(r, key, v)} />
-                      </td>
-                    ))}
-                    <td className="px-3 py-2.5 max-w-[14rem] whitespace-pre-wrap text-xs text-muted-foreground">
-                      {r.comments || "—"}
-                    </td>
-                    <td className="px-3 py-2.5 text-right">
-                      <div className="flex items-center justify-end gap-0.5">
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(r)}>
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="sm" variant="ghost"
-                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          onClick={() => remove(r)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {pageRows.map((r) => (
+                <ReceivingRow
+                  key={r.id}
+                  r={r}
+                  onStatus={changeStatus}
+                  onEdit={openEdit}
+                  onDelete={remove}
+                />
+              ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {pageCount > 1 && (
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            {current * PAGE_SIZE + 1}–{Math.min((current + 1) * PAGE_SIZE, visible.length)} of {visible.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="outline" className="h-7 text-xs"
+              disabled={current === 0} onClick={() => setPage(current - 1)}>
+              Previous
+            </Button>
+            <span className="px-2">Page {current + 1} of {pageCount}</span>
+            <Button size="sm" variant="outline" className="h-7 text-xs"
+              disabled={current >= pageCount - 1} onClick={() => setPage(current + 1)}>
+              Next
+            </Button>
+          </div>
         </div>
       )}
 
