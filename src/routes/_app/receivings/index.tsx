@@ -80,7 +80,8 @@ function StatusCell({ field, value, onChange }: {
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="h-7 w-full border-0 bg-transparent p-0 text-xs shadow-none focus:ring-0 [&>svg]:opacity-40">
         <span className={`font-medium ${STATUS_COLOUR[value] ?? "text-muted-foreground"}`}>
-          {value}
+          {/* Rows carried over from the sheet have no status recorded yet. */}
+          {value || "—"}
         </span>
       </SelectTrigger>
       <SelectContent>
