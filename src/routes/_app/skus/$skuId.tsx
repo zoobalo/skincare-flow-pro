@@ -17,6 +17,7 @@ import { PRODUCTION_STAGES } from "@/lib/mock/types";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { VendorCardComments } from "@/components/vendor-card-comments";
+import { PackagingBom } from "@/components/packaging-bom";
 import { PostDispatchSection } from "@/components/post-dispatch-section";
 
 export const Route = createFileRoute("/_app/skus/$skuId")({
@@ -618,61 +619,18 @@ function SkuDetailContent({ sku, manufacturers, vendors, allPackaging, allRawMat
           <div className="mb-3 flex justify-end">
             <Button size="sm" onClick={() => setPackOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Add Packaging Material</Button>
           </div>
-          {sku.packaging.length === 0 && (
+          {localPackaging.length === 0 ? (
             <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No packaging materials yet. Click "Add Packaging Material" to get started.</div>
+          ) : (
+            <PackagingBom
+              items={localPackaging}
+              vendors={vendors}
+              statusStyle={VENDOR_STATUS_STYLE}
+              onCycleStatus={cyclePackagingVendorStatus}
+              onEdit={openEditPack}
+              onDelete={deletePackaging}
+            />
           )}
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {localPackaging.map((p) => (
-              <div key={p.id} className="rounded-xl border bg-card p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-semibold">{p.name}</h4>
-                    <span className="text-xs text-muted-foreground">{vendors.find(v => v.id === p.vendorId)?.name ?? p.vendorId}</span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <div className="text-right text-xs text-muted-foreground">MOQ<br /><span className="font-semibold tabular-nums text-foreground">{p.moq.toLocaleString()}</span></div>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditPack(p)}><Edit className="h-3.5 w-3.5" /></Button>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => deletePackaging(p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                  </div>
-                </div>
-                {/* Vendor status badge — click to cycle */}
-                <button
-                  type="button"
-                  onClick={() => cyclePackagingVendorStatus(p)}
-                  title="Click to change vendor status"
-                  className={`mt-2 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-opacity hover:opacity-75 ${VENDOR_STATUS_STYLE[p.vendorStatus]}`}
-                >
-                  {p.vendorStatus}
-                </button>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                  <div><div className="text-muted-foreground">Own stock</div><div className="font-semibold tabular-nums">{(p.currentStock ?? 0).toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Mfr. warehouse</div><div className="font-semibold tabular-nums">{(p.mfrStock ?? 0).toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Other stock</div><div className="font-semibold tabular-nums">{(p.otherStock ?? 0).toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">LLC Udaipur</div><div className="font-semibold tabular-nums">{(p.llcUdaipurStock ?? 0).toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Edgistify Gurgaon</div><div className="font-semibold tabular-nums">{(p.edgistifyGurgaonStock ?? 0).toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Unprinted stock</div><div className="font-semibold tabular-nums">{(p.unprintedStock ?? 0).toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Total stock</div><div className="font-semibold tabular-nums">{((p.currentStock ?? 0) + (p.mfrStock ?? 0) + (p.otherStock ?? 0) + (p.llcUdaipurStock ?? 0) + (p.edgistifyGurgaonStock ?? 0)).toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Transit</div><div className="font-semibold tabular-nums">{(p.transitStock ?? 0).toLocaleString()}</div></div>
-                  <div><div className="text-muted-foreground">Cost / unit</div><div className="font-semibold tabular-nums">₹{p.costPerUnit}</div></div>
-                  <div><div className="text-muted-foreground">Lead time</div><div className="font-semibold tabular-nums">{p.leadTimeDays}d</div></div>
-                </div>
-                {(p.unprintedStock ?? 0) > 0 && p.unprintedStockNote && (
-                  <div className="mt-2 rounded-md bg-muted/50 px-3 py-2 text-xs">
-                    <span className="font-medium text-muted-foreground">Unprinted note: </span>
-                    <span className="whitespace-pre-wrap">{p.unprintedStockNote}</span>
-                  </div>
-                )}
-                {p.transitStock > 0 && (
-                  <div className="mt-2 rounded-md bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400 flex items-center justify-between">
-                    <span className="font-medium">In transit: {p.transitStock.toLocaleString()} units</span>
-                    <span>Expected delivery: <span className="font-semibold">{fmtDate(p.transitDeliveryDate)}</span></span>
-                  </div>
-                )}
-                <div className="mt-3 border-t pt-3 text-xs text-muted-foreground">Last PO: {fmtDate(p.lastPurchaseDate)}</div>
-                <VendorCardComments vendorId={p.vendorId} />
-              </div>
-            ))}
-          </div>
         </TabsContent>
 
         {/* ── Raw Materials ── */}
