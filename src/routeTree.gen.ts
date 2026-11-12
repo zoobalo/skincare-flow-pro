@@ -54,7 +54,6 @@ import { Route as AppTasksIndexRouteImport } from './routes/_app/tasks/index'
 import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
 import { Route as AppVendorsIndexRouteImport } from './routes/_app/vendors/index'
 import { Route as AppVendorsVendorIdRouteImport } from './routes/_app/vendors/$vendorId'
-import { Route as AppWarehouseQcIndexRouteImport } from './routes/_app/warehouse-qc/index'
 import { Route as AppWarehouseIndexRouteImport } from './routes/_app/warehouse/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -283,11 +282,6 @@ const AppVendorsVendorIdRoute = AppVendorsVendorIdRouteImport.update({
   path: '/vendors/$vendorId',
   getParentRoute: () => AppRoute,
 } as any)
-const AppWarehouseQcIndexRoute = AppWarehouseQcIndexRouteImport.update({
-  id: '/warehouse-qc/',
-  path: '/warehouse-qc/',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppWarehouseIndexRoute = AppWarehouseIndexRouteImport.update({
   id: '/warehouse/',
   path: '/warehouse/',
@@ -339,7 +333,6 @@ export interface FileRoutesByFullPath {
   '/tasks/': typeof AppTasksIndexRoute
   '/users/': typeof AppUsersIndexRoute
   '/vendors/': typeof AppVendorsIndexRoute
-  '/warehouse-qc/': typeof AppWarehouseQcIndexRoute
   '/warehouse/': typeof AppWarehouseIndexRoute
 }
 export interface FileRoutesByTo {
@@ -387,7 +380,6 @@ export interface FileRoutesByTo {
   '/tasks': typeof AppTasksIndexRoute
   '/users': typeof AppUsersIndexRoute
   '/vendors': typeof AppVendorsIndexRoute
-  '/warehouse-qc': typeof AppWarehouseQcIndexRoute
   '/warehouse': typeof AppWarehouseIndexRoute
 }
 export interface FileRoutesById {
@@ -437,7 +429,6 @@ export interface FileRoutesById {
   '/_app/tasks/': typeof AppTasksIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
   '/_app/vendors/': typeof AppVendorsIndexRoute
-  '/_app/warehouse-qc/': typeof AppWarehouseQcIndexRoute
   '/_app/warehouse/': typeof AppWarehouseIndexRoute
 }
 export interface FileRouteTypes {
@@ -487,7 +478,6 @@ export interface FileRouteTypes {
     | '/tasks/'
     | '/users/'
     | '/vendors/'
-    | '/warehouse-qc/'
     | '/warehouse/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -535,7 +525,6 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/users'
     | '/vendors'
-    | '/warehouse-qc'
     | '/warehouse'
   id:
     | '__root__'
@@ -584,7 +573,6 @@ export interface FileRouteTypes {
     | '/_app/tasks/'
     | '/_app/users/'
     | '/_app/vendors/'
-    | '/_app/warehouse-qc/'
     | '/_app/warehouse/'
   fileRoutesById: FileRoutesById
 }
@@ -915,13 +903,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVendorsVendorIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/warehouse-qc/': {
-      id: '/_app/warehouse-qc/'
-      path: '/warehouse-qc'
-      fullPath: '/warehouse-qc/'
-      preLoaderRoute: typeof AppWarehouseQcIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/warehouse/': {
       id: '/_app/warehouse/'
       path: '/warehouse'
@@ -971,7 +952,6 @@ interface AppRouteChildren {
   AppTasksIndexRoute: typeof AppTasksIndexRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
   AppVendorsIndexRoute: typeof AppVendorsIndexRoute
-  AppWarehouseQcIndexRoute: typeof AppWarehouseQcIndexRoute
   AppWarehouseIndexRoute: typeof AppWarehouseIndexRoute
 }
 
@@ -1014,7 +994,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppTasksIndexRoute: AppTasksIndexRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,
   AppVendorsIndexRoute: AppVendorsIndexRoute,
-  AppWarehouseQcIndexRoute: AppWarehouseQcIndexRoute,
   AppWarehouseIndexRoute: AppWarehouseIndexRoute,
 }
 

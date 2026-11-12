@@ -19,7 +19,6 @@ export * from "./imp-links.ts";
 export * from "./teams.ts";
 export * from "./user-grants.ts";
 export * from "./sku-links.ts";
-export * from "./warehouse-qc.ts";
 export * from "./assigned-tasks.ts";
 export * from "./assigned-task-comments.ts";
 export * from "./vendor-comments.ts";
