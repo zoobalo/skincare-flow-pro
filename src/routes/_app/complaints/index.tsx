@@ -272,9 +272,12 @@ function ComplaintCard({
           </div>
 
           {complaint.kind === "SKU" && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              SKU: {complaint.skuName ?? "—"}
-              {complaint.skuCode ? <span className="ml-1 opacity-70">({complaint.skuCode})</span> : null}
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              SKU:{" "}
+              <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-sm font-semibold text-primary">
+                {complaint.skuName ?? "—"}
+              </span>
+              {complaint.skuCode ? <span className="ml-1.5 opacity-70">({complaint.skuCode})</span> : null}
             </p>
           )}
           {complaint.against && (
