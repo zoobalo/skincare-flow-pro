@@ -257,16 +257,9 @@ function ComplaintCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-              resolved
-                ? "border-green-200 bg-green-100 text-green-800"
-                : "border-amber-200 bg-amber-100 text-amber-800"
-            }`}>
+            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
               {resolved ? <CircleCheck className="h-3 w-3" /> : <CircleAlert className="h-3 w-3" />}
-              {complaint.status}
-            </span>
-            <span className="rounded-full border bg-muted/50 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-              {complaint.kind}
+              {complaint.status} · {complaint.kind}
             </span>
             <p className={`font-semibold leading-snug ${resolved ? "line-through" : ""}`}>{complaint.title}</p>
           </div>
