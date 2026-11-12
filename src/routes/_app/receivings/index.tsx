@@ -44,6 +44,14 @@ const STATUS_COLOUR: Record<string, string> = {
 
 
 /** The five status columns, editable straight from the row. */
+const STATUS_LABELS = {
+  coaStatus: "COA", grnStatus: "GRN", invoiceStatus: "Invoice Status",
+  qc: "QC", finalStatus: "Final Status",
+} as const;
+
+/** Wide enough for "Not Received" and for the longest heading above it. */
+const STATUS_WIDTH = "min-w-[132px]";
+
 const STATUS_COLUMNS = {
   coaStatus:     ARRIVAL_STATUSES,
   grnStatus:     ARRIVAL_STATUSES,
@@ -88,7 +96,7 @@ const StatusCell = memo(function StatusCell({ field, value, onChange }: {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`w-full cursor-pointer appearance-none bg-transparent text-xs font-medium outline-none transition-opacity hover:opacity-60 focus:ring-0 ${
+      className={`w-full cursor-pointer appearance-none whitespace-nowrap bg-transparent text-xs font-medium outline-none transition-opacity hover:opacity-60 focus:ring-0 ${
         STATUS_COLOUR[value] ?? "text-muted-foreground"
       }`}
     >
@@ -128,7 +136,7 @@ const ReceivingRow = memo(function ReceivingRow({ r, onStatus, onEdit, onDelete 
       <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{r.expDate || "—"}</td>
       <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmtQty(r.mrp)}</td>
       {(Object.keys(STATUS_COLUMNS) as StatusKey[]).map((key) => (
-        <td key={key} className="px-3 py-2">
+        <td key={key} className={`px-3 py-2 ${STATUS_WIDTH}`}>
           <StatusCell field={key} value={r[key]} onChange={(v) => onStatus(r, key, v)} />
         </td>
       ))}
@@ -327,7 +335,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border bg-card">
-          <table className="w-full min-w-[1700px] text-sm">
+          <table className="w-full min-w-[1880px] text-sm">
             <thead>
               <tr className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-3 py-2.5 text-left font-medium">SKU Name</th>
@@ -344,11 +352,11 @@ function ReceivingsContent({ rows, suggestions, skus }: {
                 <th className="px-3 py-2.5 text-left font-medium">MFG</th>
                 <th className="px-3 py-2.5 text-left font-medium">EXP</th>
                 <th className="px-3 py-2.5 text-right font-medium">MRP</th>
-                <th className="px-3 py-2.5 text-left font-medium">COA</th>
-                <th className="px-3 py-2.5 text-left font-medium">GRN</th>
-                <th className="px-3 py-2.5 text-left font-medium">Invoice Status</th>
-                <th className="px-3 py-2.5 text-left font-medium">QC</th>
-                <th className="px-3 py-2.5 text-left font-medium">Final Status</th>
+                {(Object.keys(STATUS_COLUMNS) as StatusKey[]).map((key) => (
+                  <th key={key} className={`px-3 py-2.5 text-left font-medium whitespace-nowrap ${STATUS_WIDTH}`}>
+                    {STATUS_LABELS[key]}
+                  </th>
+                ))}
                 <th className="px-3 py-2.5 text-left font-medium">Comments</th>
                 <th className="px-3 py-2.5 text-right font-medium">Actions</th>
               </tr>
