@@ -72,6 +72,21 @@ const EMPTY = {
 };
 type Form = typeof EMPTY;
 
+/**
+ * The Indian financial year a date falls in: April to March, so 14-10-2026
+ * and 03-02-2027 are both "2026-2027". Receipts without a date belong to none.
+ */
+const NO_DATE = "__nodate__";
+const ALL_YEARS = "__all__";
+
+function financialYear(iso: string | null): string | null {
+  if (!iso) return null;
+  const [y, m] = iso.split("-").map(Number);
+  if (!y || !m) return null;
+  const start = m >= 4 ? y : y - 1;
+  return `${start}-${start + 1}`;
+}
+
 /** "2026-04-01" as stored, "01-04-2026" as the warehouse writes it. */
 const fmtDate = (d: string | null) => {
   if (!d) return "—";
@@ -181,6 +196,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
   // A status set from the row shows immediately and is reconciled when the
   // list comes back, so the table does not blink on every change.
   const [pending, setPending] = useState<Record<string, Partial<ApiReceiving>>>({});
+  const [fy, setFy] = useState<string>(() => financialYear(new Date().toISOString().slice(0, 10))!);
   const [q, setQ] = useState("");
   const [party, setParty] = useState("__all__");
   const [status, setStatus] = useState("__all__");
@@ -194,19 +210,30 @@ function ReceivingsContent({ rows, suggestions, skus }: {
   const parties = useMemo(
     () => [...new Set(rows.map((r) => r.partyName).filter(Boolean))].sort(), [rows]);
 
+  // Offered years come from the data, newest first, plus this one so a fresh
+  // year can be selected before anything has been received in it.
+  const fyOptions = useMemo(() => {
+    const seen = new Set(rows.map((r) => financialYear(r.receivedDate)).filter(Boolean) as string[]);
+    seen.add(financialYear(new Date().toISOString().slice(0, 10))!);
+    return [...seen].sort().reverse();
+  }, [rows]);
+  const hasUndated = useMemo(() => rows.some((r) => !r.receivedDate), [rows]);
+
   const merged = useMemo(
     () => rows.map((r) => (pending[r.id] ? { ...r, ...pending[r.id] } : r)), [rows, pending]);
 
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return merged.filter((r) => {
+      if (fy === NO_DATE) { if (r.receivedDate) return false; }
+      else if (fy !== ALL_YEARS && financialYear(r.receivedDate) !== fy) return false;
       if (party !== "__all__" && r.partyName !== party) return false;
       if (status !== "__all__" && r.finalStatus !== status) return false;
       if (!needle) return true;
       return [r.skuName, r.partyName, r.batchNo, r.invoiceNumber, r.poNumber]
         .some((v) => v?.toLowerCase().includes(needle));
     });
-  }, [merged, q, party, status]);
+  }, [merged, fy, q, party, status]);
 
   const totalReceived = useMemo(
     () => visible.reduce((sum, r) => sum + Number(r.receivedQty ?? 0), 0), [visible]);
@@ -282,11 +309,24 @@ function ReceivingsContent({ rows, suggestions, skus }: {
     <div className="space-y-6">
       <PageHeader
         title="Receivings"
-        description={`${visible.length} receipt${visible.length !== 1 ? "s" : ""} · ${totalReceived.toLocaleString("en-IN")} units received`}
+        description={
+          `${fy === ALL_YEARS ? "All years" : fy === NO_DATE ? "No received date" : `FY ${fy}`}` +
+          ` · ${visible.length} receipt${visible.length !== 1 ? "s" : ""}` +
+          ` · ${totalReceived.toLocaleString("en-IN")} units received`
+        }
         actions={<Button onClick={openCreate}><Plus className="mr-1.5 h-4 w-4" />Record Receiving</Button>}
       />
 
       <div className="flex flex-wrap items-center gap-2">
+        <Select value={fy} onValueChange={(v) => { setFy(v); resetPage(); }}>
+          <SelectTrigger className="h-8 w-44 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {fyOptions.map((y) => <SelectItem key={y} value={y}>FY {y}</SelectItem>)}
+            {hasUndated && <SelectItem value={NO_DATE}>No received date</SelectItem>}
+            <SelectItem value={ALL_YEARS}>All years</SelectItem>
+          </SelectContent>
+        </Select>
+
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -327,7 +367,13 @@ function ReceivingsContent({ rows, suggestions, skus }: {
             <PackageCheck className="h-7 w-7" />
           </div>
           <div>
-            <p className="font-semibold">{rows.length ? "Nothing matches those filters" : "No receivings yet"}</p>
+            <p className="font-semibold">
+              {rows.length
+                ? (q || party !== "__all__" || status !== "__all__")
+                  ? "Nothing matches those filters"
+                  : `Nothing received in FY ${fy}`
+                : "No receivings yet"}
+            </p>
             <p className="mt-1 text-sm text-muted-foreground">
               Record each shipment as it lands at the warehouse — what came in, from whom, against which invoice.
             </p>
