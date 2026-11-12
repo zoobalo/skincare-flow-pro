@@ -282,6 +282,8 @@ export type ApiComplaintComment = {
 
 export type ApiComplaint = {
   id: string; teamId: string; title: string; details: string; against: string;
+  kind: "SKU" | "General";
+  skuId: string | null; skuCode: string | null; skuName: string | null;
   status: "Open" | "Resolved";
   raisedById: string; raisedByName: string;
   resolvedById: string | null; resolvedByName: string | null; resolvedAt: string | null;
@@ -959,7 +961,7 @@ export const assignedTasksApi = {
 
 export const complaintsApi = {
   list: () => get<ApiComplaint[]>("/complaints"),
-  create: (data: { title: string; details?: string; against?: string }) =>
+  create: (data: { title: string; details?: string; against?: string; kind: "SKU" | "General"; skuId?: string | null }) =>
     send<ApiComplaint>("/complaints", "POST", data),
   update: (id: string, data: { title?: string; details?: string; against?: string; status?: "Open" | "Resolved" }) =>
     send<ApiComplaint>(`/complaints/${id}`, "PATCH", data),

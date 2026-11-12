@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { db } from "../../db/client.ts";
 import { complaints, complaintComments } from "../../db/schema/complaints.ts";
+import { skus } from "../../db/schema/skus.ts";
 import { eq, inArray, asc, desc } from "drizzle-orm";
 import type { JWTPayload } from "../auth/jwt.ts";
 
@@ -13,13 +14,20 @@ export const complaintRoutes = new Hono()
   // The list carries its comments, so the page opens with every thread ready.
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    const rows = await db.select().from(complaints)
+    const rows = await db
+      .select({
+        complaint: complaints,
+        skuCode:   skus.code,
+        skuName:   skus.name,
+      })
+      .from(complaints)
+      .leftJoin(skus, eq(skus.id, complaints.skuId))
       .where(eq(complaints.teamId, user.teamId))
       .orderBy(desc(complaints.createdAt));
 
     const comments = rows.length
       ? await db.select().from(complaintComments)
-          .where(inArray(complaintComments.complaintId, rows.map((r) => r.id)))
+          .where(inArray(complaintComments.complaintId, rows.map((r) => r.complaint.id)))
           .orderBy(asc(complaintComments.createdAt))
       : [];
 
@@ -29,16 +37,34 @@ export const complaintRoutes = new Hono()
       list.push(cm);
       byComplaint.set(cm.complaintId, list);
     }
-    return c.json(rows.map((r) => ({ ...r, comments: byComplaint.get(r.id) ?? [] })));
+    return c.json(rows.map((r) => ({
+      ...r.complaint,
+      skuCode:  r.skuCode,
+      skuName:  r.skuName,
+      comments: byComplaint.get(r.complaint.id) ?? [],
+    })));
   })
 
   .post("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
-    const { title, details, against } = await c.req.json();
+    const { title, details, against, kind, skuId } = await c.req.json();
     if (!title?.trim()) return c.json({ error: "A short title is required" }, 400);
+
+    const type = kind === "SKU" ? "SKU" : "General";
+    let sku: string | null = null;
+    if (type === "SKU") {
+      if (!skuId) return c.json({ error: "Choose the SKU this complaint is about" }, 400);
+      const [found] = await db.select({ id: skus.id, teamId: skus.teamId })
+        .from(skus).where(eq(skus.id, skuId)).limit(1);
+      if (!found || found.teamId !== user.teamId) return c.json({ error: "SKU not found" }, 404);
+      sku = found.id;
+    }
+
     const [created] = await db.insert(complaints).values({
       id:           crypto.randomUUID(),
       teamId:       user.teamId,
+      kind:         type,
+      skuId:        sku,
       title:        title.trim(),
       details:      details?.trim() ?? "",
       against:      against?.trim() ?? "",
@@ -46,7 +72,15 @@ export const complaintRoutes = new Hono()
       raisedById:   user.sub,
       raisedByName: user.name,
     }).returning();
-    return c.json({ ...created, comments: [] }, 201);
+    const named = sku
+      ? (await db.select({ code: skus.code, name: skus.name }).from(skus).where(eq(skus.id, sku)).limit(1))[0]
+      : undefined;
+    return c.json({
+      ...created,
+      skuCode: named?.code ?? null,
+      skuName: named?.name ?? null,
+      comments: [],
+    }, 201);
   })
 
   .patch("/:id", async (c) => {

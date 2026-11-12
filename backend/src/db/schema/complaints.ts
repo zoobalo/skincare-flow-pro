@@ -3,6 +3,9 @@ import { pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
 export const complaints = pgTable("complaints", {
   id:          text("id").primaryKey(),
   teamId:      text("team_id").notNull(),
+  // "SKU" complaints name the SKU they are about; "General" ones do not.
+  kind:        text("kind").notNull().default("General"),
+  skuId:       text("sku_id"),
   title:       text("title").notNull(),
   details:     text("details").notNull().default(""),
   against:     text("against").notNull().default(""),
@@ -18,6 +21,7 @@ export const complaints = pgTable("complaints", {
 }, (t) => [
   index("complaints_team_idx").on(t.teamId),
   index("complaints_status_idx").on(t.status),
+  index("complaints_sku_idx").on(t.skuId),
 ]);
 
 export const complaintComments = pgTable("complaint_comments", {

@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader } from "@/components/page-header";
-import { complaintsApi, type ApiComplaint, type ApiComplaintComment } from "@/lib/api";
+import { api, complaintsApi, type ApiComplaint, type ApiComplaintComment, type ApiSku } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/complaints/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    return { complaints: await complaintsApi.list() };
+    const [complaints, skus] = await Promise.all([complaintsApi.list(), api.skus.list()]);
+    return { complaints, skus };
   },
   pendingComponent: PageSkeleton,
   component: ComplaintsPage,
@@ -35,28 +36,36 @@ function fmtStamp(iso: string) {
 function ComplaintsPage() {
   const data = Route.useLoaderData();
   if (!data) return <PageSkeleton />;
-  return <ComplaintsContent complaints={data.complaints} />;
+  return <ComplaintsContent complaints={data.complaints} skus={data.skus} />;
 }
 
-function ComplaintsContent({ complaints: all }: { complaints: ApiComplaint[] }) {
+function ComplaintsContent({ complaints: all, skus }: { complaints: ApiComplaint[]; skus: ApiSku[] }) {
   const router = useRouter();
   const reload = () => router.invalidate();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: "", against: "", details: "" });
+  const [form, setForm] = useState<{
+    kind: "SKU" | "General"; skuId: string | null; title: string; against: string; details: string;
+  }>({ kind: "General", skuId: null, title: "", against: "", details: "" });
   const [filter, setFilter] = useState<"Open" | "Resolved" | "__all__">("Open");
+  const [kindFilter, setKindFilter] = useState<"SKU" | "General" | "__all__">("__all__");
 
   const open = all.filter((x) => x.status === "Open").length;
-  const complaints = filter === "__all__" ? all : all.filter((x) => x.status === filter);
+  const complaints = all.filter((x) => {
+    if (filter !== "__all__" && x.status !== filter) return false;
+    if (kindFilter !== "__all__" && x.kind !== kindFilter) return false;
+    return true;
+  });
 
   const raise = async () => {
     if (!form.title.trim()) { toast.error("Give the complaint a short title."); return; }
+    if (form.kind === "SKU" && !form.skuId) { toast.error("Choose which SKU this is about."); return; }
     setSaving(true);
     try {
       await complaintsApi.create(form);
       toast.success("Complaint raised.");
-      setForm({ title: "", against: "", details: "" });
+      setForm({ kind: "General", skuId: null, title: "", against: "", details: "" });
       setSheetOpen(false);
       await reload();
     } catch (e) {
@@ -99,6 +108,15 @@ function ComplaintsContent({ complaints: all }: { complaints: ApiComplaint[] }) 
             <SelectItem value="__all__">All complaints</SelectItem>
           </SelectContent>
         </Select>
+
+        <Select value={kindFilter} onValueChange={(v) => setKindFilter(v as typeof kindFilter)}>
+          <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">Both types</SelectItem>
+            <SelectItem value="SKU">SKU</SelectItem>
+            <SelectItem value="General">General</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {complaints.length === 0 ? (
@@ -127,6 +145,42 @@ function ComplaintsContent({ complaints: all }: { complaints: ApiComplaint[] }) 
         <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
           <SheetHeader><SheetTitle>Raise a Complaint</SheetTitle></SheetHeader>
           <div className="mt-6 grid grid-cols-1 gap-5">
+            <div className="space-y-1.5">
+              <Label>Type of complaint *</Label>
+              <Select
+                value={form.kind}
+                onValueChange={(v) => setForm((f) => ({
+                  ...f,
+                  kind: v as "SKU" | "General",
+                  // Dropping back to General clears a SKU picked by mistake.
+                  skuId: v === "SKU" ? f.skuId : null,
+                }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SKU">SKU — about one product</SelectItem>
+                  <SelectItem value="General">General — everything else</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {form.kind === "SKU" && (
+              <div className="space-y-1.5">
+                <Label>Which SKU? *</Label>
+                <Select
+                  value={form.skuId ?? ""}
+                  onValueChange={(v) => setForm((f) => ({ ...f, skuId: v }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select SKU…" /></SelectTrigger>
+                  <SelectContent>
+                    {skus.map((sk) => (
+                      <SelectItem key={sk.id} value={sk.id}>{sk.code} — {sk.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label>What is the problem? *</Label>
               <Input
@@ -211,9 +265,18 @@ function ComplaintCard({
               {resolved ? <CircleCheck className="h-3 w-3" /> : <CircleAlert className="h-3 w-3" />}
               {complaint.status}
             </span>
+            <span className="rounded-full border bg-muted/50 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+              {complaint.kind}
+            </span>
             <p className={`font-semibold leading-snug ${resolved ? "line-through" : ""}`}>{complaint.title}</p>
           </div>
 
+          {complaint.kind === "SKU" && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              SKU: {complaint.skuName ?? "—"}
+              {complaint.skuCode ? <span className="ml-1 opacity-70">({complaint.skuCode})</span> : null}
+            </p>
+          )}
           {complaint.against && (
             <p className="mt-1 text-xs text-muted-foreground">Against: {complaint.against}</p>
           )}
