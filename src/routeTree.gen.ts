@@ -40,6 +40,7 @@ import { Route as AppProductionIndexRouteImport } from './routes/_app/production
 import { Route as AppPurchaseOrdersIndexRouteImport } from './routes/_app/purchase-orders/index'
 import { Route as AppPurchaseOrdersPoIdRouteImport } from './routes/_app/purchase-orders/$poId'
 import { Route as AppPurchaseOrdersNewRouteImport } from './routes/_app/purchase-orders/new'
+import { Route as AppReceivingsIndexRouteImport } from './routes/_app/receivings/index'
 import { Route as AppReimburseIndexRouteImport } from './routes/_app/reimburse/index'
 import { Route as AppReportsIndexRouteImport } from './routes/_app/reports/index'
 import { Route as AppSampleIndexRouteImport } from './routes/_app/sample/index'
@@ -211,6 +212,11 @@ const AppPurchaseOrdersNewRoute = AppPurchaseOrdersNewRouteImport.update({
   path: '/purchase-orders/new',
   getParentRoute: () => AppRoute,
 } as any)
+const AppReceivingsIndexRoute = AppReceivingsIndexRouteImport.update({
+  id: '/receivings/',
+  path: '/receivings/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReimburseIndexRoute = AppReimburseIndexRouteImport.update({
   id: '/reimburse/',
   path: '/reimburse/',
@@ -315,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/production-remarks/': typeof AppProductionRemarksIndexRoute
   '/production/': typeof AppProductionIndexRoute
   '/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
+  '/receivings/': typeof AppReceivingsIndexRoute
   '/reimburse/': typeof AppReimburseIndexRoute
   '/reports/': typeof AppReportsIndexRoute
   '/sample/': typeof AppSampleIndexRoute
@@ -361,6 +368,7 @@ export interface FileRoutesByTo {
   '/production-remarks': typeof AppProductionRemarksIndexRoute
   '/production': typeof AppProductionIndexRoute
   '/purchase-orders': typeof AppPurchaseOrdersIndexRoute
+  '/receivings': typeof AppReceivingsIndexRoute
   '/reimburse': typeof AppReimburseIndexRoute
   '/reports': typeof AppReportsIndexRoute
   '/sample': typeof AppSampleIndexRoute
@@ -409,6 +417,7 @@ export interface FileRoutesById {
   '/_app/production-remarks/': typeof AppProductionRemarksIndexRoute
   '/_app/production/': typeof AppProductionIndexRoute
   '/_app/purchase-orders/': typeof AppPurchaseOrdersIndexRoute
+  '/_app/receivings/': typeof AppReceivingsIndexRoute
   '/_app/reimburse/': typeof AppReimburseIndexRoute
   '/_app/reports/': typeof AppReportsIndexRoute
   '/_app/sample/': typeof AppSampleIndexRoute
@@ -457,6 +466,7 @@ export interface FileRouteTypes {
     | '/production-remarks/'
     | '/production/'
     | '/purchase-orders/'
+    | '/receivings/'
     | '/reimburse/'
     | '/reports/'
     | '/sample/'
@@ -503,6 +513,7 @@ export interface FileRouteTypes {
     | '/production-remarks'
     | '/production'
     | '/purchase-orders'
+    | '/receivings'
     | '/reimburse'
     | '/reports'
     | '/sample'
@@ -550,6 +561,7 @@ export interface FileRouteTypes {
     | '/_app/production-remarks/'
     | '/_app/production/'
     | '/_app/purchase-orders/'
+    | '/_app/receivings/'
     | '/_app/reimburse/'
     | '/_app/reports/'
     | '/_app/sample/'
@@ -793,6 +805,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPurchaseOrdersNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/receivings/': {
+      id: '/_app/receivings/'
+      path: '/receivings'
+      fullPath: '/receivings/'
+      preLoaderRoute: typeof AppReceivingsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/reimburse/': {
       id: '/_app/reimburse/'
       path: '/reimburse'
@@ -921,6 +940,7 @@ interface AppRouteChildren {
   AppProductionRemarksIndexRoute: typeof AppProductionRemarksIndexRoute
   AppProductionIndexRoute: typeof AppProductionIndexRoute
   AppPurchaseOrdersIndexRoute: typeof AppPurchaseOrdersIndexRoute
+  AppReceivingsIndexRoute: typeof AppReceivingsIndexRoute
   AppReimburseIndexRoute: typeof AppReimburseIndexRoute
   AppReportsIndexRoute: typeof AppReportsIndexRoute
   AppSampleIndexRoute: typeof AppSampleIndexRoute
@@ -962,6 +982,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProductionRemarksIndexRoute: AppProductionRemarksIndexRoute,
   AppProductionIndexRoute: AppProductionIndexRoute,
   AppPurchaseOrdersIndexRoute: AppPurchaseOrdersIndexRoute,
+  AppReceivingsIndexRoute: AppReceivingsIndexRoute,
   AppReimburseIndexRoute: AppReimburseIndexRoute,
   AppReportsIndexRoute: AppReportsIndexRoute,
   AppSampleIndexRoute: AppSampleIndexRoute,

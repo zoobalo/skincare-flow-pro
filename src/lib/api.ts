@@ -275,6 +275,22 @@ export type ApiAssignedTaskComment = {
   id: string; taskId: string; authorId: string; authorName: string; text: string; createdAt: string;
 };
 
+export type ApiReceiving = {
+  id: string; teamId: string;
+  skuName: string; partyName: string; batchNo: string;
+  receivedQty: string | null; receivedDate: string | null;
+  poNumber: string; poDate: string | null; poQty: string | null;
+  invoiceNumber: string; invoiceDate: string | null; invoiceQty: string | null;
+  mfgDate: string; expDate: string; mrp: string | null;
+  coaStatus: string; qc: string; finalStatus: string; comments: string;
+  createdById: string; createdByName: string;
+  createdAt: string; updatedAt: string;
+};
+
+export type ApiReceivingInput = Partial<Omit<ApiReceiving,
+  "id" | "teamId" | "createdById" | "createdByName" | "createdAt" | "updatedAt">>
+  & { skuName: string; partyName: string };
+
 export type ApiComplaintComment = {
   id: string; complaintId: string; authorId: string; authorName: string;
   text: string; createdAt: string;
@@ -957,6 +973,15 @@ export const assignedTasksApi = {
     fetch(`${BASE}/assigned-tasks/${taskId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ text }) }).then((r) => r.json()),
   deleteComment: (taskId: string, commentId: string) =>
     fetch(`${BASE}/assigned-tasks/${taskId}/comments/${commentId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+};
+
+export const receivingsApi = {
+  list:        () => get<ApiReceiving[]>("/receivings"),
+  suggestions: () => get<{ skuNames: string[]; partyNames: string[] }>("/receivings/suggestions"),
+  create: (data: ApiReceivingInput) => send<ApiReceiving>("/receivings", "POST", data),
+  update: (id: string, data: Partial<ApiReceivingInput>) =>
+    send<ApiReceiving>(`/receivings/${id}`, "PATCH", data),
+  delete: (id: string) => send<{ ok: true }>(`/receivings/${id}`, "DELETE"),
 };
 
 export const complaintsApi = {

@@ -61,6 +61,7 @@ const nav = [
   ]},
   { group: "Inventory", items: [
     { to: "/inventory",               label: "Inventory",           icon: Boxes       },
+    { to: "/receivings",              label: "Receivings",          icon: PackageCheck },
     { to: "/forecast",     label: "Inventory Forecast", icon: TrendingDown },
     { to: "/inventory/packaging",     label: "Packaging Materials", icon: PackageOpen },
     { to: "/inventory/raw-materials", label: "Raw Materials",       icon: FlaskConical },
