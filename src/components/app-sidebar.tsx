@@ -5,7 +5,7 @@ import { auth } from "@/lib/api";
 import { getGrants, type Grant, SHAREABLE_MODULES } from "@/lib/grants";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Factory, Boxes, PackageOpen, FlaskConical,
-  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, TrendingDown, Palette, ClipboardList, PackageCheck, Link2, Activity, TestTube2, Share2, ShieldCheck,
+  GitBranch, Truck, Warehouse, FileText, BarChart3, FileBarChart, UserCog, Settings, Sparkles, ListChecks, Beaker, MessageSquareWarning, BookUser, ReceiptText, PhoneCall, TrendingDown, Palette, ClipboardList, PackageCheck, Link2, Activity, TestTube2, Share2, ShieldCheck, CircleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +46,7 @@ const nav = [
     { to: "/sku-activity",  label: "SKU Activity",     icon: Activity     },
     { to: "/sample",        label: "Sample",            icon: TestTube2    },
     { to: "/warehouse-qc",  label: "Warehouse QC",      icon: ShieldCheck  },
+    { to: "/complaints",    label: "Complaints",        icon: CircleAlert  },
   ]},
   { group: "NPD", items: [
     { to: "/npd", label: "New Product Development", icon: Beaker },

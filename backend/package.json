@@ -1,7 +1,7 @@
 {
   "name": "skinops-backend",
   "version": "1.0.0",
-  "description": "Zoobalo backend — Drizzle ORM + PostgreSQL",
+  "description": "Zoobalo backend \u2014 Drizzle ORM + PostgreSQL",
   "type": "module",
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --packages=external",
@@ -11,7 +11,8 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/seed.ts",
     "db:reset": "tsx src/db/reset.ts",
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "db:sql": "tsx src/db/apply-sql.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.3",

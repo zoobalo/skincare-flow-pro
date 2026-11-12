@@ -19,6 +19,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as QuoteTokenRouteImport } from './routes/quote.$token'
 import { Route as AppAnalyticsIndexRouteImport } from './routes/_app/analytics/index'
 import { Route as AppArtworkIndexRouteImport } from './routes/_app/artwork/index'
+import { Route as AppComplaintsIndexRouteImport } from './routes/_app/complaints/index'
 import { Route as AppCourierIndexRouteImport } from './routes/_app/courier/index'
 import { Route as AppDirectoryIndexRouteImport } from './routes/_app/directory/index'
 import { Route as AppFollowUpsIndexRouteImport } from './routes/_app/follow-ups/index'
@@ -101,6 +102,11 @@ const AppAnalyticsIndexRoute = AppAnalyticsIndexRouteImport.update({
 const AppArtworkIndexRoute = AppArtworkIndexRouteImport.update({
   id: '/artwork/',
   path: '/artwork/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppComplaintsIndexRoute = AppComplaintsIndexRouteImport.update({
+  id: '/complaints/',
+  path: '/complaints/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCourierIndexRoute = AppCourierIndexRouteImport.update({
@@ -293,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/analytics/': typeof AppAnalyticsIndexRoute
   '/artwork/': typeof AppArtworkIndexRoute
+  '/complaints/': typeof AppComplaintsIndexRoute
   '/courier/': typeof AppCourierIndexRoute
   '/directory/': typeof AppDirectoryIndexRoute
   '/follow-ups/': typeof AppFollowUpsIndexRoute
@@ -338,6 +345,7 @@ export interface FileRoutesByTo {
   '/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/analytics': typeof AppAnalyticsIndexRoute
   '/artwork': typeof AppArtworkIndexRoute
+  '/complaints': typeof AppComplaintsIndexRoute
   '/courier': typeof AppCourierIndexRoute
   '/directory': typeof AppDirectoryIndexRoute
   '/follow-ups': typeof AppFollowUpsIndexRoute
@@ -385,6 +393,7 @@ export interface FileRoutesById {
   '/_app/vendors/$vendorId': typeof AppVendorsVendorIdRoute
   '/_app/analytics/': typeof AppAnalyticsIndexRoute
   '/_app/artwork/': typeof AppArtworkIndexRoute
+  '/_app/complaints/': typeof AppComplaintsIndexRoute
   '/_app/courier/': typeof AppCourierIndexRoute
   '/_app/directory/': typeof AppDirectoryIndexRoute
   '/_app/follow-ups/': typeof AppFollowUpsIndexRoute
@@ -432,6 +441,7 @@ export interface FileRouteTypes {
     | '/vendors/$vendorId'
     | '/analytics/'
     | '/artwork/'
+    | '/complaints/'
     | '/courier/'
     | '/directory/'
     | '/follow-ups/'
@@ -477,6 +487,7 @@ export interface FileRouteTypes {
     | '/vendors/$vendorId'
     | '/analytics'
     | '/artwork'
+    | '/complaints'
     | '/courier'
     | '/directory'
     | '/follow-ups'
@@ -523,6 +534,7 @@ export interface FileRouteTypes {
     | '/_app/vendors/$vendorId'
     | '/_app/analytics/'
     | '/_app/artwork/'
+    | '/_app/complaints/'
     | '/_app/courier/'
     | '/_app/directory/'
     | '/_app/follow-ups/'
@@ -632,6 +644,13 @@ declare module '@tanstack/react-router' {
       path: '/artwork'
       fullPath: '/artwork/'
       preLoaderRoute: typeof AppArtworkIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/complaints/': {
+      id: '/_app/complaints/'
+      path: '/complaints'
+      fullPath: '/complaints/'
+      preLoaderRoute: typeof AppComplaintsIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/courier/': {
@@ -886,6 +905,7 @@ interface AppRouteChildren {
   AppVendorsVendorIdRoute: typeof AppVendorsVendorIdRoute
   AppAnalyticsIndexRoute: typeof AppAnalyticsIndexRoute
   AppArtworkIndexRoute: typeof AppArtworkIndexRoute
+  AppComplaintsIndexRoute: typeof AppComplaintsIndexRoute
   AppCourierIndexRoute: typeof AppCourierIndexRoute
   AppDirectoryIndexRoute: typeof AppDirectoryIndexRoute
   AppFollowUpsIndexRoute: typeof AppFollowUpsIndexRoute
@@ -926,6 +946,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppVendorsVendorIdRoute: AppVendorsVendorIdRoute,
   AppAnalyticsIndexRoute: AppAnalyticsIndexRoute,
   AppArtworkIndexRoute: AppArtworkIndexRoute,
+  AppComplaintsIndexRoute: AppComplaintsIndexRoute,
   AppCourierIndexRoute: AppCourierIndexRoute,
   AppDirectoryIndexRoute: AppDirectoryIndexRoute,
   AppFollowUpsIndexRoute: AppFollowUpsIndexRoute,

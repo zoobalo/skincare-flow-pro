@@ -275,6 +275,20 @@ export type ApiAssignedTaskComment = {
   id: string; taskId: string; authorId: string; authorName: string; text: string; createdAt: string;
 };
 
+export type ApiComplaintComment = {
+  id: string; complaintId: string; authorId: string; authorName: string;
+  text: string; createdAt: string;
+};
+
+export type ApiComplaint = {
+  id: string; teamId: string; title: string; details: string; against: string;
+  status: "Open" | "Resolved";
+  raisedById: string; raisedByName: string;
+  resolvedById: string | null; resolvedByName: string | null; resolvedAt: string | null;
+  createdAt: string; updatedAt: string;
+  comments: ApiComplaintComment[];
+};
+
 export type ApiWarehouseQc = {
   id: string; teamId: string; qcDate: string; qcDoneBy: string;
   qcTypes: string[]; skuIds: string[];
@@ -941,6 +955,19 @@ export const assignedTasksApi = {
     fetch(`${BASE}/assigned-tasks/${taskId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ text }) }).then((r) => r.json()),
   deleteComment: (taskId: string, commentId: string) =>
     fetch(`${BASE}/assigned-tasks/${taskId}/comments/${commentId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+};
+
+export const complaintsApi = {
+  list: () => get<ApiComplaint[]>("/complaints"),
+  create: (data: { title: string; details?: string; against?: string }) =>
+    send<ApiComplaint>("/complaints", "POST", data),
+  update: (id: string, data: { title?: string; details?: string; against?: string; status?: "Open" | "Resolved" }) =>
+    send<ApiComplaint>(`/complaints/${id}`, "PATCH", data),
+  delete: (id: string) => send<{ ok: true }>(`/complaints/${id}`, "DELETE"),
+  addComment: (id: string, text: string) =>
+    send<ApiComplaintComment>(`/complaints/${id}/comments`, "POST", { text }),
+  deleteComment: (id: string, commentId: string) =>
+    send<{ ok: true }>(`/complaints/${id}/comments/${commentId}`, "DELETE"),
 };
 
 export const warehouseQcApi = {
