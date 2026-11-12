@@ -24,11 +24,13 @@ export const Route = createFileRoute("/_app/payments/")({
   head: () => ({ meta: [{ title: "Payments — Zoobalo" }] }),
 });
 
+const COA_OPTIONS   = ["Not Received", "Received"] as const;
 const QC_OPTIONS    = ["Pending", "Done"] as const;
 const GO_OPTIONS    = ["Stop", "Go"] as const;
 const PAY_OPTIONS   = ["Pending", "Conveyed to accounts team", "Completed"] as const;
 
 const EDITABLE = {
+  coaStatus:     COA_OPTIONS,
   internalQc:    QC_OPTIONS,
   externalQc:    QC_OPTIONS,
   finalStatus:   GO_OPTIONS,
@@ -37,6 +39,8 @@ const EDITABLE = {
 type EditableKey = keyof typeof EDITABLE;
 
 const COLOUR: Record<string, string> = {
+  "Not Received": "text-red-600 dark:text-red-400",
+  Received: "text-green-700 dark:text-green-400",
   Pending: "text-red-600 dark:text-red-400",
   Done:    "text-green-700 dark:text-green-400",
   Stop:    "text-red-600 dark:text-red-400",
@@ -99,7 +103,8 @@ function PaymentsContent({ invoices, parties }: {
 
   const EMPTY = {
     party: "", invoiceNumber: "", invoiceDate: today(), dueDays: "0",
-    internalQc: "Pending", externalQc: "Pending", finalStatus: "Stop", comments: "",
+    coaStatus: "Not Received", internalQc: "Pending", externalQc: "Pending",
+    finalStatus: "Stop", comments: "",
   };
   const [form, setForm] = useState({ ...EMPTY });
 
@@ -160,6 +165,7 @@ function PaymentsContent({ invoices, parties }: {
         partyId: party.partyId, partyType: party.partyType,
         invoiceNumber: form.invoiceNumber, invoiceDate: form.invoiceDate,
         dueDays: Number(form.dueDays) || 0,
+        coaStatus: form.coaStatus,
         internalQc: form.internalQc, externalQc: form.externalQc,
         finalStatus: form.finalStatus, comments: form.comments,
       });
@@ -258,6 +264,16 @@ function PaymentsContent({ invoices, parties }: {
               </p>
             </div>
 
+            <div className="col-span-2 space-y-1.5">
+              <Label>COA</Label>
+              <Select value={form.coaStatus} onValueChange={(v) => setForm((f) => ({ ...f, coaStatus: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {COA_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-1.5">
               <Label>Internal QC</Label>
               <Select value={form.internalQc} onValueChange={(v) => setForm((f) => ({ ...f, internalQc: v }))}>
@@ -347,7 +363,7 @@ const InvoiceRow = memo(function InvoiceRow({ r, onChange, onDelete }: {
         ) : "—"}
       </td>
       {(Object.keys(EDITABLE) as EditableKey[]).map((key) => (
-        <td key={key} className="min-w-[120px] px-3 py-2">
+        <td key={key} className="min-w-[132px] px-3 py-2">
           <Cell field={key} value={r[key]} onChange={(v) => onChange(r, key, v)} />
         </td>
       ))}
@@ -383,7 +399,7 @@ function InvoiceTable({ rows, onChange, onDelete, emptyNote }: {
   }
   return (
     <div className="overflow-x-auto rounded-xl border bg-card">
-      <table className="w-full min-w-[1500px] text-sm">
+      <table className="w-full min-w-[1640px] text-sm">
         <thead>
           <tr className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
             <th className="px-3 py-2.5 text-left font-medium">Party</th>
@@ -393,6 +409,7 @@ function InvoiceTable({ rows, onChange, onDelete, emptyNote }: {
             <th className="px-3 py-2.5 text-right font-medium">Due Days</th>
             <th className="px-3 py-2.5 text-left font-medium">Due On</th>
             <th className="px-3 py-2.5 text-left font-medium">Days Elapsed</th>
+            <th className="min-w-[132px] px-3 py-2.5 text-left font-medium">COA</th>
             <th className="min-w-[120px] px-3 py-2.5 text-left font-medium">Internal QC</th>
             <th className="min-w-[120px] px-3 py-2.5 text-left font-medium">External QC</th>
             <th className="min-w-[120px] px-3 py-2.5 text-left font-medium">Final Status</th>

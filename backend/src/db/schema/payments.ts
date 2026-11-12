@@ -32,6 +32,7 @@ export const paymentInvoices = pgTable("payment_invoices", {
   invoiceNumber: text("invoice_number").notNull(),
   invoiceDate:   date("invoice_date", { mode: "string" }),
   dueDays:       integer("due_days").notNull().default(0),
+  coaStatus:     text("coa_status").notNull().default("Not Received"), // Received | Not Received
   internalQc:    text("internal_qc").notNull().default("Pending"),   // Done | Pending
   externalQc:    text("external_qc").notNull().default("Pending"),   // Done | Pending
   finalStatus:   text("final_status").notNull().default("Stop"),     // Go | Stop

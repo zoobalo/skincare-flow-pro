@@ -13,6 +13,7 @@ const int = (v: unknown) => {
   return Number.isFinite(n) && n >= 0 ? Math.trunc(n) : 0;
 };
 
+const COA    = new Set(["Received", "Not Received"]);
 const QC     = new Set(["Done", "Pending"]);
 const GO     = new Set(["Go", "Stop"]);
 const PAYING = new Set(["Pending", "Conveyed to accounts team", "Completed"]);
@@ -101,6 +102,7 @@ export const paymentRoutes = new Hono()
       invoiceNumber: str(b.invoiceNumber),
       invoiceDate:   day(b.invoiceDate),
       dueDays:       int(b.dueDays),
+      coaStatus:     COA.has(str(b.coaStatus))     ? str(b.coaStatus)     : "Not Received",
       internalQc:    QC.has(str(b.internalQc))     ? str(b.internalQc)     : "Pending",
       externalQc:    QC.has(str(b.externalQc))     ? str(b.externalQc)     : "Pending",
       finalStatus:   GO.has(str(b.finalStatus))    ? str(b.finalStatus)    : "Stop",
@@ -128,7 +130,7 @@ export const paymentRoutes = new Hono()
     if (b.dueDays       !== undefined) patch.dueDays       = int(b.dueDays);
     if (b.comments      !== undefined) patch.comments      = str(b.comments);
 
-    for (const [k, allowed] of [["internalQc", QC], ["externalQc", QC],
+    for (const [k, allowed] of [["coaStatus", COA], ["internalQc", QC], ["externalQc", QC],
                                 ["finalStatus", GO], ["paymentStatus", PAYING]] as const) {
       if (b[k] === undefined) continue;
       if (!allowed.has(str(b[k]))) return c.json({ error: `${str(b[k])} is not a valid ${k}` }, 400);

@@ -284,6 +284,7 @@ export type ApiPaymentInvoice = {
   id: string; teamId: string;
   partyId: string; partyType: "Vendor" | "Manufacturer"; partyName: string;
   invoiceNumber: string; invoiceDate: string | null; dueDays: number;
+  coaStatus: "Received" | "Not Received";
   internalQc: "Done" | "Pending";
   externalQc: "Done" | "Pending";
   finalStatus: "Go" | "Stop";
@@ -296,7 +297,7 @@ export type ApiPaymentInvoice = {
 export type ApiPaymentInvoiceInput = {
   partyId: string; partyType: string; invoiceNumber: string;
   invoiceDate: string | null; dueDays: number;
-  internalQc?: string; externalQc?: string; finalStatus?: string;
+  coaStatus?: string; internalQc?: string; externalQc?: string; finalStatus?: string;
   paymentStatus?: string; comments?: string;
 };
 
