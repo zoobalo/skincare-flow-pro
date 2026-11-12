@@ -25,7 +25,9 @@ export const Route = createFileRoute("/_app/receivings/")({
   head: () => ({ meta: [{ title: "Receivings — Zoobalo" }] }),
 });
 
-const COA_STATUSES   = ["Pending", "Received", "Not Required"] as const;
+const COA_STATUSES     = ["Pending", "Received", "Not Required"] as const;
+const GRN_STATUSES     = ["Pending", "Created", "Not Required"] as const;
+const INVOICE_STATUSES = ["Pending", "Received", "Booked", "Paid"] as const;
 const QC_STATUSES    = ["Pending", "Pass", "Fail", "On Hold"] as const;
 const FINAL_STATUSES = ["Pending", "Accepted", "Short Received", "Rejected"] as const;
 
@@ -35,7 +37,8 @@ const EMPTY = {
   poNumber: "", poDate: "", poQty: "",
   invoiceNumber: "", invoiceDate: "", invoiceQty: "",
   mfgDate: "", expDate: "", mrp: "",
-  coaStatus: "Pending", qc: "Pending", finalStatus: "Pending", comments: "",
+  coaStatus: "Pending", grnStatus: "Pending", invoiceStatus: "Pending",
+  qc: "Pending", finalStatus: "Pending", comments: "",
 };
 type Form = typeof EMPTY;
 
@@ -96,7 +99,8 @@ function ReceivingsContent({ rows, suggestions, skus }: {
       poNumber: r.poNumber, poDate: r.poDate ?? "", poQty: r.poQty ?? "",
       invoiceNumber: r.invoiceNumber, invoiceDate: r.invoiceDate ?? "", invoiceQty: r.invoiceQty ?? "",
       mfgDate: r.mfgDate, expDate: r.expDate, mrp: r.mrp ?? "",
-      coaStatus: r.coaStatus, qc: r.qc, finalStatus: r.finalStatus, comments: r.comments,
+      coaStatus: r.coaStatus, grnStatus: r.grnStatus, invoiceStatus: r.invoiceStatus,
+      qc: r.qc, finalStatus: r.finalStatus, comments: r.comments,
     });
     setEditing(r);
     setSheetOpen(true);
@@ -181,7 +185,7 @@ function ReceivingsContent({ rows, suggestions, skus }: {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border bg-card">
-          <table className="w-full min-w-[1500px] text-sm">
+          <table className="w-full min-w-[1700px] text-sm">
             <thead>
               <tr className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-3 py-2.5 text-left font-medium">SKU Name</th>
@@ -199,6 +203,8 @@ function ReceivingsContent({ rows, suggestions, skus }: {
                 <th className="px-3 py-2.5 text-left font-medium">EXP</th>
                 <th className="px-3 py-2.5 text-right font-medium">MRP</th>
                 <th className="px-3 py-2.5 text-left font-medium">COA</th>
+                <th className="px-3 py-2.5 text-left font-medium">GRN</th>
+                <th className="px-3 py-2.5 text-left font-medium">Invoice Status</th>
                 <th className="px-3 py-2.5 text-left font-medium">QC</th>
                 <th className="px-3 py-2.5 text-left font-medium">Final Status</th>
                 <th className="px-3 py-2.5 text-left font-medium">Comments</th>
@@ -230,6 +236,8 @@ function ReceivingsContent({ rows, suggestions, skus }: {
                     <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{r.expDate || "—"}</td>
                     <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmtQty(r.mrp)}</td>
                     <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.coaStatus}</td>
+                    <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.grnStatus}</td>
+                    <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.invoiceStatus}</td>
                     <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.qc}</td>
                     <td className="px-3 py-2.5 text-xs">{r.finalStatus}</td>
                     <td className="px-3 py-2.5 max-w-[14rem] whitespace-pre-wrap text-xs text-muted-foreground">
@@ -341,6 +349,24 @@ function ReceivingsContent({ rows, suggestions, skus }: {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {COA_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>GRN Status</Label>
+                <Select value={form.grnStatus} onValueChange={set("grnStatus")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {GRN_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label>Invoice Status</Label>
+                <Select value={form.invoiceStatus} onValueChange={set("invoiceStatus")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {INVOICE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

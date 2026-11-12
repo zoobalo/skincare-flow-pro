@@ -282,7 +282,8 @@ export type ApiReceiving = {
   poNumber: string; poDate: string | null; poQty: string | null;
   invoiceNumber: string; invoiceDate: string | null; invoiceQty: string | null;
   mfgDate: string; expDate: string; mrp: string | null;
-  coaStatus: string; qc: string; finalStatus: string; comments: string;
+  coaStatus: string; grnStatus: string; invoiceStatus: string;
+  qc: string; finalStatus: string; comments: string;
   createdById: string; createdByName: string;
   createdAt: string; updatedAt: string;
 };

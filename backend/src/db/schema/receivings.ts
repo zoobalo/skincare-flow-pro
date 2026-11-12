@@ -35,6 +35,8 @@ export const receivings = pgTable("receivings", {
   mrp:           numeric("mrp"),
 
   coaStatus:     text("coa_status").notNull().default("Pending"),
+  grnStatus:     text("grn_status").notNull().default("Pending"),
+  invoiceStatus: text("invoice_status").notNull().default("Pending"),
   qc:            text("qc").notNull().default("Pending"),
   finalStatus:   text("final_status").notNull().default("Pending"),
   comments:      text("comments").notNull().default(""),

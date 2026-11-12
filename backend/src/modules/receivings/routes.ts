@@ -13,7 +13,8 @@ const day = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null
 
 const FIELDS = [
   "skuName", "partyName", "batchNo", "poNumber", "invoiceNumber",
-  "mfgDate", "expDate", "coaStatus", "qc", "finalStatus", "comments",
+  "mfgDate", "expDate", "coaStatus", "grnStatus", "invoiceStatus", "qc",
+  "finalStatus", "comments",
 ] as const;
 const NUMBERS = ["receivedQty", "poQty", "invoiceQty", "mrp"] as const;
 const DATES = ["receivedDate", "poDate", "invoiceDate"] as const;
@@ -63,7 +64,9 @@ export const receivingRoutes = new Hono()
       mfgDate:       str(body.mfgDate),
       expDate:       str(body.expDate),
       mrp:           num(body.mrp),
-      coaStatus:     str(body.coaStatus)   || "Pending",
+      coaStatus:     str(body.coaStatus)     || "Pending",
+      grnStatus:     str(body.grnStatus)     || "Pending",
+      invoiceStatus: str(body.invoiceStatus) || "Pending",
       qc:            str(body.qc)          || "Pending",
       finalStatus:   str(body.finalStatus) || "Pending",
       comments:      str(body.comments),
