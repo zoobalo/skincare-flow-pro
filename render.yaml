@@ -41,3 +41,6 @@ services:
       # Apps Script bridge for the receivings backup spreadsheet
       - key: RECEIVINGS_SHEET_SCRIPT_URL
         sync: false
+      # Link-shared Inventory Forecast spreadsheet, read through its CSV export
+      - key: FORECAST_SHEET_URL
+        sync: false

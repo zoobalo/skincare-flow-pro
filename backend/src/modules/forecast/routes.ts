@@ -1,6 +1,10 @@
 import { Hono } from "hono";
 import { resolveTeamId } from "../../lib/resolve-team.ts";
 import type { JWTPayload } from "../auth/jwt.ts";
+import { db } from "../../db/client.ts";
+import { forecastRows, forecastMeta } from "../../db/schema/forecast-sheet.ts";
+import { importForecastSheet } from "./sheet-import.ts";
+import { eq, asc } from "drizzle-orm";
 import { getForecast } from "./queries.ts";
 import {
   pushSalesTemplate, pushStockTemplate, pullSales, pullStock, todayISO,
@@ -12,6 +16,27 @@ const asMessage = (err: unknown) =>
   err instanceof Error ? err.message : "Sheet request failed";
 
 export const forecastRoutes = new Hono()
+  // ── The spreadsheet snapshot ──────────────────────────────────────────────
+  .get("/sheet", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    const [rows, [meta]] = await Promise.all([
+      db.select().from(forecastRows)
+        .where(eq(forecastRows.teamId, user.teamId))
+        .orderBy(asc(forecastRows.position)),
+      db.select().from(forecastMeta).where(eq(forecastMeta.teamId, user.teamId)).limit(1),
+    ]);
+    return c.json({ rows, meta: meta ?? null });
+  })
+
+  .post("/sheet/import", async (c) => {
+    const user = c.get("user" as never) as JWTPayload;
+    try {
+      return c.json(await importForecastSheet(user.teamId, user.name ?? ""));
+    } catch (err) {
+      return c.json({ error: err instanceof Error ? err.message : "Import failed" }, 502);
+    }
+  })
+
   .get("/", async (c) => {
     const user = c.get("user" as never) as JWTPayload;
     const teamId = await resolveTeamId(c, user, "forecast");

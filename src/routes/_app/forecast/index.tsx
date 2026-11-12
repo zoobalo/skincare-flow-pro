@@ -1,287 +1,225 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { PageHeader } from "@/components/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { PageHeader } from "@/components/page-header";
+import { forecastSheetApi, type ApiForecastRow, type ApiForecastMeta } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { api, type ApiForecast, type ApiForecastRow } from "@/lib/api";
-import {
-  Search, TrendingDown, Download, Upload, AlertTriangle, PackageX, Clock, CheckCircle2, HelpCircle,
-} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw, Loader2, Search, TrendingDown } from "lucide-react";
+import { memo, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/forecast/")({
   loader: async () => {
     if (typeof window === "undefined") return null;
-    const sharedTeamId = new URLSearchParams(window.location.search).get("sharedTeamId") ?? undefined;
-    return { data: await api.forecast.get(sharedTeamId), sharedTeamId };
+    return forecastSheetApi.get();
   },
   pendingComponent: PageSkeleton,
   component: ForecastPage,
   head: () => ({ meta: [{ title: "Inventory Forecast — Zoobalo" }] }),
 });
 
-function ForecastPage() {
-  const d = Route.useLoaderData();
-  if (!d) return <PageSkeleton />;
-  return <ForecastContent data={d.data} sharedTeamId={d.sharedTeamId} />;
-}
+/** The sheet's own vocabulary, in the order it escalates. */
+const STATUSES = ["CRITICAL", "PRODUCE NOW", "PLAN PRODUCTION", "SUFFICIENT", "NO SALES DATA"] as const;
 
-const STATUS: Record<ApiForecastRow["status"], {
-  label: string; cls: string; icon: React.ComponentType<{ className?: string }>;
-}> = {
-  critical:        { label: "Start production now", cls: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900", icon: AlertTriangle },
-  "no-stock":      { label: "Out of stock",         cls: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900", icon: PackageX },
-  warning:         { label: "Below threshold",      cls: "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900", icon: Clock },
-  ok:              { label: "Sufficient",           cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900", icon: CheckCircle2 },
-  "no-sales-data": { label: "No sales data",        cls: "bg-muted text-muted-foreground border-transparent", icon: HelpCircle },
+const STATUS_COLOUR: Record<string, string> = {
+  "CRITICAL":        "text-red-600 dark:text-red-400",
+  "PRODUCE NOW":     "text-orange-600 dark:text-orange-400",
+  "PLAN PRODUCTION": "text-amber-600 dark:text-amber-400",
+  "SUFFICIENT":      "text-green-700 dark:text-green-400",
+  "NO SALES DATA":   "text-muted-foreground",
 };
 
-const fmtNum = (n: number | null) => (n === null ? "—" : Math.round(n).toLocaleString("en-IN"));
-const fmtShort = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+const n = (v: string | null) =>
+  v === null || v === "" ? "—" : Number(v).toLocaleString("en-IN");
+const dec = (v: string | null) =>
+  v === null || v === "" ? "—" : Number(v).toLocaleString("en-IN", { maximumFractionDigits: 1 });
 
-const fmtDate = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+function ForecastPage() {
+  const data = Route.useLoaderData();
+  if (!data) return <PageSkeleton />;
+  return <ForecastContent rows={data.rows} meta={data.meta} />;
+}
 
-function ForecastContent({ data, sharedTeamId }: { data: ApiForecast; sharedTeamId?: string }) {
+function ForecastContent({ rows, meta }: { rows: ApiForecastRow[]; meta: ApiForecastMeta | null }) {
   const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [week, setWeek] = useState(data.currentWeekEnding);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("__all__");
 
-  async function run(key: string, fn: () => Promise<unknown>, describe: (r: any) => string) {
-    setBusy(key);
+  const update = async () => {
+    setBusy(true);
+    const note = toast.loading("Reading the spreadsheet…");
     try {
-      const res = await fn();
-      toast.success(describe(res));
-      const ambiguous = (res as { ambiguous?: string[] })?.ambiguous ?? [];
-      if (ambiguous.length) {
-        toast.warning(
-          `Skipped ${ambiguous.length} code${ambiguous.length === 1 ? "" : "s"} used by more than one SKU: ${ambiguous.join(", ")}. Give each product a unique code in SKU Management, or their numbers will be mixed up.`,
-          { duration: 14000 },
-        );
-      }
-      const skipped = (res as { skipped?: string[] })?.skipped ?? [];
-      if (skipped.length) {
-        toast.warning(
-          `${skipped.length} row${skipped.length === 1 ? "" : "s"} skipped — no matching SKU code: ${skipped.slice(0, 6).join(", ")}${skipped.length > 6 ? "…" : ""}`,
-          { duration: 10000 },
-        );
-      }
-      router.invalidate();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return q
-      ? data.rows.filter((r) => r.name.toLowerCase().includes(q) || r.code.toLowerCase().includes(q))
-      : data.rows;
-  }, [data.rows, search]);
+      const r = await forecastSheetApi.import();
+      toast.success(`Updated — ${r.rows} SKUs as of ${r.reportDate || "the latest report"}.`, { id: note });
+      await router.invalidate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not read the spreadsheet.", { id: note });
+    } finally { setBusy(false); }
+  };
 
   const counts = useMemo(() => {
-    const c = { critical: 0, "no-stock": 0, warning: 0, ok: 0, "no-sales-data": 0 };
-    for (const r of data.rows) c[r.status]++;
+    const c: Record<string, number> = {};
+    for (const r of rows) c[r.status] = (c[r.status] ?? 0) + 1;
     return c;
-  }, [data.rows]);
+  }, [rows]);
 
-  const lastImport = data.rows.find((r) => r.lastImportedAt)?.lastImportedAt ?? null;
-  const staleDays = lastImport
-    ? Math.floor((Date.now() - new Date(lastImport).getTime()) / 86400000)
-    : null;
+  const needle = q.trim().toLowerCase();
+  const visible = useMemo(() => rows.filter((r) => {
+    if (status !== "__all__" && r.status !== status) return false;
+    return !needle || r.skuName.toLowerCase().includes(needle);
+  }), [rows, status, needle]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <PageHeader
         title="Inventory Forecast"
-        description="How long current stock lasts at recent sales velocity, and when production must start."
+        description={
+          meta
+            ? `Report ${meta.reportDate} · ${meta.currentWeek} · lead time ${meta.leadTimeDays ?? "—"} days · ` +
+              `produce below ${meta.triggerAtDays ?? "—"} days of stock`
+            : "Not imported yet — press Update Data to read the spreadsheet."
+        }
+        actions={
+          <Button onClick={update} disabled={busy}>
+            {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  : <RefreshCw className="mr-1.5 h-4 w-4" />}
+            {busy ? "Updating…" : "Update Data"}
+          </Button>
+        }
       />
 
-      {/* Sheet controls */}
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm font-semibold">Weekly sales sheet</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Send the SKU list across, then pull the numbers back in. Import any
-            day — each import counts as one week of sales.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              Data up to
-              <Input
-                type="date"
-                value={week}
-                onChange={(e) => setWeek(e.target.value)}
-                className="h-8 w-36 text-xs"
-              />
-            </label>
-            <Button
-              size="sm" variant="outline" className="h-8"
-              disabled={busy !== null}
-              onClick={() => run("st", () => api.forecast.salesTemplate(week, sharedTeamId),
-                (r) => `Template sent — ${r.skus} SKUs, ${r.platforms} platforms.`)}
+      {meta && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {STATUSES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatus(status === s ? "__all__" : s)}
+              className={`rounded-xl border bg-card p-3 text-left transition-colors hover:bg-muted/40 ${
+                status === s ? "ring-2 ring-primary" : ""
+              }`}
             >
-              <Upload className="mr-1.5 h-3.5 w-3.5" />
-              {busy === "st" ? "Sending…" : "Sync template"}
-            </Button>
-            <Button
-              size="sm" className="h-8"
-              disabled={busy !== null}
-              onClick={() => run("si", () => api.forecast.salesImport(week, sharedTeamId),
-                (r) => `Imported sales for ${r.updated} SKUs.`)}
-            >
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-              {busy === "si" ? "Importing…" : "IN"}
-            </Button>
+              <p className={`text-2xl font-semibold tabular-nums ${STATUS_COLOUR[s]}`}>
+                {counts[s] ?? 0}
+              </p>
+              <p className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">{s}</p>
+            </button>
+          ))}
+          <div className="rounded-xl border bg-card p-3">
+            <p className="text-2xl font-semibold tabular-nums">{n(meta.totalToProduce)}</p>
+            <p className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+              Units to produce
+            </p>
           </div>
-        </div>
-
-        <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm font-semibold">Current inventory sheet</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Same flow — template out, quantities in.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              size="sm" variant="outline" className="h-8"
-              disabled={busy !== null}
-              onClick={() => run("kt", () => api.forecast.stockTemplate(sharedTeamId),
-                (r) => `Template sent — ${r.skus} SKUs, ${r.locations} locations.`)}
-            >
-              <Upload className="mr-1.5 h-3.5 w-3.5" />
-              {busy === "kt" ? "Sending…" : "Sync template"}
-            </Button>
-            <Button
-              size="sm" className="h-8"
-              disabled={busy !== null}
-              onClick={() => run("ki", () => api.forecast.stockImport(sharedTeamId),
-                (r) => `Updated stock for ${r.updated} SKUs.`)}
-            >
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-              {busy === "ki" ? "Importing…" : "IN"}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {staleDays !== null && staleDays > 10 && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-          Sales data was last imported {staleDays} days ago — the numbers below are likely optimistic.
         </div>
       )}
 
-      {/* Status summary */}
-      <div className="flex flex-wrap gap-2">
-        {(Object.keys(STATUS) as ApiForecastRow["status"][]).map((k) => (
-          counts[k] > 0 && (
-            <div key={k} className={cn("flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs", STATUS[k].cls)}>
-              {(() => { const I = STATUS[k].icon; return <I className="h-3.5 w-3.5" />; })()}
-              <span className="font-medium">{counts[k]}</span> {STATUS[k].label}
-            </div>
-          )
-        ))}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input className="h-8 w-60 pl-8 text-xs" placeholder="SKU name…"
+            value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <Select value={status} onValueChange={setStatus}>
+          <SelectTrigger className="h-8 w-48 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All statuses</SelectItem>
+            {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {(q || status !== "__all__") && (
+          <Button size="sm" variant="ghost" className="h-8 text-xs"
+            onClick={() => { setQ(""); setStatus("__all__"); }}>Clear</Button>
+        )}
+        {meta && (
+          <span className="ml-auto text-xs text-muted-foreground">
+            Last updated {new Date(meta.importedAt).toLocaleString("en-IN", {
+              day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+            {meta.importedByName ? ` by ${meta.importedByName}` : ""}
+          </span>
+        )}
       </div>
 
-      <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search SKU…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-      </div>
-
-      {rows.length === 0 ? (
-        <div className="rounded-xl border bg-card p-12 text-center">
-          <TrendingDown className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">No SKUs match your search.</p>
+      {!rows.length ? (
+        <div className="flex flex-col items-center justify-center gap-4 rounded-xl border bg-card p-16 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <TrendingDown className="h-7 w-7" />
+          </div>
+          <div>
+            <p className="font-semibold">Nothing imported yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Fill the forecast spreadsheet, then press Update Data to bring it in.
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full min-w-[1180px] text-sm">
-            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 text-left font-semibold">SKU</th>
-                <th className="px-3 py-2 text-right font-semibold">In stock</th>
-                {Array.from({ length: 4 }, (_, i) => (
-                  <th key={i} className="whitespace-nowrap px-2 py-2 text-right font-semibold">
-                    Week {i + 1}
-                    <span className="block text-[10px] font-normal normal-case text-muted-foreground/70">
-                      {data.recentWeeks[i] ? fmtShort(data.recentWeeks[i]) : "—"}
-                    </span>
-                  </th>
-                ))}
-                <th className="whitespace-nowrap border-l px-3 py-2 text-right font-semibold">
-                  Monthly
-                  <span className="block text-[10px] font-normal normal-case text-muted-foreground/70">
-                    4 weeks
-                  </span>
-                </th>
-                <th className="whitespace-nowrap px-3 py-2 text-right font-semibold">Weekly avg</th>
-                <th className="px-3 py-2 text-right font-semibold">Days of cover</th>
-                <th className="px-3 py-2 text-left font-semibold">Stockout</th>
-                <th className="px-3 py-2 text-left font-semibold">Start production by</th>
-                <th className="px-3 py-2 text-left font-semibold">Status</th>
+        <div className="overflow-x-auto rounded-xl border bg-card">
+          <table className="w-full min-w-[1900px] text-sm">
+            <thead>
+              <tr className="border-b bg-muted/40 text-[11px] uppercase tracking-wide text-muted-foreground">
+                <th className="px-2 py-2 text-right font-medium">#</th>
+                <th className="px-3 py-2 text-left font-medium">SKU Name</th>
+                <th className="px-2 py-2 text-right font-medium">D2C</th>
+                <th className="px-2 py-2 text-right font-medium">Amazon</th>
+                <th className="px-2 py-2 text-right font-medium">Nykaa</th>
+                <th className="px-2 py-2 text-right font-medium">Blinkit</th>
+                <th className="px-2 py-2 text-right font-medium">Zepto</th>
+                <th className="px-3 py-2 text-right font-medium">Warehouse Inventory</th>
+                <th className="px-3 py-2 text-right font-medium">Open / In-Transit</th>
+                <th className="px-2 py-2 text-right font-medium">Week 1</th>
+                <th className="px-2 py-2 text-right font-medium">Week 2</th>
+                <th className="px-2 py-2 text-right font-medium">Week 3</th>
+                <th className="px-2 py-2 text-right font-medium">Week 4</th>
+                <th className="px-3 py-2 text-right font-medium">Avg Weekly</th>
+                <th className="px-3 py-2 text-right font-medium">Monthly Rate</th>
+                <th className="px-3 py-2 text-right font-medium">Daily Rate</th>
+                <th className="px-3 py-2 text-right font-medium">Sufficiency Days</th>
+                <th className="px-3 py-2 text-right font-medium">Needed for Lead Time</th>
+                <th className="px-3 py-2 text-left font-medium">Stock-Out</th>
+                <th className="px-3 py-2 text-left font-medium">Trigger Date</th>
+                <th className="min-w-[140px] px-3 py-2 text-left font-medium">Status</th>
+                <th className="px-3 py-2 text-right font-medium">Suggested Qty</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {rows.map((r) => {
-                const S = STATUS[r.status];
-                const alarming = r.status === "critical" || r.status === "no-stock";
-                return (
-                  <tr key={r.skuId} className={cn("hover:bg-muted/30", alarming && "bg-red-50/40 dark:bg-red-950/10")}>
-                    <td className="px-3 py-2">
-                      <p className="font-medium leading-tight">{r.name}</p>
-                      <p className="text-xs text-muted-foreground">{r.code}</p>
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.currentInventory.toLocaleString("en-IN")}</td>
-                    {Array.from({ length: 4 }, (_, i) => {
-                      const v = r.weeks[i];
-                      return (
-                        <td key={i} className="px-2 py-2 text-right tabular-nums text-muted-foreground">
-                          {v === null || v === undefined ? "—" : v.toLocaleString("en-IN")}
-                        </td>
-                      );
-                    })}
-                    <td className="border-l px-3 py-2 text-right font-medium tabular-nums">
-                      {r.monthlyUnits === null ? "—" : r.monthlyUnits.toLocaleString("en-IN")}
-                      {r.weeksOfData > 0 && r.weeksOfData < 4 && (
-                        <span className="ml-1 text-[11px] font-normal text-muted-foreground">
-                          ({r.weeksOfData}w)
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmtNum(r.weeklyUnits)}</td>
-                    <td className={cn("px-3 py-2 text-right font-semibold tabular-nums", alarming && "text-red-600 dark:text-red-400")}>
-                      {r.daysOfCover === null ? "—" : Math.round(r.daysOfCover)}
-                    </td>
-                    <td className="px-3 py-2 text-xs">{fmtDate(r.stockoutDate)}</td>
-                    <td className="px-3 py-2 text-xs">
-                      {fmtDate(r.startProductionBy)}
-                      <span className="ml-1 text-muted-foreground">({r.leadTimeDays}d lead)</span>
-                    </td>
-                    <td className="px-3 py-2">
-                      <Badge variant="outline" className={cn("gap-1 whitespace-nowrap text-[11px]", S.cls)}>
-                        <S.icon className="h-3 w-3" /> {S.label}
-                      </Badge>
-                    </td>
-                  </tr>
-                );
-              })}
+              {visible.map((r) => <Row key={r.id} r={r} />)}
             </tbody>
           </table>
         </div>
       )}
-
-      <p className="text-xs text-muted-foreground">
-        Week 1 is the most recent import, counting back. Monthly is those four weeks added up, and Weekly avg is
-        their average — the figure days of cover is calculated from. A SKU turns red when cover falls below its
-        production lead time plus 30 days, amber below {data.rows[0]?.thresholdDays ?? 90} days.
-      </p>
     </div>
   );
 }
+
+const Row = memo(function Row({ r }: { r: ApiForecastRow }) {
+  return (
+    <tr>
+      <td className="px-2 py-2 text-right text-xs text-muted-foreground tabular-nums">{r.position}</td>
+      <td className="px-3 py-2 font-medium">{r.skuName}</td>
+      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">{n(r.saleD2c)}</td>
+      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">{n(r.saleAmazon)}</td>
+      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">{n(r.saleNykaa)}</td>
+      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">{n(r.saleBlinkit)}</td>
+      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">{n(r.saleZepto)}</td>
+      <td className="px-3 py-2 text-right tabular-nums">{n(r.currentInventory)}</td>
+      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{n(r.openProduction)}</td>
+      <td className="px-2 py-2 text-right tabular-nums">{n(r.week1)}</td>
+      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">{n(r.week2)}</td>
+      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">{n(r.week3)}</td>
+      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">{n(r.week4)}</td>
+      <td className="px-3 py-2 text-right tabular-nums">{n(r.avgWeeklySale)}</td>
+      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{n(r.monthlySaleRate)}</td>
+      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{dec(r.dailySaleRate)}</td>
+      <td className="px-3 py-2 text-right tabular-nums font-medium">{dec(r.stockSufficiencyDays)}</td>
+      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{n(r.stockNeededLeadTime)}</td>
+      <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{r.stockOutDate || "—"}</td>
+      <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{r.productionTriggerDate || "—"}</td>
+      <td className={`px-3 py-2 whitespace-nowrap text-xs font-semibold ${STATUS_COLOUR[r.status] ?? ""}`}>
+        {r.status || "—"}
+      </td>
+      <td className="px-3 py-2 text-right tabular-nums font-medium">{n(r.suggestedProductionQty)}</td>
+    </tr>
+  );
+});

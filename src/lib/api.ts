@@ -275,6 +275,25 @@ export type ApiAssignedTaskComment = {
   id: string; taskId: string; authorId: string; authorName: string; text: string; createdAt: string;
 };
 
+export type ApiForecastRow = {
+  id: string; teamId: string; position: number; skuName: string;
+  saleD2c: string | null; saleAmazon: string | null; saleNykaa: string | null;
+  saleBlinkit: string | null; saleZepto: string | null;
+  currentInventory: string | null; openProduction: string | null;
+  week1: string | null; week2: string | null; week3: string | null; week4: string | null;
+  avgWeeklySale: string | null; monthlySaleRate: string | null; dailySaleRate: string | null;
+  stockSufficiencyDays: string | null; stockNeededLeadTime: string | null;
+  stockOutDate: string; productionTriggerDate: string;
+  status: string; suggestedProductionQty: string | null;
+};
+
+export type ApiForecastMeta = {
+  teamId: string; reportDate: string; monthStart: string; currentWeek: string;
+  leadTimeDays: number | null; triggerAtDays: number | null;
+  totalToProduce: string | null; rowCount: number;
+  importedAt: string; importedByName: string;
+};
+
 export type ApiPaymentParty = {
   partyId: string; partyName: string; partyType: "Vendor" | "Manufacturer";
   creditDays: number | null;
@@ -347,26 +366,6 @@ export type ApiArtworkLink = {
   id: string; artworkId: string; kind: string; url: string;
   updatedById: string | null; updatedByName: string | null; updatedAt: string;
 };
-
-export type ApiForecastRow = {
-  skuId: string; code: string; name: string;
-  currentInventory: number; leadTimeDays: number; thresholdDays: number;
-  weeklyUnits: number | null; weeks: (number | null)[]; monthlyUnits: number | null;
-  weeksOfData: number; dailyVelocity: number | null;
-  daysOfCover: number | null; stockoutDate: string | null; startProductionBy: string | null;
-  status: "critical" | "warning" | "ok" | "no-sales-data" | "no-stock";
-  platformBreakdown: Record<string, number>;
-  lastImportedAt: string | null;
-};
-
-export type ApiForecast = {
-  rows: ApiForecastRow[];
-  recentWeeks: string[];
-  platforms: string[];
-  currentWeekEnding: string;
-};
-
-export type ApiSheetImport = { updated: number; skipped: string[]; ambiguous: string[]; weekEnding?: string };
 
 export type ApiNpdQuote = {
   id: string; requestId: string; partyName: string; leadTime: string;
@@ -785,19 +784,6 @@ export const api = {
   },
 
 
-  forecast: {
-    get: (sharedTeamId?: string) => get<ApiForecast>(`/forecast${sharedQs(sharedTeamId)}`),
-    salesTemplate: (weekEnding?: string, sharedTeamId?: string) =>
-      send<{ skus: number; platforms: number; weekEnding: string }>(
-        `/forecast/sales/template${sharedQs(sharedTeamId)}`, "POST", { weekEnding }),
-    salesImport: (weekEnding?: string, sharedTeamId?: string) =>
-      send<ApiSheetImport>(`/forecast/sales/import${sharedQs(sharedTeamId)}`, "POST", { weekEnding }),
-    stockTemplate: (sharedTeamId?: string) =>
-      send<{ skus: number; locations: number }>(`/forecast/stock/template${sharedQs(sharedTeamId)}`, "POST", {}),
-    stockImport: (sharedTeamId?: string) =>
-      send<ApiSheetImport>(`/forecast/stock/import${sharedQs(sharedTeamId)}`, "POST", {}),
-  },
-
   npdQuotes: {
     list: (sharedTeamId?: string) =>
       get<ApiNpdQuoteRequest[]>(`/npd/quote-requests${sharedQs(sharedTeamId)}`),
@@ -993,6 +979,12 @@ export const assignedTasksApi = {
     fetch(`${BASE}/assigned-tasks/${taskId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ text }) }).then((r) => r.json()),
   deleteComment: (taskId: string, commentId: string) =>
     fetch(`${BASE}/assigned-tasks/${taskId}/comments/${commentId}`, { method: "DELETE", headers: authHeaders() }).then((r) => r.json()),
+};
+
+export const forecastSheetApi = {
+  get:    () => get<{ rows: ApiForecastRow[]; meta: ApiForecastMeta | null }>("/forecast/sheet"),
+  import: () => send<{ rows: number; reportDate: string; currentWeek: string }>(
+    "/forecast/sheet/import", "POST"),
 };
 
 export const paymentsApi = {
